@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
-
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Customer extends Authenticatable implements JWTSubject
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'phone_num',
