@@ -1,7 +1,7 @@
 # Metronet
 ## ISP Management System
 
-System for ISP
+System for ISP Management
 
 ## Features
 
@@ -21,7 +21,7 @@ System for ISP
 -  Payment
 -  Notifications
 
-### Tech
+### Tech Stack
 - Laravel
 - MySQL
 - Redis
@@ -35,3 +35,57 @@ System for ISP
 - Invoice is created via kafka.
 - Payment is processed.
 - Notification is sent to the customer.
+
+### Step by step guide to configure the project
+1. Clone the repository:
+
+```bash
+git clone https://github.com/Yin-Myat-Noe-Lwin/Metronet.git
+cd Metronet
+```
+
+2. Copy the environment file:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+3. Build and start the Docker containers:
+
+```bash
+docker compose up --build -d
+```
+
+4. Install Composer Dependencies:
+
+```bash
+docker compose exec -it backend bash
+composer install
+```
+
+5. Generate the Laravel application key:
+
+```bash
+docker compose exec -it backend bash
+php artisan key:generate
+```
+
+6. Run database migrations:
+
+```bash
+docker compose exec -it backend bash
+php artisan migrate
+```
+
+7. Seed the database:
+
+```bash
+docker compose exec -it backend bash
+php artisan db:seed
+```
+
+8. Access the application:
+
+```bash
+http://localhost:8080
+```
