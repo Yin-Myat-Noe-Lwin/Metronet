@@ -1,5 +1,16 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomerAddressController;
+use App\Http\Controllers\IspPlanController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\CpeController;
+use App\Http\Controllers\ServiceAreaController;
+
 Route::middleware(['auth:api', 'admin'])->group(function () {
   Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -16,9 +27,9 @@ Route::middleware(['auth:api', 'admin'])->group(function () {
 
   Route::get('/admin/subscriptions', [SubscriptionController::class, 'index']);
 
-  Route::get('/admin/invoices', [AdminInvoiceController::class, 'index']);
-  
-  Route::get('/admin/payments', [AdminPaymentController::class, 'index']);
+  Route::get('/admin/invoices', [InvoiceController::class, 'index']);
+
+  Route::get('/admin/payments', [PaymentController::class, 'index']);
 
   Route::get('/admin/cpes', [CpeController::class, 'index']);
   Route::post('/admin/cpes', [CpeController::class, 'store']);

@@ -1,5 +1,14 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomerAddressController;
+use App\Http\Controllers\IspPlanController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\NotificationController;
+
 Route::middleware('auth:api')->group(function () {
 
   Route::post('/logout', [AuthController::class, 'logout']);
