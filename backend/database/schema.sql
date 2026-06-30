@@ -33,7 +33,7 @@ CREATE TABLE `customer_addresses` (
     `city` VARCHAR(30) NOT NULL,
     `region` VARCHAR(30) NOT NULL,
     `address_type` TINYINT NOT NULL COMMENT '1=Home, 2=Office, 3=Business',
-    `is_primary` TINYINT NOT NULL COMMENT '0=Secondary, 1=Primary',
+    `is_primary` TINYINT NOT NULL DEFAULT 0 COMMENT '0=Secondary, 1=Primary',
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     CONSTRAINT fk_addresses_customer_id
