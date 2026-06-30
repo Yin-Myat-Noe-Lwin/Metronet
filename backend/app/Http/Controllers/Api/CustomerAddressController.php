@@ -88,6 +88,7 @@ class CustomerAddressController extends Controller
                 ]);
             }
 
+            // make sure customer can't change the status again (primary, secondary)
             $data = $request->only([
                     'address',
                     'township',
