@@ -12,8 +12,6 @@
   use App\Http\Controllers\Api\ServiceAreaController;
 
   Route::middleware(['auth:api', 'admin'])->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-
     Route::get('/admin/customers', [CustomerController::class, 'index']);
     Route::get('/admin/customers/{id}', [CustomerController::class, 'show']);
     Route::delete('/admin/customers/{id}', [CustomerController::class, 'destroy']);
