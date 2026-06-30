@@ -82,7 +82,7 @@ CREATE TABLE `subscriptions` (
 CREATE TABLE `invoices` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `invoice_number` VARCHAR(50) NOT NULL UNIQUE,
-    `subscription_id` INT UNSIGNED NOT NULL,
+    `subscription_id` BIGINT UNSIGNED NOT NULL,
     `amount` DECIMAL(10,2) NOT NULL,
     `due_date` DATE NOT NULL,
     `status` TINYINT NOT NULL COMMENT '0=pending,1=paid,2=overdue,3=cancelled',
