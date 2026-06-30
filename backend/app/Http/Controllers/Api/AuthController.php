@@ -103,13 +103,6 @@ class AuthController extends Controller
                 ]);
             }
 
-            // if customer already verified the mail
-            if ($customer->email_verified_at) {
-                return response()->json([
-                    'message' => 'Email is already verified.'
-                ]);
-            }
-
             Log::info('the customer'.$customer);
 
             $customer->update([
