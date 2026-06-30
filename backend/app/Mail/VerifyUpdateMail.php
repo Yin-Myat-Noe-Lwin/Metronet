@@ -39,7 +39,7 @@ class VerifyUpdateMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.verify-email',
+            view: 'emails.update-email',
         );
     }
 
