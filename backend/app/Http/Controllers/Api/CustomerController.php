@@ -30,7 +30,7 @@ class CustomerController extends Controller
             $customer = Auth::user();
 
             $primary_address = $customer->addresses->where('is_primary', 1)
-                                                    ->first(['address', 'township', 'city', 'region']);
+                                                    ->first();
 
             if($primary_address) {
                 $full_primary_address = implode(', ', array_filter([
@@ -43,7 +43,7 @@ class CustomerController extends Controller
             }
 
             $secondary_address = $customer->addresses->where('is_primary', 0)
-                                                    ->first(['address', 'township', 'city', 'region']);
+                                                    ->first();
 
             if($secondary_address) {
                 $full_secondary_address = implode(', ', array_filter([
