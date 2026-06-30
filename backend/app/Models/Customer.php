@@ -35,6 +35,7 @@ class Customer extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'verification_token_expires_at' => 'datetime',
             'password' => 'hashed',
+            'status' => 'integer'
         ];
     }
 
