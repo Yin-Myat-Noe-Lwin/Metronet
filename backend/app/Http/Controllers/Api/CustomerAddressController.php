@@ -136,11 +136,12 @@ class CustomerAddressController extends Controller
             $customer = Auth::user();
 
             $address = CustomerAddress::where('id', $id)
-                                        ->where('customer_id', $customer_id)
+                                        ->where('customer_id', $customer->id)
                                         ->first();
 
             if (!$address) {
                 return response()->json([
+
                     'message' => 'Address not found'
                 ]);
             }
@@ -178,7 +179,7 @@ class CustomerAddressController extends Controller
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong.'
+                'message' => $e->getMessage()
             ]);
         }
     }
