@@ -45,7 +45,7 @@ class CustomerController extends Controller
             $secondary_addresses = $customer->addresses()->where('is_primary', 0)
                                                     ->get();
 
-            if($secondary_addresses->isNotEmpty()) {
+            if(!$secondary_addresses->isEmpty()) {
                 foreach($secondary_addresses as $secondary_address) {
                     $full_secondary_addresses[] = implode(', ', array_filter([
                         $secondary_address->address,
@@ -66,7 +66,7 @@ class CustomerController extends Controller
                 'phone_number' => $customer->phone_num,
                 'subscribed_plans' => $subscriptions->isEmpty() ? [] : $subscriptions,
                 'primary_address' => $full_primary_address?? 'No Primary Address',
-                'secondary_address' => $full_secondary_address?? 'No Secondary Address'
+                'secondary_address' => !empty($full_secondary_addresses) ? $full_secondary_addresses : []
             ]);
         } catch (PDOException $e) {
             return response()->json([
