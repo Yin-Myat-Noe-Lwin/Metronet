@@ -119,17 +119,24 @@ class CustomerController extends Controller
                 ]);
             }
 
-            $customer->update([
-                'name' => $request->name,
-                'phone_num' => $request->phone_num
-            ]);
+            if ($request->filled('name')) {
+                $customer->update([
+                    'name' => $request->name
+                ]);
+            }
+
+            if ($request->filled('phone_num')) {
+                $customer->update([
+                    'phone_num' => $request->phone_num
+                ]);
+            }
 
             return response()->json([
                 'message' => 'Profile was updated successfully. To verify new mail, check your mail.'
             ]);
         } catch (PDOException $e) {
             return response()->json([
-                'message' => 'Database Connection Error'
+                'message' => $e->getMessage()
             ]);
         } catch (QueryException $e) {
             return response()->json([
@@ -149,7 +156,7 @@ class CustomerController extends Controller
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong.'
+                'message' => $e->getMessage()
             ]);
         }
     }
