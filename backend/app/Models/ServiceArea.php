@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ServiceArea extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'region',
         'city',
