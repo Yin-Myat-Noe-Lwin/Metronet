@@ -179,7 +179,7 @@ class CustomerAddressController extends Controller
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'message' => $e->getMessage()
+                'message' => 'Something went wrong'
             ]);
         }
     }
