@@ -156,15 +156,11 @@ class AuthController extends Controller
                 ]);
             }
 
-            if($customer ||  $customer->status === 0) {
+            Log::info('customer status'. gettype($customer->status));
+
+            if($customer &&  $customer->status === 0) {
                 return response()->json([
                     'message' => 'Please verify your email first'
-                ]);
-            }
-
-            if ($customer->status !== 1) {
-                return response()->json([
-                    'message' => 'Account disabled'
                 ]);
             }
 
