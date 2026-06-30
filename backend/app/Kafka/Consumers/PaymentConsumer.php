@@ -2,7 +2,8 @@
 
     use Kafka;
     use Illuminate\Support\Facades\Log;
-
+    use App\Models\Invoice;
+    use App\Models\Subscription;
     class PaymentConsumer
     {
         public function handle($message)

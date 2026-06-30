@@ -1,7 +1,11 @@
 <?php
 
     use Illuminate\Support\Facades\Log;
-
+    use App\Models\Subscription;
+    use App\Models\Customer;
+    use App\Models\Invoice;
+    use App\Models\Notification;
+    use Illuminate\Support\Facades\Mail;
     class NotificationConsumer
     {
         public function handle($message)

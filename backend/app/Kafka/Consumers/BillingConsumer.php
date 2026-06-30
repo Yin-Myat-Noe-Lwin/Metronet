@@ -2,6 +2,9 @@
 
   use Kafka;
   use Illuminate\Support\Facades\Log;
+  use App\Models\Subscription;
+  use App\Models\IspPlan;
+  use App\Models\Invoice;
 
   class BillingConsumer {
 
