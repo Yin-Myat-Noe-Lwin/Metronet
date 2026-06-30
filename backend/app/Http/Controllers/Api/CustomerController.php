@@ -29,7 +29,7 @@ class CustomerController extends Controller
         try{
             $customer = Auth::user();
 
-            $primary_address = $customer->addresses->where('is_primary', 1)
+            $primary_address = $customer->addresses()->where('is_primary', 1)
                                                     ->first();
 
             if($primary_address) {
@@ -42,17 +42,19 @@ class CustomerController extends Controller
                 Log::info('customer primary address'.$full_primary_address);
             }
 
-            $secondary_address = $customer->addresses->where('is_primary', 0)
-                                                    ->first();
+            $secondary_addresses = $customer->addresses()->where('is_primary', 0)
+                                                    ->get();
 
-            if($secondary_address) {
-                $full_secondary_address = implode(', ', array_filter([
-                                        $secondary_address->address,
-                                        $secondary_address->township,
-                                        $secondary_address->city,
-                                        $secondary_address->region
-                        ]));
-                Log::info('customer secondary address'.$full_secondary_address);
+            if($secondary_addresses->isNotEmpty()) {
+                foreach($secondary_addresses as $secondary_address) {
+                    $full_secondary_addresses[] = implode(', ', array_filter([
+                        $secondary_address->address,
+                        $secondary_address->township,
+                        $secondary_address->city,
+                        $secondary_address->region
+                    ]));
+                }
+                Log::info('customer secondary address',$full_secondary_addresses);
             }
 
             $subscriptions = $customer->subscriptions;
