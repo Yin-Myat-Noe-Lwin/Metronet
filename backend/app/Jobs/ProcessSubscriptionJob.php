@@ -11,7 +11,7 @@ use App\Models\Subscription;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Kafka;
+use Junges\Kafka\Facades\Kafka;
 
 class ProcessSubscriptionJob implements ShouldQueue
 {
@@ -33,8 +33,6 @@ class ProcessSubscriptionJob implements ShouldQueue
     public function handle(): void
     {
         $subscription = Subscription::find($this->subscriptionId);
-
-        Log::info('Subscription data:'.$subscription);
 
         // check if subscription status is not pending
         if(!$subscription || $subscription->status !=0) {
