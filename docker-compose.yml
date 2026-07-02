@@ -10,13 +10,14 @@ services:
       - "8080:8000"
     volumes:
       - ./backend:/app
-      - /app/vendor
     working_dir: /app
     command: php artisan serve --host=0.0.0.0 --port=8000
     depends_on:
       - db
       - redis
       - kafka
+    networks:
+      - metronet
 
   db:
     image: mysql:8
@@ -32,6 +33,8 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - metronet
 
   kafka:
     image: apache/kafka:latest
@@ -48,6 +51,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    networks:
+      - metronet
 
   scheduler:
     build:
@@ -56,11 +61,57 @@ services:
     working_dir: /app
     volumes:
       - ./backend:/app
-      - /app/vendor
     command: php artisan schedule:work
     depends_on:
       - db
       - redis
+    networks:
+      - metronet
+
+  worker:
+    build:
+      context: ./backend
+    container_name: worker
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    depends_on:
+      - db
+      - redis
+      - kafka
+    networks:
+      - metronet
+
+  billing-consumer:
+    build:
+      context: ./backend
+    container_name: billing-consumer
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: php artisan kafka:billing-consume
+    depends_on:
+      - kafka
+      - db
+      - redis
+    networks:
+      - metronet
+
+  payment-consumer:
+    build:
+      context: ./backend
+    container_name: payment-consumer
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: php artisan kafka:payment-consume
+    depends_on:
+      - kafka
+      - db
+      - redis
+    networks:
+      - metronet
 
   redis:
     image: redis:7-alpine
@@ -68,6 +119,12 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    networks:
+      - metronet
 
 volumes:
   mysql_data:
+
+networks:
+  metronet:
+    driver: bridge
