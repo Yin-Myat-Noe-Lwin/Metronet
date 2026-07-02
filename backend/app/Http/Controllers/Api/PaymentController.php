@@ -14,30 +14,30 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 
-use Illuminate\Support\Facades\DB;
+use Junges\Kafka\Facades\Kafka;
 
-use Kafka;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
     public function pay($invoiceId): JsonResponse
     {
-        try {
-            // logged in customer
-            $customer = Auth::user();
+        // logged in customer
+        $customer = Auth::user();
 
-            $invoice = Invoice::where('id', $invoiceId)
-                            ->whereHas('subscription', function ($q) use ($customer) {
-                                $q->where('customer_id', $customer->id);
-                            })
-                            ->first();
+        $invoice = Invoice::where('id', $invoiceId)
+                        ->whereHas('subscription', function ($q) use ($customer) {
+                            $q->where('customer_id', $customer->id);
+                        })
+                        ->first();
 
-            if (!$invoice || $invoice->status != 0) {
-                return response()->json(['message' => 'Invalid invoice']);
-            }
+        if (!$invoice || $invoice->status != 0) {
+            return response()->json(['message' => 'Invalid invoice']);
+        }
 
-            DB::beginTransaction();
+        DB::beginTransaction();
 
+        try{
             $payment = Payment::create([
                 'customer_id' => $customer->id,
                 'invoice_id' => $invoice->id,
@@ -53,43 +53,23 @@ class PaymentController extends Controller
                 'status' => 1
             ]);
 
-            // publish Kafka event
-            Kafka::publish()
-                ->onTopic('payment.completed')
-                ->withBodyKey('payment_id', $payment->id)
-                ->withBodyKey('invoice_id', $invoice->id)
-                ->withBodyKey('customer_id', $customer->id)
-                ->send();
-
-            return response()->json([
-                'message' => 'Payment successful',
-                'payment' => $payment
-            ]);
-        } catch (PDOException $e) {
-            return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (QueryException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (AuthenticationException $e) {
-            return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (AuthorizationException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Something went wrong.'
-            ]);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
         }
+
+        // publish Kafka event
+        Kafka::publish()
+            ->onTopic('payment.completed')
+            ->withBodyKey('payment_id', $payment->id)
+            ->withBodyKey('invoice_id', $invoice->id)
+            ->withBodyKey('customer_id', $customer->id)
+            ->send();
+
+        return response()->json([
+            'message' => 'Payment successful',
+            'payment' => $payment
+        ]);
     }
 
     public function index(): JsonResponse
