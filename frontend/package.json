@@ -5,32 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:docker": "vite --host 0.0.0.0 --port 5173 --mode docker",
     "build": "vite build",
+    "build:docker": "vite build --mode docker",
     "preview": "vite preview",
-    "lint": "run-s \"lint:*\"",
-    "lint:oxlint": "oxlint . --fix",
-    "lint:eslint": "eslint . --fix --cache",
+    "test:unit": "vitest",
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
-    "pinia": "^3.0.4",
+    "axios": "^1.18.1",
     "vue": "^3.5.38",
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@vitejs/plugin-vue": "^6.0.7",
-    "eslint": "^10.5.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-oxlint": "~1.69.0",
-    "eslint-plugin-vue": "~10.9.2",
-    "globals": "^17.6.0",
-    "npm-run-all2": "^9.0.2",
-    "oxlint": "~1.69.0",
+    "@vue/test-utils": "^2.4.11",
+    "jsdom": "^29.1.1",
     "prettier": "3.8.4",
     "vite": "^8.0.16",
     "vite-plugin-vue-devtools": "^8.1.2",
-    "vue-eslint-parser": "^10.4.1"
+    "vitest": "^4.1.9"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"
