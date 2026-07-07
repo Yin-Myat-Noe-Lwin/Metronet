@@ -57,28 +57,39 @@ cp backend/.env.example backend/.env
 docker compose up --build -d
 ```
 
-4. Generate the Laravel application key:
+4. Run composer install command:
+   ```
+   docker compose exec backend
+   composer install
+   ```
+
+5. Restart the backend container:
+   ```
+   docker compose restart backend
+   ```
+
+6. Generate the Laravel application key:
 
 ```bash
 docker compose exec -it backend bash
 php artisan key:generate
 ```
 
-5. Run database migrations:
+7. Run database migrations:
 
 ```bash
 docker compose exec -it backend bash
 php artisan migrate
 ```
 
-6. Seed the database:
+8. Seed the database:
 
 ```bash
 docker compose exec -it backend bash
 php artisan db:seed
 ```
 
-7. Access the application:
+9. Access the application:
 
 ```bash
 http://localhost:5173
