@@ -10,7 +10,7 @@
         "laravel/framework": "^11.31",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
-        "mateusjunges/laravel-kafka": "^2.10",
+        "mateusjunges/laravel-kafka": "^3.0",
         "php-open-source-saver/jwt-auth": "^2.3"
     },
     "require-dev": {
@@ -71,6 +71,6 @@
             "php-http/discovery": true
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }
