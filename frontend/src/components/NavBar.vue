@@ -1,10 +1,18 @@
 <template>
   <header class="navbar">
     <div class="container">
-      <router-link to="/" class="logo">
+      <template v-if="!isAdmin">
+        <router-link to="/" class="logo">
         <span class="logo-icon">⚡</span>
         <span class="logo-text">MetroNet</span>
       </router-link>
+      </template>
+      <template v-else>
+        <router-link to="/admin/customers" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">MetroNet</span>
+      </router-link>
+      </template>
 
       <nav class="nav">
         <!-- Show different navigation based on user role -->
