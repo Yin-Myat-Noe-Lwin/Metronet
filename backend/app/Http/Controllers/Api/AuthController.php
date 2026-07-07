@@ -150,26 +150,24 @@ class AuthController extends Controller
 
             $customer = Customer::where('email', $credentials['email'])->first();
 
-            if(!$customer) {
+            if (!$customer) {
                 return response()->json([
                     'message' => 'Invalid Email or Password'
-                ]);
+                ], 401);
             }
 
-            Log::info('customer status'. gettype($customer->status));
-
-            if($customer &&  $customer->status === 0) {
+            if ($customer && $customer->status === 0) {
                 return response()->json([
                     'message' => 'Please verify your email first'
-                ]);
+                ], 403); 
             }
 
             $token = Auth::attempt($credentials);
 
-            if(!$token) {
+            if (!$token) {
                 return response()->json([
-                    'message' => 'invalid credentials'
-                ]);
+                    'message' => 'Invalid credentials'
+                ], 401);
             }
 
             return response()->json([
@@ -177,30 +175,31 @@ class AuthController extends Controller
                 'token' => $token,
                 'role' => $customer->role,
             ]);
+
         } catch (PDOException $e) {
             return response()->json([
                 'message' => 'Database Connection Error'
-            ]);
+            ], 500);
         } catch (QueryException $e) {
             return response()->json([
                 'message' => 'Database operation failed.'
-            ]);
+            ], 500);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Record not found.'
-            ]);
+            ], 404);
         } catch (AuthenticationException $e) {
             return response()->json([
-                'message' =>  'Authenication failed.'
-            ]);
+                'message' => 'Authentication failed.'
+            ], 401);
         } catch (AuthorizationException $e) {
             return response()->json([
                 'message' => 'You are not authorized to perform this action.'
-            ]);
+            ], 403);
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Something went wrong.'
-            ]);
+            ], 500);
         }
     }
 
