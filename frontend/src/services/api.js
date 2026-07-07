@@ -208,9 +208,9 @@ export const serviceAreasService = {
 
 // ✅ Customer Service - Only View and Delete
 export const customerService = {
-  async getCustomers(page = 1) {
+  async getCustomers() {
     try {
-      const response = await apiClient.get(`/api/admin/customers?page=${page}`)
+      const response = await apiClient.get(`/api/admin/customers`)
       console.log('Customers response:', response.data)
       return response.data
     } catch (error) {
