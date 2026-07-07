@@ -283,9 +283,10 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   position: relative;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding-left: 0;
+  padding-right: 30px;
 }
 
 /* Logo - Moved further left */
