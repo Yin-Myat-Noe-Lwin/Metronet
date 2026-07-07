@@ -19,6 +19,23 @@ services:
     networks:
       - metronet
 
+  supervisor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: supervisor
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: supervisord -c /etc/supervisor.conf
+    restart: always
+    depends_on:
+      - db
+      - redis
+      - kafka
+    networks:
+      - metronet
+
   db:
     image: mysql:8
     container_name: db
@@ -51,65 +68,29 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     networks:
       - metronet
 
-  scheduler:
-    build:
-      context: ./backend
-    container_name: scheduler
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    command: php artisan schedule:work
-    depends_on:
-      - db
-      - redis
-    networks:
-      - metronet
-
-  worker:
-    build:
-      context: ./backend
-    container_name: worker
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
-    depends_on:
-      - db
-      - redis
-      - kafka
-    networks:
-      - metronet
-
-  billing-consumer:
-    build:
-      context: ./backend
-    container_name: billing-consumer
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    command: php artisan kafka:billing-consume
+  kafka-init:
+    image: apache/kafka:latest
+    container_name: kafka-init
     depends_on:
       - kafka
-      - db
-      - redis
-    networks:
-      - metronet
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      echo 'Waiting for Kafka...';
+      sleep 10;
 
-  payment-consumer:
-    build:
-      context: ./backend
-    container_name: payment-consumer
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    command: php artisan kafka:payment-consume
-    depends_on:
-      - kafka
-      - db
-      - redis
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic service.activated --partitions 1 --replication-factor 1;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic invoice.created --partitions 1 --replication-factor 1;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic payment.success --partitions 1 --replication-factor 1;
+
+      echo 'Kafka topics created successfully';
+      "
     networks:
       - metronet
 
@@ -119,6 +100,19 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    networks:
+      - metronet
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     networks:
       - metronet
 
