@@ -4,7 +4,9 @@ RUN apt-get update && apt-get install -y \
     git curl unzip zip \
     libzip-dev \
     librdkafka-dev \
+    pkg-config \
     g++ gcc make autoconf \
+    supervisor \
     && docker-php-ext-install pdo pdo_mysql zip
 
 RUN pecl install redis \
@@ -16,6 +18,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 COPY . /app
+
+COPY docker/supervisord.conf /etc/supervisor.conf
 
 ENV COMPOSER_MEMORY_LIMIT=-1
 
