@@ -227,11 +227,8 @@ class CustomerController extends Controller
     public function index(): JsonResponse
     {
         try{
-            $page = request('page', 1);
-
-            $customers = Cache::remember("customers_page_$page", 60, function () {
-                            return Customer::orderBy('created_at', 'desc')
-                                ->paginate(20);
+            $customers = Cache::remember("customers", 60, function () {
+                            return Customer::orderBy('created_at', 'desc')->get();
                         });
 
             return response()->json([
@@ -259,7 +256,7 @@ class CustomerController extends Controller
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong.'
+                'message' => $e->getMessage()
             ]);
         }
     }
