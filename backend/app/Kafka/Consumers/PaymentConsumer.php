@@ -1,37 +1,46 @@
 <?php
 
-    use Illuminate\Support\Facades\Log;
-    use App\Models\Invoice;
-    use App\Models\Subscription;
-    use Junges\Kafka\Facades\Kafka;
+namespace App\Kafka\Consumers;
 
-    class PaymentConsumer
+use App\Models\Payment;
+use App\Models\Customer;
+use App\Models\Notification;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Mail\PaymentSuccessMail;
+
+class PaymentConsumer
+{
+    public function handle($message)
     {
-        public function handle($message)
-        {
-            $data = $message->getBody();
+        $data = $message->getBody();
 
-            $invoice = Invoice::where('id', $data['invoice_id'])->first();
+        Log::info('PaymentConsumer executed', $data);
 
-            if (!$invoice) {
-                return;
-            }
-
-            // mark subscription active or extend
-            // $subscription = Subscription::where('id', $invoice->subscription_id)->first();
-
-            // if ($subscription) {
-            //     $subscription->update([
-            //         'status' => 1,
-            //         'end_date' => now()->addMonth()
-            //     ]);
-            // }
-
-            // trigger notification event
-            Kafka::publish()
-                ->onTopic('payment.success')
-                ->withBodyKey('invoice_id', $invoice->id)
-                ->withBodyKey('customer_id', $subscription->customer_id)
-                ->send();
+        $payment = Payment::find($data['payment_id']);
+        if (!$payment) {
+            return;
         }
+
+        $customer = Customer::find($data['customer_id']);
+        if (!$customer) {
+            return;
+        }
+
+        // Send email
+        Mail::to($customer->email)
+            ->send(new PaymentSuccessMail($payment));
+
+        // Save notification
+        Notification::create([
+            'customer_id' => $customer->id,
+            'type' => 2, // payment successful
+            'title' => 'Payment Successful',
+            'message' => 'Your payment has been received successfully.',
+            'status' => 1,
+            'is_read' => 0,
+            'sent_status' => 1,
+            'sent_at' => now(),
+        ]);
     }
+}
