@@ -9,6 +9,7 @@
   use App\Http\Controllers\Api\PaymentController;
   use App\Http\Controllers\Api\NotificationController;
 
+
   Route::get('/plans', [IspPlanController::class, 'index']);
 
   Route::middleware('auth:api')->group(function () {
@@ -24,6 +25,8 @@
 
     Route::get('/profile', [CustomerController::class, 'profile']);
     Route::patch('/profile', [CustomerController::class, 'updateProfile']);
+
+    Route::get('/service-areas', [ServiceAreaController::class, 'viewAreas']);
 
     Route::get('/invoices', [InvoiceController::class, 'index']);
     Route::get('/invoices/{id}', [InvoiceController::class, 'show']);

@@ -26,8 +26,9 @@
     Route::get('/admin/subscriptions', [SubscriptionController::class, 'index']);
 
     Route::get('/admin/invoices', [InvoiceController::class, 'index']);
+    Route::get('/admin/invoices/{id}', [InvoiceController::class, 'show']);
 
-    Route::get('/admin/payments', [PaymentController::class, 'index']);
+    Route::get('/admin/payments', [PaymentController::class, 'viewPayments']);
 
     Route::get('/admin/cpes', [CpeController::class, 'index']);
     Route::post('/admin/cpes', [CpeController::class, 'store']);
