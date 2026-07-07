@@ -27,6 +27,7 @@ System for ISP Management
 - Redis
 - Kafka
 - Docker
+- Supervisor
 
 ### Workflow
 - Customer subscribes to a plan.
@@ -80,5 +81,5 @@ php artisan db:seed
 7. Access the application:
 
 ```bash
-http://localhost:8080
+http://localhost:5173
 ```
