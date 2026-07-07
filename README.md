@@ -33,9 +33,11 @@ System for ISP Management
 - Customer subscribes to a plan.
 - Subscription is processed using a job.
 - CPE is assigned automatically.
+- If subscription works, customer will get the subscription success mail.
 - Invoice is created via kafka.
+- Invoice is sent to customer's mail.
 - Payment is processed.
-- Notification is sent to the customer.
+- Notification and mail is sent to the customer.
 
 ### Step by step guide to configure the project
 1. Clone the repository:
