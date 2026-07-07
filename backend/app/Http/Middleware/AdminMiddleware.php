@@ -15,7 +15,7 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::user()->role != 2) {
+        if (Auth::user()->role != 0) {
             return response()->json([
                 'message' => 'Admin access only'
             ], 403);
