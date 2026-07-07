@@ -4,28 +4,13 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Kafka\Consumers\PaymentConsumer;
-
-use MateusJunges\Kafka\Facades\Kafka;
+use Junges\Kafka\Facades\Kafka;
 
 class PaymentConsumerCommand extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'kafka:payment-consume';
+    protected $description = 'Consume payment success events';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Command description';
-
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
         $consumer = Kafka::consumer()

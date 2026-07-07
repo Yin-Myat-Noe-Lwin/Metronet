@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Kafka\Consumers\BillingConsumer;
-
 use Junges\Kafka\Facades\Kafka;
+use Illuminate\Support\Facades\Log;
 
 class BillingConsumerCommand extends Command
 {
@@ -29,16 +29,18 @@ class BillingConsumerCommand extends Command
     public function handle()
     {
         $consumer = Kafka::consumer()
+            ->withBrokers('kafka:9092')
+            ->withConsumerGroupId('billing-group')
             ->subscribe('service.activated')
-            ->handler(function ($message) {
+            ->withHandler(function ($message) {
 
-                $data = $message->getBody();
+                Log::info('Kafka received', $message->getBody());
 
                 (new BillingConsumer())->handle($message);
+
             })
             ->build();
 
         $consumer->consume();
-
     }
 }
