@@ -84,6 +84,61 @@ class ServiceAreaController extends Controller
         }
     }
 
+    public function viewAreas(): JsonResponse
+    {
+        try {
+            // Use pluck directly without get() for better performance
+            $regions = ServiceArea::where('status', 1)
+                ->select('region')
+                ->distinct()
+                ->pluck('region')
+                ->values();
+
+            $cities = ServiceArea::where('status', 1)
+                ->select('city')
+                ->distinct()
+                ->pluck('city')
+                ->values();
+
+            $townships = ServiceArea::where('status', 1)
+                ->select('township')
+                ->distinct()
+                ->pluck('township')
+                ->values();
+
+            return response()->json([
+                'region' => $regions,
+                'city' => $cities,
+                'township' => $townships
+            ]);
+
+        } catch (PDOException $e) {
+            return response()->json([
+                'message' =>  $e->getMessage()
+            ]);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (AuthenticationException $e) {
+            return response()->json([
+                'message' =>  $e->getMessage()
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong.'
+            ]);
+        }
+    }
+
     public function update(ServiceAreaUpdateRequest $request, $id): JsonResponse
     {
         try{
