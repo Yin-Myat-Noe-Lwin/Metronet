@@ -45,23 +45,28 @@ System for ISP Management
    cd Metronet
    ```
 
-2. Copy the environment file:
+2. Copy and Configure the environment file for backend:
 
    ```bash
    cp backend/.env.example backend/.env
    ```
 
-3. Build and start the Docker containers:
+3. Configure the environment file for frontend:
+
+   ```bash
+   cd frontend
+   ```
+
+4. Build and start the Docker containers:
    
    ```bash
    docker compose up --build -d
    ```
 
-4. Run composer install command:
+5. Run composer install command:
    
    ```bash
-   docker compose exec backend
-   composer install
+   docker compose run --rm backend composer install
    ```
 
 6. Restart the backend container:
