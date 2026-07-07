@@ -14,7 +14,10 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 
+use Illuminate\Support\Facades\Auth;
 use Junges\Kafka\Facades\Kafka;
+use App\Models\Invoice;
+use App\Models\Payment;
 
 use Illuminate\Support\Facades\DB;
 
@@ -22,14 +25,13 @@ class PaymentController extends Controller
 {
     public function pay($invoiceId): JsonResponse
     {
-        // logged in customer
         $customer = Auth::user();
 
         $invoice = Invoice::where('id', $invoiceId)
-                        ->whereHas('subscription', function ($q) use ($customer) {
-                            $q->where('customer_id', $customer->id);
-                        })
-                        ->first();
+                            ->whereHas('subscription', function ($q) use ($customer) {
+                                $q->where('customer_id', $customer->id);
+                            })
+                            ->first();
 
         if (!$invoice || $invoice->status != 0) {
             return response()->json(['message' => 'Invalid invoice']);
@@ -37,7 +39,7 @@ class PaymentController extends Controller
 
         DB::beginTransaction();
 
-        try{
+        try {
             $payment = Payment::create([
                 'customer_id' => $customer->id,
                 'invoice_id' => $invoice->id,
@@ -48,28 +50,32 @@ class PaymentController extends Controller
                 'paid_at' => now(),
             ]);
 
-            // update invoice status to 1
             $invoice->update([
                 'status' => 1
             ]);
 
             DB::commit();
+
+            Kafka::publish()
+                ->onTopic('payment.success')
+                ->withBodyKey('payment_id', $payment->id)
+                ->withBodyKey('invoice_id', $invoice->id)
+                ->withBodyKey('customer_id', $customer->id)
+                ->send();
+
+            return response()->json([
+                'message' => 'Payment successful',
+                'payment' => $payment
+            ]);
+
         } catch (\Throwable $e) {
             DB::rollBack();
+
+            return response()->json([
+                'message' => 'Payment failed',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // publish Kafka event
-        Kafka::publish()
-            ->onTopic('payment.completed')
-            ->withBodyKey('payment_id', $payment->id)
-            ->withBodyKey('invoice_id', $invoice->id)
-            ->withBodyKey('customer_id', $customer->id)
-            ->send();
-
-        return response()->json([
-            'message' => 'Payment successful',
-            'payment' => $payment
-        ]);
     }
 
     public function index(): JsonResponse
