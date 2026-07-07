@@ -45,6 +45,9 @@
 
     <!-- Table -->
     <div v-else class="table-wrapper">
+      <div class="table-header">
+        <span class="table-count">Total: {{ customers.length }} customers</span>
+      </div>
       <table class="admin-table">
         <thead>
           <tr>
@@ -96,42 +99,6 @@
           </tr>
         </tbody>
       </table>
-
-      <!-- Pagination -->
-      <div class="pagination" v-if="pagination.total > 0">
-        <div class="pagination-info">
-          Showing {{ (pagination.current_page - 1) * pagination.per_page + 1 }} to
-          {{ Math.min(pagination.current_page * pagination.per_page, pagination.total) }}
-          of {{ pagination.total }} customers
-        </div>
-        <div class="pagination-controls">
-          <button
-            class="page-btn"
-            :disabled="pagination.current_page === 1"
-            @click="changePage(pagination.current_page - 1)"
-          >
-            Previous
-          </button>
-          <span class="page-numbers">
-            <button
-              v-for="page in visiblePages"
-              :key="page"
-              class="page-number"
-              :class="{ 'page-number--active': page === pagination.current_page }"
-              @click="changePage(page)"
-            >
-              {{ page }}
-            </button>
-          </span>
-          <button
-            class="page-btn"
-            :disabled="pagination.current_page === pagination.last_page"
-            @click="changePage(pagination.current_page + 1)"
-          >
-            Next
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- View Customer Modal -->
@@ -244,12 +211,6 @@ export default {
       searchQuery: '',
       searchTimeout: null,
       customers: [],
-      pagination: {
-        current_page: 1,
-        last_page: 1,
-        total: 0,
-        per_page: 20
-      },
       showViewModal: false,
       showDeleteModal: false,
       viewingCustomer: null,
@@ -272,56 +233,32 @@ export default {
         c.phone_num?.includes(query) ||
         c.phone?.includes(query)
       )
-    },
-    visiblePages() {
-      const current = this.pagination.current_page
-      const last = this.pagination.last_page
-      const pages = []
-      const maxVisible = 5
-
-      if (last <= maxVisible) {
-        for (let i = 1; i <= last; i++) pages.push(i)
-      } else {
-        pages.push(1)
-        let start = Math.max(2, current - 1)
-        let end = Math.min(last - 1, current + 1)
-        if (start > 2) pages.push('...')
-        for (let i = start; i <= end; i++) pages.push(i)
-        if (end < last - 1) pages.push('...')
-        pages.push(last)
-      }
-      return pages
     }
   },
   mounted() {
     this.fetchCustomers()
   },
   methods: {
-    async fetchCustomers(page = 1) {
+    async fetchCustomers() {
       this.loading = true
       this.error = null
 
       try {
-        const response = await customerService.getCustomers(page)
-        console.log('✅ Customers API Response:', response)
+        const response = await customerService.getCustomers()
+        console.log('✅ Full API Response:', response)
 
-        const result = response.data || response
+        // ✅ Handle the response correctly
+        // Response structure: { data: [ ... ] }
+        let customersData = []
 
-        if (result.data && Array.isArray(result.data)) {
-          // ✅ Filter out admin users (role = 0) from the list
-          this.customers = result.data.filter(c => c.role !== 0)
-          this.pagination = {
-            current_page: result.current_page || 1,
-            last_page: result.last_page || 1,
-            total: result.total || 0,
-            per_page: result.per_page || 20
-          }
-        } else if (Array.isArray(result)) {
-          this.customers = result.filter(c => c.role !== 0)
-        } else {
-          this.customers = []
+        if (response.data && Array.isArray(response.data)) {
+          customersData = response.data
+        } else if (Array.isArray(response)) {
+          customersData = response
         }
 
+        // Filter out admin users (role = 0) from the list
+        this.customers = customersData.filter(c => c.role !== 0)
         console.log('✅ Loaded customers (excluding admins):', this.customers.length)
 
       } catch (error) {
@@ -341,11 +278,6 @@ export default {
       } finally {
         this.loading = false
       }
-    },
-
-    changePage(page) {
-      if (page < 1 || page > this.pagination.last_page) return
-      this.fetchCustomers(page)
     },
 
     onSearch() {
@@ -400,7 +332,7 @@ export default {
 
         this.showDeleteModal = false
         this.showToast('Customer deactivated successfully!', 'success')
-        this.fetchCustomers(this.pagination.current_page)
+        this.fetchCustomers()
 
       } catch (error) {
         console.error('Error deleting customer:', error)
@@ -645,6 +577,18 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
+.table-header {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.table-count {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -754,77 +698,6 @@ export default {
 
 .action-btn.delete:hover {
   background: #ffcdd2;
-}
-
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.pagination-info {
-  font-size: 14px;
-  color: #666;
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.page-btn {
-  padding: 8px 16px;
-  background: #f8f9fa;
-  border: 1px solid #e8ecf1;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.page-btn:hover:not(:disabled) {
-  background: #ff6b35;
-  color: #fff;
-  border-color: #ff6b35;
-}
-
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-numbers {
-  display: flex;
-  gap: 4px;
-}
-
-.page-number {
-  min-width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.page-number:hover {
-  background: #f8f9fa;
-}
-
-.page-number--active {
-  background: #ff6b35;
-  color: #fff;
 }
 
 /* Modal */
@@ -1163,11 +1036,6 @@ export default {
 
   .modal-lg {
     max-width: 95%;
-  }
-
-  .pagination {
-    flex-direction: column;
-    align-items: center;
   }
 
   .action-buttons-group {
