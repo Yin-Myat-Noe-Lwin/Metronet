@@ -96,6 +96,7 @@ CREATE TABLE `payments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `customer_id` BIGINT UNSIGNED NOT NULL,
     `invoice_id` BIGINT UNSIGNED NOT NULL,
+    `amount` DECIMAL(10,2) NOT NULL,
     `method` TINYINT NOT NULL COMMENT '1=card, 2=bank, 3=cash 4=mock',
     `transaction_ref` VARCHAR(100) NULL,
     `status` TINYINT NOT NULL COMMENT '0=pending 1=success 2=failed',
@@ -135,19 +136,18 @@ CREATE TABLE `cpe_assignments` (
 CREATE TABLE `notifications` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `customer_id` BIGINT UNSIGNED NOT NULL,
-    `type` TINYINT NOT NULL COMMENT '1=email, 2=sms',
+    `event_type` TINYINT NOT NULL COMMENT '1=invoice_created, 2=payment_success, 3=subscription_approved, 4=service_activated',
+    `channel` TINYINT NOT NULL DEFAULT 1 COMMENT '1=email, 2=sms, 3=in_app',
     `title` VARCHAR(100) NOT NULL,
     `message` TEXT,
-    `status` TINYINT NOT NULL COMMENT '0=pending 1=active',
-    -- check if customer has read the noti or not
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=active',
     `is_read` TINYINT DEFAULT 0,
     `read_at` TIMESTAMP NULL,
-    -- for scheduled notifications
-    `scheduled_at` timestamp NULL DEFAULT NULL,
-    `sent_status` TINYINT COMMENT '0=not sent 1=sent 2=failed',
-    `sent_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
+    `scheduled_at` TIMESTAMP NULL,
+    `sent_status` TINYINT DEFAULT 0 COMMENT '0=pending 1=sent 2=failed',
+    `sent_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
     CONSTRAINT fk_notifications_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
