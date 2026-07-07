@@ -40,57 +40,59 @@ System for ISP Management
 ### Step by step guide to configure the project
 1. Clone the repository:
 
-```bash
-git clone https://github.com/Yin-Myat-Noe-Lwin/Metronet.git
-cd Metronet
-```
+   ```bash
+   git clone https://github.com/Yin-Myat-Noe-Lwin/Metronet.git
+   cd Metronet
+   ```
 
 2. Copy the environment file:
 
-```bash
-cp backend/.env.example backend/.env
-```
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
 
 3. Build and start the Docker containers:
-
-```bash
-docker compose up --build -d
-```
+   
+   ```bash
+   docker compose up --build -d
+   ```
 
 4. Run composer install command:
-   ```
+   
+   ```bash
    docker compose exec backend
    composer install
    ```
 
-5. Restart the backend container:
-   ```
+6. Restart the backend container:
+   
+   ```bash
    docker compose restart backend
    ```
 
-6. Generate the Laravel application key:
+8. Generate the Laravel application key:
 
-```bash
-docker compose exec -it backend bash
-php artisan key:generate
-```
+   ```bash
+   docker compose exec -it backend bash
+   php artisan key:generate
+   ```
 
 7. Run database migrations:
 
-```bash
-docker compose exec -it backend bash
-php artisan migrate
-```
+   ```bash
+   docker compose exec -it backend bash
+   php artisan migrate
+   ```
 
 8. Seed the database:
 
-```bash
-docker compose exec -it backend bash
-php artisan db:seed
-```
+   ```bash
+   docker compose exec -it backend bash
+   php artisan db:seed
+   ```
 
 9. Access the application:
 
-```bash
-http://localhost:5173
-```
+   ```bash
+   http://localhost:5173
+   ```
