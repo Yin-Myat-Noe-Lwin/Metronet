@@ -221,6 +221,48 @@
         <router-link to="/register" class="mobile-link" @click="isMobileMenuOpen = false">Sign Up</router-link>
       </template>
     </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div v-if="showLogoutModal" class="modal-overlay" @click.self="closeLogoutModal">
+      <div class="modal-container">
+        <div class="modal-content">
+          <div class="modal-icon">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </div>
+          <h3>Confirm Logout</h3>
+          <p>Are you sure you want to sign out of your account?</p>
+          <div class="modal-actions">
+            <button @click="closeLogoutModal" class="modal-btn modal-btn-secondary">
+              Cancel
+            </button>
+            <button @click="confirmLogout" class="modal-btn modal-btn-primary">
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div v-if="toastMessage" class="toast" :class="toastType">
+      <span class="toast-icon">
+        <svg v-if="toastType === 'toast-success'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </span>
+      {{ toastMessage }}
+      <button @click="toastMessage = null" class="toast-close">×</button>
+    </div>
   </header>
 </template>
 
@@ -231,7 +273,11 @@ export default {
     return {
       isDropdownOpen: false,
       isMobileMenuOpen: false,
+      showLogoutModal: false,
       notificationCount: 0,
+      toastMessage: null,
+      toastType: 'toast-success',
+      toastTimeout: null,
       isLoggedIn: localStorage.getItem('isLoggedIn') === 'true',
       userName: localStorage.getItem('userName') || '',
       userEmail: localStorage.getItem('userEmail') || '',
@@ -267,6 +313,9 @@ export default {
   beforeUnmount() {
     window.removeEventListener('userDataUpdated', this.updateUserData)
     document.removeEventListener('click', this.handleClickOutside)
+    if (this.toastTimeout) {
+      clearTimeout(this.toastTimeout)
+    }
   },
   methods: {
     updateUserData() {
@@ -288,6 +337,20 @@ export default {
       }
     },
     handleLogout() {
+      // Show confirmation modal
+      this.showLogoutModal = true
+      this.closeDropdown()
+      this.isMobileMenuOpen = false
+    },
+    closeLogoutModal() {
+      this.showLogoutModal = false
+    },
+    confirmLogout() {
+      // Close modal
+      this.showLogoutModal = false
+
+      // Show loading state on logout button if needed
+      // Perform logout
       localStorage.removeItem('isLoggedIn')
       localStorage.removeItem('userEmail')
       localStorage.removeItem('userName')
@@ -303,7 +366,27 @@ export default {
       this.isDropdownOpen = false
       this.isMobileMenuOpen = false
 
-      this.$router.push('/')
+      // Show success toast
+      this.showToast('Successfully logged out!', 'toast-success')
+
+      // Redirect to home after a moment
+      setTimeout(() => {
+        this.$router.push('/')
+      }, 500)
+    },
+    showToast(message, type = 'toast-success') {
+      this.toastMessage = message
+      this.toastType = type
+
+      // Clear existing timeout
+      if (this.toastTimeout) {
+        clearTimeout(this.toastTimeout)
+      }
+
+      // Auto-hide after 3 seconds
+      this.toastTimeout = setTimeout(() => {
+        this.toastMessage = null
+      }, 3000)
     },
     fetchNotificationCount() {
       // You can replace with API call
@@ -470,7 +553,7 @@ export default {
   color: #ff4444;
 }
 
-/* Dropdown - Click to toggle */
+/* Dropdown */
 .dropdown {
   position: relative;
   display: inline-block;
@@ -663,6 +746,174 @@ export default {
   color: #e74c3c !important;
 }
 
+/* Logout Confirmation Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-container {
+  background: #fff;
+  border-radius: 20px;
+  max-width: 420px;
+  width: 90%;
+  padding: 40px 36px;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-content {
+  text-align: center;
+}
+
+.modal-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.modal-icon svg {
+  background: rgba(255, 107, 53, 0.08);
+  padding: 12px;
+  border-radius: 50%;
+}
+
+.modal-container h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.modal-container p {
+  font-size: 15px;
+  color: #8892a8;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.modal-btn-secondary {
+  background: #f0f2f6;
+  color: #1a1a2e;
+}
+
+.modal-btn-secondary:hover {
+  background: #e8ecf1;
+}
+
+.modal-btn-primary {
+  background: #ff6b35;
+  color: #fff;
+}
+
+.modal-btn-primary:hover {
+  background: #e85a2a;
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  z-index: 3000;
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 400px;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-success {
+  background: #2ed573;
+}
+
+.toast-error {
+  background: #ff4757;
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: auto;
+  transition: color 0.3s;
+}
+
+.toast-close:hover {
+  color: #fff;
+}
+
 /* Responsive */
 @media (max-width: 992px) {
   .nav {
@@ -734,6 +985,17 @@ export default {
   .admin-user {
     padding: 4px 8px;
   }
+
+  .modal-container {
+    padding: 32px 24px;
+  }
+
+  .toast {
+    bottom: 20px;
+    right: 20px;
+    left: 20px;
+    max-width: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -753,6 +1015,14 @@ export default {
 
   .logo-text {
     font-size: 18px;
+  }
+
+  .modal-container {
+    padding: 24px 20px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
   }
 }
 </style>
