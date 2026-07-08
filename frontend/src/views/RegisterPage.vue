@@ -138,6 +138,17 @@
             <span v-if="errors.password_confirmation" class="field-error">{{ errors.password_confirmation }}</span>
           </div>
 
+          <!-- Auto Verify Email (Testing Only) -->
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label" :class="{ 'checkbox-error': errors.auto_verify }">
+              <input type="checkbox" v-model="form.autoVerify">
+              <span>
+                <strong>Auto Verify Email</strong>
+                <span class="checkbox-hint">(Testing only - skip email verification)</span>
+              </span>
+            </label>
+          </div>
+
           <!-- Terms -->
           <label class="checkbox-label" :class="{ 'checkbox-error': errors.terms }">
             <input type="checkbox" v-model="form.agreeTerms" @change="validateField('terms')">
@@ -183,7 +194,8 @@ export default {
         phone: null,
         password: null,
         password_confirmation: null,
-        terms: null
+        terms: null,
+        auto_verify: null
       },
       form: {
         name: '',
@@ -191,7 +203,8 @@ export default {
         phone: '',
         password: '',
         password_confirmation: '',
-        agreeTerms: false
+        agreeTerms: false,
+        autoVerify: false // New field for auto verification
       }
     }
   },
@@ -312,17 +325,30 @@ export default {
           email: this.form.email,
           phone_num: this.form.phone,
           password: this.form.password,
-          password_confirmation: this.form.password_confirmation
+          password_confirmation: this.form.password_confirmation,
+          auto_verify: this.form.autoVerify // Send auto_verify flag
         }
 
-        await authService.register(userData)
+        console.log('Registration data:', userData)
 
-        this.successMessage = 'Account created successfully! Please verify your email.'
+        const response = await authService.register(userData)
+        console.log('Registration response:', response)
 
-        // Redirect after 3 seconds
-        setTimeout(() => {
-          this.$router.push('/login')
-        }, 3000)
+        if (this.form.autoVerify) {
+          this.successMessage = 'Account created successfully! (Auto-verified) You can now log in.'
+
+          // Auto-login or redirect to login
+          setTimeout(() => {
+            this.$router.push('/login')
+          }, 2000)
+        } else {
+          this.successMessage = 'Account created successfully! Please verify your email.'
+
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            this.$router.push('/login')
+          }, 3000)
+        }
 
       } catch (error) {
         console.error('Registration error:', error)
@@ -653,6 +679,22 @@ form {
   margin-top: 1px;
 }
 
+.checkbox-group {
+  padding: 4px 0;
+}
+
+.checkbox-hint {
+  display: block;
+  font-size: 11px;
+  color: #8892a8;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.checkbox-label strong {
+  color: #1a1a2e;
+}
+
 .checkbox-error {
   color: #e74c3c;
 }
@@ -752,6 +794,10 @@ form {
   .password-toggle {
     font-size: 12px;
     padding: 4px 8px;
+  }
+
+  .checkbox-hint {
+    font-size: 10px;
   }
 }
 </style>
