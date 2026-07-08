@@ -49,6 +49,9 @@ cd Metronet
 ```bash
 cp backend/.env.example backend/.env
 ```
+```bash
+cp frontend/.env.example frontend/.env
+```
 
 3. Build and start the Docker containers:
 
