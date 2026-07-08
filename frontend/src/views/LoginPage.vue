@@ -394,6 +394,27 @@ form {
   background: #fff;
 }
 
+/* Chrome, Safari, Edge */
+.form-input::-webkit-credentials-auto-fill-button,
+.form-input::-webkit-caps-lock-indicator,
+.form-input::-webkit-contacts-auto-fill-button,
+.form-input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Firefox */
+.form-input::-moz-reveal {
+  display: none !important;
+}
+
+/* Edge/IE */
+.form-input::-ms-reveal,
+.form-input::-ms-clear {
+  display: none !important;
+}
+
 .input-error {
   border-color: #e74c3c !important;
 }
