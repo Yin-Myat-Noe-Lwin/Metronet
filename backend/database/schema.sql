@@ -1,3 +1,10 @@
+DROP TABLE IF EXISTS `jobs`;
+DROP TABLE IF EXISTS `job_batches`;
+DROP TABLE IF EXISTS `failed_jobs`;
+
+DROP TABLE IF EXISTS `cache`;
+DROP TABLE IF EXISTS `cache_locks`;
+
 DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `cpe_assignments`;
 DROP TABLE IF EXISTS `payments`;
@@ -8,6 +15,54 @@ DROP TABLE IF EXISTS `customer_addresses`;
 DROP TABLE IF EXISTS `cpes`;
 DROP TABLE IF EXISTS `isp_plans`;
 DROP TABLE IF EXISTS `customers`;
+
+CREATE TABLE `jobs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `queue` VARCHAR(255) NOT NULL,
+    `payload` LONGTEXT NOT NULL,
+    `attempts` TINYINT UNSIGNED NOT NULL,
+    `reserved_at` INT UNSIGNED NULL,
+    `available_at` INT UNSIGNED NOT NULL,
+    `created_at` INT UNSIGNED NOT NULL,
+    INDEX `jobs_queue_index` (`queue`)
+);
+
+CREATE TABLE `job_batches` (
+    `id` VARCHAR(255) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(255) NOT NULL,
+    `total_jobs` INT NOT NULL,
+    `pending_jobs` INT NOT NULL,
+    `failed_jobs` INT NOT NULL,
+    `failed_job_ids` LONGTEXT NOT NULL,
+    `options` MEDIUMTEXT NULL,
+    `cancelled_at` INT NULL,
+    `created_at` INT NOT NULL,
+    `finished_at` INT NULL
+);
+
+CREATE TABLE `failed_jobs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `uuid` VARCHAR(255) NOT NULL UNIQUE,
+    `connection` TEXT NOT NULL,
+    `queue` TEXT NOT NULL,
+    `payload` LONGTEXT NOT NULL,
+    `exception` LONGTEXT NOT NULL,
+    `failed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE `cache` (
+    `key` VARCHAR(255) NOT NULL PRIMARY KEY,
+    `value` MEDIUMTEXT NOT NULL,
+    `expiration` INT NOT NULL,
+    INDEX `cache_expiration_index` (`expiration`)
+);
+
+CREATE TABLE `cache_locks` (
+    `key` VARCHAR(255) NOT NULL PRIMARY KEY,
+    `owner` VARCHAR(255) NOT NULL,
+    `expiration` INT NOT NULL,
+    INDEX `cache_locks_expiration_index` (`expiration`)
+);
 
 CREATE TABLE `customers` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -24,6 +79,15 @@ CREATE TABLE `customers` (
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
 );
+
+INSERT INTO customers
+(name, phone_num, email, status, role, password, created_at, updated_at)
+VALUES
+('Elizabeth', '09123456789', 'elizabeth@gmail.com', 1, 1, 'password', NOW(), NOW()),
+('Leona Louisa', '0980888088', 'leonalouisa@gmail.com', 1, 0, 'password', NOW(), NOW()),
+('Emily', '09676767677', 'emily@gmail.com', 1, 0, 'password', NOW(), NOW()),
+('Billy', '09121212122', 'billy@gmail.com', 1, 1, 'password', NOW(), NOW()),
+('Zoey', '09000000000', 'zoey@gmail.com', 1, 1, 'password', NOW(), NOW());
 
 CREATE TABLE `customer_addresses` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -52,6 +116,16 @@ CREATE TABLE `isp_plans` (
     `updated_at` timestamp NULL DEFAULT NULL
 );
 
+INSERT INTO isp_plans
+(name, description, price, status, upload_speed, download_speed, created_at, updated_at)
+VALUES
+('Home Starter', 'Basic internet for browsing, messaging and social media. Best for 1–2 users.', 25000.00, 1, 10, 20, NOW(), NOW()),
+('Home Basic', 'Stable internet for streaming, online classes and daily home usage.', 35000.00, 1, 15, 30, NOW(), NOW()),
+('Home Plus', 'Fast HD streaming, video calls and light gaming for small families.', 55000.00, 1, 25, 50, NOW(), NOW()),
+('Fiber Family', 'High-speed fiber for multiple devices, streaming and online learning.', 75000.00, 1, 35, 70, NOW(), NOW()),
+('Premium Ultra', 'Ultra-fast internet for 4K streaming, gaming and smart home use.', 95000.00, 1, 50, 100, NOW(), NOW()),
+('Business Pro', 'Enterprise-grade stable connection for offices and heavy usage.', 120000.00, 1, 75, 150, NOW(), NOW());
+
 CREATE TABLE `service_areas` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `region` VARCHAR(30) NOT NULL,
@@ -61,6 +135,20 @@ CREATE TABLE `service_areas` (
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL
 );
+
+INSERT INTO service_areas
+(region, city, township, status, created_at, updated_at)
+VALUES
+('Yangon', 'Yangon', 'Dala', 1, NOW(), NOW()),
+('Yangon', 'Yangon', 'Hlaing', 1, NOW(), NOW()),
+('Yangon', 'Yangon', 'Bahan', 1, NOW(), NOW()),
+('Yangon', 'Yangon', 'Kamayut', 1, NOW(), NOW()),
+('Mandalay', 'Mandalay', 'Chanayethazan', 1, NOW(), NOW()),
+('Mandalay', 'Mandaly', 'Aungmyethazan', 1, NOW(), NOW()),
+('Mandalay', 'Mandalay', 'Pyigyitagon', 1, NOW(), NOW()),
+('Naypyidaw', 'Naypyidaw', 'Zabuthiri', 1, NOW(), NOW()),
+('Naypyidaw', 'Naypyidaw', 'Pyinmana', 1, NOW(), NOW()),
+('Shan', 'Shan', 'Taunggyi', 1, NOW(), NOW());
 
 CREATE TABLE `subscriptions` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -117,6 +205,40 @@ CREATE TABLE `cpes` (
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
 );
+
+INSERT INTO cpes
+(serial_number, mac_address, status, created_at, updated_at)
+VALUES
+('CPE-390941069', '39:51:7A:0E:6F:DC', 0, NOW(), NOW()),
+('CPE-211885115', '8F:22:B1:F7:E4:29', 0, NOW(), NOW()),
+('CPE-582399202', 'F5:78:DC:D1:74:AB', 0, NOW(), NOW()),
+('CPE-530302393', 'AE:15:D7:2E:1D:24', 0, NOW(), NOW()),
+('CPE-983293382', 'AC:01:7B:96:A5:82', 0, NOW(), NOW()),
+('CPE-674839201', '12:45:AB:7C:9D:EF', 0, NOW(), NOW()),
+('CPE-829104756', 'A1:B2:C3:D4:E5:F6', 0, NOW(), NOW()),
+('CPE-458920317', '22:34:56:78:9A:BC', 0, NOW(), NOW()),
+('CPE-739201845', 'DE:AD:BE:EF:10:20', 0, NOW(), NOW()),
+('CPE-581934620', '98:76:54:32:10:FE', 0, NOW(), NOW()),
+('CPE-902817364', '11:22:33:44:55:66', 0, NOW(), NOW()),
+('CPE-315790482', '77:88:99:AA:BB:CC', 0, NOW(), NOW()),
+('CPE-746291830', '01:23:45:67:89:AB', 0, NOW(), NOW()),
+('CPE-864209531', 'CD:EF:01:23:45:67', 0, NOW(), NOW()),
+('CPE-193847562', '10:20:30:40:50:60', 0, NOW(), NOW()),
+('CPE-528374910', '6A:7B:8C:9D:AE:BF', 0, NOW(), NOW()),
+('CPE-690125738', 'B1:C2:D3:E4:F5:A6', 0, NOW(), NOW()),
+('CPE-417839205', '34:56:78:9A:BC:DE', 0, NOW(), NOW()),
+('CPE-783920146', 'FE:DC:BA:98:76:54', 0, NOW(), NOW()),
+('CPE-256814907', 'AA:BB:CC:DD:EE:FF', 0, NOW(), NOW()),
+('CPE-901273645', '13:57:9B:DF:24:68', 0, NOW(), NOW()),
+('CPE-368492750', '24:68:AC:E0:12:46', 0, NOW(), NOW()),
+('CPE-574839102', '35:79:BD:F1:13:57', 0, NOW(), NOW()),
+('CPE-819263540', '46:8A:CE:02:24:68', 0, NOW(), NOW()),
+('CPE-637490281', '57:9B:DF:13:35:79', 0, NOW(), NOW()),
+('CPE-482719603', '68:AC:E0:24:46:8A', 0, NOW(), NOW()),
+('CPE-795031864', '79:BD:F1:35:57:9B', 0, NOW(), NOW()),
+('CPE-104928573', '8A:CE:02:46:68:AC', 0, NOW(), NOW()),
+('CPE-236790415', '9B:DF:13:57:79:BD', 0, NOW(), NOW()),
+('CPE-348105729', 'BC:E0:24:68:8A:CE', 0, NOW(), NOW());
 
 CREATE TABLE `cpe_assignments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
