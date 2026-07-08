@@ -14,42 +14,54 @@
 
         <form @submit.prevent="handleRegister">
           <div class="form-group">
+             <label class="form-label">
+              Full Name <span class="required">*</span>
+            </label>
             <input
               type="text"
               v-model="form.name"
               required
-              placeholder="Full Name"
+              placeholder="e.g., Leona Louisa"
               class="form-input"
             >
           </div>
 
           <div class="form-group">
+            <label class="form-label">
+              Email <span class="required">*</span>
+            </label>
             <input
               type="email"
               v-model="form.email"
               required
-              placeholder="Email Address"
+              placeholder="you@example.com"
               class="form-input"
             >
           </div>
 
           <div class="form-group">
+            <label class="form-label">
+              Phone Number <span class="required">*</span>
+            </label>
             <input
               type="tel"
               v-model="form.phone"
               required
-              placeholder="Phone Number"
+              placeholder="e.g., 09123456789"
               class="form-input"
             >
           </div>
 
           <div class="form-group">
+            <label class="form-label">
+              Password <span class="required">*</span>
+            </label>
             <div class="password-wrapper">
               <input
                 :type="showPassword ? 'text' : 'password'"
                 v-model="form.password"
                 required
-                placeholder="Password (min 8 chars)"
+                placeholder="Minimum 8 characters"
                 minlength="8"
                 class="form-input"
               >
@@ -60,12 +72,15 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label">
+              Confirm Password <span class="required">*</span>
+            </label>
             <div class="password-wrapper">
               <input
                 :type="showConfirmPassword ? 'text' : 'password'"
                 v-model="form.password_confirmation"
                 required
-                placeholder="Confirm Password"
+                placeholder="Re-enter your password"
                 class="form-input"
               >
               <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="password-toggle">
@@ -233,6 +248,24 @@ form {
   gap: 14px;
 }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.required {
+  color: #e74c3c;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
 .form-input {
   width: 100%;
   padding: 12px 16px;
@@ -247,6 +280,24 @@ form {
   outline: none;
   border-color: #ff6b35;
   box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
+}
+
+.form-input::-webkit-credentials-auto-fill-button,
+.form-input::-webkit-caps-lock-indicator,
+.form-input::-webkit-contacts-auto-fill-button,
+.form-input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.form-input::-moz-reveal {
+  display: none !important;
+}
+
+.form-input::-ms-reveal,
+.form-input::-ms-clear {
+  display: none !important;
 }
 
 .password-wrapper {

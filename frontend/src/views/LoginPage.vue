@@ -14,11 +14,14 @@
 
         <form @submit.prevent="handleLogin" novalidate>
           <div class="form-group">
+            <label class="form-label">
+              Email <span class="required">*</span>
+            </label>
             <input
               type="email"
               v-model="form.email"
               required
-              placeholder="Email Address"
+              placeholder="you@example.com"
               class="form-input"
               :class="{ 'input-error': errorMessage }"
             >
@@ -26,11 +29,14 @@
 
           <div class="form-group">
             <div class="password-wrapper">
+              <label class="form-label">
+                Password <span class="required">*</span>
+              </label>
               <input
                 :type="showPassword ? 'text' : 'password'"
                 v-model="form.password"
                 required
-                placeholder="Password"
+                placeholder="Enter your password"
                 class="form-input"
                 :class="{ 'input-error': errorMessage }"
               >
@@ -231,6 +237,37 @@ form {
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
+.form-input::-webkit-credentials-auto-fill-button,
+.form-input::-webkit-caps-lock-indicator,
+.form-input::-webkit-contacts-auto-fill-button,
+.form-input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.form-input::-moz-reveal {
+  display: none !important;
+}
+
+.form-input::-ms-reveal,
+.form-input::-ms-clear {
+  display: none !important;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.required {
+  color: #e74c3c;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+
 .password-wrapper {
   position: relative;
 }
@@ -242,7 +279,7 @@ form {
 .password-toggle {
   position: absolute;
   right: 12px;
-  top: 50%;
+  top: 65%;
   transform: translateY(-50%);
   background: none;
   border: none;
