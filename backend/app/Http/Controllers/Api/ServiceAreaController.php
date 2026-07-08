@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\ServiceAreaRequest;
 use App\Http\Requests\ServiceAreaUpdateRequest;
 use App\Models\ServiceArea;
+use Illuminate\Http\JsonResponse;
 
 class ServiceAreaController extends Controller
 {
@@ -92,21 +93,24 @@ class ServiceAreaController extends Controller
                 ->select('region')
                 ->distinct()
                 ->pluck('region')
-                ->values();
+                ->values()
+                ->toArray();
 
             $cities = ServiceArea::where('status', 1)
                 ->select('city')
                 ->distinct()
                 ->pluck('city')
-                ->values();
+                ->values()
+                ->toArray();
 
             $townships = ServiceArea::where('status', 1)
                 ->select('township')
                 ->distinct()
                 ->pluck('township')
-                ->values();
+                ->values()
+                ->toArray();
 
-            return response()->json([
+           return response()->json([
                 'region' => $regions,
                 'city' => $cities,
                 'township' => $townships
