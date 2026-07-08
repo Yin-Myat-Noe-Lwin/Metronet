@@ -41,7 +41,7 @@ class AuthController extends Controller
 
             $token = Auth::login($customer);
 
-            $verificationUrl = 'http://localhost:8080/api/verify-email?token='
+            $verificationUrl = 'http://localhost:5173/verify-email?token='
                                 .$verificationToken;
 
             Log::info('verification url'.$verificationUrl);
@@ -159,7 +159,7 @@ class AuthController extends Controller
             if ($customer && $customer->status === 0) {
                 return response()->json([
                     'message' => 'Please verify your email first'
-                ], 403); 
+                ], 403);
             }
 
             $token = Auth::attempt($credentials);
