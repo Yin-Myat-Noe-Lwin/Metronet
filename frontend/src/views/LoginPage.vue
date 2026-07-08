@@ -2,20 +2,50 @@
   <div class="login-page">
     <div class="container">
       <div class="login-container">
+        <!-- Back Button -->
+        <router-link to="/" class="back-link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back to Home
+        </router-link>
+
         <div class="login-header">
+          <div class="header-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="1.5">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
           <h1>Welcome Back</h1>
           <p>Sign in to manage your account</p>
         </div>
 
+        <!-- Success Message -->
+        <div v-if="successMessage" class="success-message">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          {{ successMessage }}
+        </div>
+
         <!-- Error Message -->
         <div v-if="errorMessage" class="error-message">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
           {{ errorMessage }}
         </div>
 
         <form @submit.prevent="handleLogin" novalidate>
-          <div class="form-group">
+          <!-- Email -->
+          <div class="form-group" :class="{ 'has-error': errors.email }">
             <label class="form-label">
-              Email <span class="required">*</span>
+              Email Address <span class="required">*</span>
             </label>
             <input
               type="email"
@@ -23,11 +53,15 @@
               required
               placeholder="you@example.com"
               class="form-input"
-              :class="{ 'input-error': errorMessage }"
+              :class="{ 'input-error': errors.email }"
+              @blur="validateField('email')"
+              autocomplete="email"
             >
+            <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
           </div>
 
-          <div class="form-group">
+          <!-- Password -->
+          <div class="form-group" :class="{ 'has-error': errors.password }">
             <div class="password-wrapper">
               <label class="form-label">
                 Password <span class="required">*</span>
@@ -38,15 +72,29 @@
                 required
                 placeholder="Enter your password"
                 class="form-input"
-                :class="{ 'input-error': errorMessage }"
+                :class="{ 'input-error': errors.password }"
+                @blur="validateField('password')"
+                autocomplete="current-password"
               >
-              <button type="button" @click="showPassword = !showPassword" class="password-toggle">
+              <button type="button" @click="showPassword = !showPassword" class="password-toggle" tabindex="-1">
                 {{ showPassword ? 'Hide' : 'Show' }}
               </button>
             </div>
+            <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
           </div>
 
+          <!-- Options -->
+          <div class="form-options">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="form.remember">
+              <span>Remember me</span>
+            </label>
+            <router-link to="/forgot-password" class="forgot-link">Forgot password?</router-link>
+          </div>
+
+          <!-- Submit Button -->
           <button type="submit" class="login-btn" :disabled="isLoading">
+            <span v-if="isLoading" class="spinner"></span>
             {{ isLoading ? 'Signing in...' : 'Sign In' }}
           </button>
 
@@ -69,6 +117,11 @@ export default {
       showPassword: false,
       isLoading: false,
       errorMessage: null,
+      successMessage: null,
+      errors: {
+        email: null,
+        password: null
+      },
       form: {
         email: '',
         password: '',
@@ -76,17 +129,46 @@ export default {
       }
     }
   },
+  mounted() {
+    // Check if user was redirected from verification
+    if (this.$route.query.verified === 'true') {
+      this.successMessage = 'Email verified successfully! You can now log in.'
+    }
+  },
   methods: {
-    async handleLogin() {
-      // Prevent default form submission
-      event?.preventDefault?.()
+    validateField(field) {
+      this.errors[field] = null
 
-      // Clear previous error
+      switch(field) {
+        case 'email':
+          if (!this.form.email) {
+            this.errors.email = 'Email is required'
+          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email)) {
+            this.errors.email = 'Please enter a valid email address'
+          }
+          break
+
+        case 'password':
+          if (!this.form.password) {
+            this.errors.password = 'Password is required'
+          } else if (this.form.password.length < 8) {
+            this.errors.password = 'Password must be at least 8 characters'
+          }
+          break
+      }
+    },
+    validateAll() {
+      Object.keys(this.errors).forEach(field => this.validateField(field))
+      return !this.errors.email && !this.errors.password
+    },
+    async handleLogin() {
+      // Clear previous messages
       this.errorMessage = null
+      this.successMessage = null
 
       // Validate fields
-      if (!this.form.email || !this.form.password) {
-        this.errorMessage = 'Please enter email and password'
+      if (!this.validateAll()) {
+        this.errorMessage = 'Please fix the errors above'
         return
       }
 
@@ -101,55 +183,39 @@ export default {
 
         console.log('✅ Login response:', response)
 
-        // ✅ IMPORTANT: Store the role correctly (0 = admin, 1 = user)
+        // Store user data
         const userRole = response.role !== undefined ? response.role : 1
 
-        // Store user data
         localStorage.setItem('isLoggedIn', 'true')
         localStorage.setItem('authToken', response.token)
         localStorage.setItem('userEmail', this.form.email)
-        localStorage.setItem('userRole', String(userRole)) // Store as string
-
-        // Check if admin (role 0)
-        const isAdmin = userRole === 0
-        localStorage.setItem('isAdmin', String(isAdmin))
-
-        console.log('✅ Stored userRole:', userRole)
-        console.log('✅ isAdmin:', isAdmin)
+        localStorage.setItem('userRole', String(userRole))
+        localStorage.setItem('isAdmin', String(userRole === 0))
 
         // Check for plan query
         const planId = this.$route.query.plan
         const returnPath = this.$route.query.return || '/'
 
-        // Redirect based on role (0 = admin, 1 = user)
+        // Redirect based on role
         if (userRole === 0) {
-          console.log('✅ Redirecting to admin customers')
           this.$router.push('/admin/customers')
         } else {
-          console.log('✅ Redirecting to:', returnPath)
           this.$router.push(returnPath)
         }
       } catch (error) {
         console.error('❌ Login error:', error)
 
-        // Extract error message
         if (error.response) {
           this.errorMessage = error.response.data?.message ||
                              error.response.data?.error ||
-                             'Login failed. Please try again.'
+                             'Invalid email or password. Please try again.'
         } else if (error.request) {
           this.errorMessage = 'No response from server. Please check your connection.'
         } else {
           this.errorMessage = error.message || 'Login failed. Please try again.'
         }
-
-        // Reset loading state
-        this.isLoading = false
       } finally {
-        // Ensure loading is false if not already
-        if (this.isLoading) {
-          this.isLoading = false
-        }
+        this.isLoading = false
       }
     }
   }
@@ -159,10 +225,10 @@ export default {
 <style scoped>
 .login-page {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e8ecf1 100%);
   display: flex;
   align-items: center;
-  padding: 60px 0;
+  padding: 40px 0;
 }
 
 .container {
@@ -176,39 +242,112 @@ export default {
   max-width: 440px;
   margin: 0 auto;
   background: #ffffff;
-  padding: 48px 40px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  padding: 40px 36px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Back Link */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #8892a8;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  transition: color 0.3s;
+}
+
+.back-link:hover {
+  color: #ff6b35;
+}
+
+/* Header */
 .login-header {
   text-align: center;
   margin-bottom: 28px;
 }
 
+.header-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.header-icon svg {
+  background: rgba(255, 107, 53, 0.08);
+  padding: 12px;
+  border-radius: 50%;
+}
+
 .login-header h1 {
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 800;
   color: #1a1a2e;
   margin-bottom: 4px;
+  letter-spacing: -0.5px;
 }
 
 .login-header p {
   color: #8892a8;
+  font-size: 15px;
+}
+
+/* Messages */
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f0faf5;
+  border: 1px solid #b8e6d0;
+  border-radius: 8px;
+  color: #1a8a4a;
   font-size: 14px;
+  margin-bottom: 16px;
+  animation: slideDown 0.3s ease;
 }
 
 .error-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 12px 16px;
   background: #fdf2f2;
   border: 1px solid #f8d7da;
   border-radius: 8px;
   color: #e74c3c;
   font-size: 14px;
-  text-align: center;
   margin-bottom: 16px;
+  animation: slideDown 0.3s ease;
 }
 
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form */
 form {
   display: flex;
   flex-direction: column;
@@ -219,40 +358,6 @@ form {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.form-input {
-  padding: 12px 16px;
-  border: 2px solid #e8ecf1;
-  border-radius: 8px;
-  font-size: 15px;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  font-family: inherit;
-  width: 100%;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-}
-
-.form-input::-webkit-credentials-auto-fill-button,
-.form-input::-webkit-caps-lock-indicator,
-.form-input::-webkit-contacts-auto-fill-button,
-.form-input::-webkit-credentials-auto-fill-button {
-  display: none !important;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.form-input::-moz-reveal {
-  display: none !important;
-}
-
-.form-input::-ms-reveal,
-.form-input::-ms-clear {
-  display: none !important;
 }
 
 .form-label {
@@ -267,7 +372,45 @@ form {
   margin-left: 2px;
 }
 
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e8ecf1;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.3s;
+  font-family: inherit;
+  background: #fafbfc;
+}
 
+.form-input:hover {
+  background: #fff;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.08);
+  background: #fff;
+}
+
+.input-error {
+  border-color: #e74c3c !important;
+}
+
+.input-error:focus {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.08) !important;
+}
+
+.field-error {
+  color: #e74c3c;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Password */
 .password-wrapper {
   position: relative;
 }
@@ -279,8 +422,7 @@ form {
 .password-toggle {
   position: absolute;
   right: 12px;
-  top: 65%;
-  transform: translateY(-50%);
+  bottom: 12px;
   background: none;
   border: none;
   color: #8892a8;
@@ -288,7 +430,6 @@ form {
   font-weight: 600;
   cursor: pointer;
   padding: 4px 12px;
-  border-radius: 4px;
   transition: color 0.3s;
 }
 
@@ -296,11 +437,13 @@ form {
   color: #ff6b35;
 }
 
+/* Options */
 .form-options {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
+  margin: 2px 0;
 }
 
 .checkbox-label {
@@ -309,6 +452,7 @@ form {
   gap: 8px;
   color: #666;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -322,29 +466,43 @@ form {
   color: #ff6b35;
   text-decoration: none;
   font-weight: 500;
+  font-size: 14px;
+  transition: color 0.3s;
 }
 
 .forgot-link:hover {
+  color: #e85a2a;
   text-decoration: underline;
 }
 
+/* Button */
 .login-btn {
+  position: relative;
   width: 100%;
   padding: 14px;
   background: #ff6b35;
   color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s;
   margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .login-btn:hover:not(:disabled) {
   background: #e85a2a;
-  transform: scale(1.01);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
+}
+
+.login-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .login-btn:disabled {
@@ -352,6 +510,20 @@ form {
   cursor: not-allowed;
 }
 
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Register Link */
 .register-link {
   text-align: center;
   font-size: 14px;
@@ -369,10 +541,11 @@ form {
   text-decoration: underline;
 }
 
+/* Responsive */
 @media (max-width: 480px) {
   .login-container {
-    padding: 32px 24px;
-    margin: 0 16px;
+    padding: 28px 20px;
+    border-radius: 16px;
   }
 
   .login-header h1 {
@@ -389,5 +562,20 @@ form {
     font-size: 14px;
     padding: 10px 14px;
   }
+
+  .password-toggle {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
+/* Remove autofill styles */
+.form-input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #fafbfc inset !important;
+  -webkit-text-fill-color: #1a1a2e !important;
+}
+
+.form-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
 }
 </style>
