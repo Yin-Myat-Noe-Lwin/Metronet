@@ -19,6 +19,45 @@ use Illuminate\Support\Facades\DB;
 
 class CustomerAddressController extends Controller
 {
+    public function viewAddresses(): JsonResponse
+    {
+        try {
+
+            $customer = Auth::user();
+
+            $addresses = CustomerAddress::where('customer_id', $customer->id)
+                                            ->get();
+
+            return response()->json([
+                'data' => $addresses
+            ]);
+        }catch (PDOException $e) {
+            return response()->json([
+                'message' =>  $e->getMessage()
+            ]);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (AuthenticationException $e) {
+            return response()->json([
+                'message' =>  $e->getMessage()
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong.'
+            ]);
+        }
+    }
+
     public function store(CustomerAddressRequest $request): JsonResponse
     {
         try{
@@ -31,7 +70,8 @@ class CustomerAddressController extends Controller
                 // if  the new address is primary then change the prev address to secondary address
                 if ($request->boolean('is_primary')) {
                     CustomerAddress::where('customer_id', $customer->id)
-                        ->update(['is_primary' => 0]);
+                                    ->where('is_primary', 1)
+                                    ->update(['is_primary' => 0]);
                 }
 
                 CustomerAddress::create([
