@@ -7,10 +7,13 @@ System for ISP Management
 
 ### Admin
 - Register/ Login/ Logout
-- Customer Management
-- ISP plan Management
-- CPE management
-- Service Area Management
+- Customer Management (View and Deactivate customers)
+- ISP plan Management (View, Create, Update and Deactivate isp plans)
+- CPE management (View, Create, Update and Deactivate cpes)
+- Service Area Management (View, Create, Update and Deactivate service areas)
+- Subscriptions Management (View Subscriptions)
+- Invoice Management (View Invoices)
+- Payment Management (View Payments)
 
 ### Customer
 - Register/ Login/ Logout
