@@ -29,54 +29,66 @@ class AuthController extends Controller
         try {
             $verificationToken = Str::random(64);
 
+            // Check if auto_verify is true
+            $isAutoVerify = $request->boolean('auto_verify');
+
             $customer = Customer::create([
                 'name' => $request->name,
                 'phone_num' => $request->phone_num,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'status' => 0,
+                'status' => $isAutoVerify ? 1 : 0, 
                 'verification_token' => $verificationToken,
                 'verification_token_expires_at' => now()->addHours(6)
             ]);
 
             $token = Auth::login($customer);
 
-            $verificationUrl = 'http://localhost:5173/verify-email?token='
-                                .$verificationToken;
+            // Only send verification email if not auto-verified
+            if (!$isAutoVerify) {
+                $verificationUrl = 'http://localhost:5173/verify-email?token='
+                                    . $verificationToken;
 
-            Log::info('verification url'.$verificationUrl);
+                Log::info('verification url: ' . $verificationUrl);
 
-            Mail::to($customer->email)
+                Mail::to($customer->email)
                     ->send(new verifyRegisterMail($verificationUrl));
 
+                $message = 'Your account was created successfully. Please verify your email.';
+            } else {
+                $message = 'Your account was created and verified successfully. (Test mode)';
+            }
+
             return response()->json([
-                'message' => 'Your account was created successfully. Please verify your email.',
-                'customer' => $customer
+                'message' => $message,
+                'customer' => $customer,
+                'auto_verified' => $isAutoVerify
             ]);
+
         } catch (PDOException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 500);
         } catch (QueryException $e) {
             return response()->json([
-                'message' => $e->getMessage()
-            ]);
+                'message' => 'Database operation failed.'
+            ], 500);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => $e->getMessage()
-            ]);
+                'message' => 'Record not found.'
+            ], 404);
         } catch (AuthenticationException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => 'Authentication failed.'
+            ], 401);
         } catch (AuthorizationException $e) {
             return response()->json([
-                'message' => $e->getMessage()
-            ]);
+                'message' => 'You are not authorized to perform this action.'
+            ], 403);
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Something went wrong.'
-            ]);
+            ], 500);
         }
     }
 
