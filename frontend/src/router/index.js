@@ -8,6 +8,8 @@ import SubscriptionsPage from '../views/SubscriptionsPage.vue'
 import InvoicesPage from '../views/InvoicesPage.vue'
 import NotificationsPage from '../views/NotificationsPage.vue'
 import PaymentsPage from '../views/PaymentsPage.vue'
+import VerifyEmailPage from '../views/VerifyEmail.vue'
+import UpdateEmailPage from '../views/UpdateEmail.vue'
 
 // Admin Layout and Pages
 import AdminLayout from '../layout/AdminLayout.vue'
@@ -60,7 +62,26 @@ const routes = [
       guestOnly: true
     }
   },
-
+  {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: VerifyEmailPage,
+    meta: {
+      title: 'MetroNet - Email Verification',
+      requiresAuth: false,
+      guestOnly: true
+    }
+  },
+  {
+    path: '/update-email',
+    name: 'UpdateEmail',
+    component: UpdateEmailPage,
+    meta: {
+      title: 'MetroNet - Email Update Verification',
+      requiresAuth: false,
+      guestOnly: true
+    }
+  },
   // Authenticated User Routes
   {
     path: '/profile',
