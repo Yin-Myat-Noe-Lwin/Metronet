@@ -3,20 +3,44 @@
     <div class="container">
       <template v-if="!isAdmin">
         <router-link to="/" class="logo">
-        <span class="logo-icon">⚡</span>
-        <span class="logo-text">MetroNet</span>
-      </router-link>
+          <span class="logo-icon">⚡</span>
+          <span class="logo-text">MetroNet</span>
+        </router-link>
       </template>
       <template v-else>
         <router-link to="/admin/customers" class="logo">
-        <span class="logo-icon">⚡</span>
-        <span class="logo-text">MetroNet</span>
-      </router-link>
+          <span class="logo-icon">⚡</span>
+          <span class="logo-text">MetroNet</span>
+        </router-link>
       </template>
 
       <nav class="nav">
         <!-- Show different navigation based on user role -->
         <template v-if="isAdmin">
+          <!-- Admin Navigation -->
+          <router-link
+            to="/admin/customers"
+            class="nav-link"
+            active-class="nav-link--active"
+            exact-active-class="nav-link--active"
+          >
+            Customers
+          </router-link>
+          <router-link
+            to="/admin/plans"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Plans
+          </router-link>
+          <router-link
+            to="/admin/subscriptions"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Subscriptions
+          </router-link>
+
           <!-- Admin User Avatar -->
           <div class="admin-user">
             <span class="avatar-initials">{{ userInitials }}</span>
@@ -43,16 +67,30 @@
             Plans
           </router-link>
 
-          <!-- Account Dropdown -->
-          <div class="dropdown" @mouseenter="isDropdownOpen = true" @mouseleave="isDropdownOpen = false">
-            <button class="dropdown-toggle nav-link">
+          <!-- Dropdown - Click to toggle -->
+          <div
+            class="dropdown"
+            ref="dropdown"
+            v-click-outside="closeDropdown"
+          >
+            <button
+              class="dropdown-toggle nav-link"
+              @click.stop="toggleDropdown"
+              type="button"
+              aria-haspopup="true"
+              :aria-expanded="isDropdownOpen"
+            >
               <span class="avatar-initials">{{ userInitials }}</span>
               <span class="user-name">{{ displayName }}</span>
-              <span class="dropdown-arrow">▼</span>
+              <span class="dropdown-arrow" :class="{ 'dropdown-arrow--open': isDropdownOpen }">▼</span>
             </button>
 
-            <div class="dropdown-menu" v-show="isDropdownOpen">
-              <router-link to="/profile" class="dropdown-item">
+            <div
+              class="dropdown-menu"
+              v-show="isDropdownOpen"
+              role="menu"
+            >
+              <router-link to="/profile" class="dropdown-item" @click="closeDropdown">
                 <span class="dropdown-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -61,16 +99,7 @@
                 </span>
                 My Profile
               </router-link>
-              <router-link to="/addresses" class="dropdown-item">
-                <span class="dropdown-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
-                </span>
-                Addresses
-              </router-link>
-              <router-link to="/subscriptions" class="dropdown-item">
+              <router-link to="/subscriptions" class="dropdown-item" @click="closeDropdown">
                 <span class="dropdown-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
@@ -80,7 +109,7 @@
                 </span>
                 Subscriptions
               </router-link>
-              <router-link to="/invoices" class="dropdown-item">
+              <router-link to="/invoices" class="dropdown-item" @click="closeDropdown">
                 <span class="dropdown-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -92,7 +121,7 @@
                 </span>
                 Invoices
               </router-link>
-              <router-link to="/payments" class="dropdown-item">
+              <router-link to="/payments" class="dropdown-item" @click="closeDropdown">
                 <span class="dropdown-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
@@ -101,7 +130,7 @@
                 </span>
                 Payments
               </router-link>
-              <router-link to="/notifications" class="dropdown-item">
+              <router-link to="/notifications" class="dropdown-item" @click="closeDropdown">
                 <span class="dropdown-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -112,7 +141,7 @@
                 <span class="badge" v-if="notificationCount > 0">{{ notificationCount }}</span>
               </router-link>
               <div class="dropdown-divider"></div>
-              <a @click="handleLogout" class="dropdown-item logout-item" style="cursor:pointer;">
+              <a @click="handleLogout" class="dropdown-item logout-item">
                 <span class="dropdown-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -233,9 +262,11 @@ export default {
   mounted() {
     this.fetchNotificationCount()
     window.addEventListener('userDataUpdated', this.updateUserData)
+    document.addEventListener('click', this.handleClickOutside)
   },
   beforeUnmount() {
     window.removeEventListener('userDataUpdated', this.updateUserData)
+    document.removeEventListener('click', this.handleClickOutside)
   },
   methods: {
     updateUserData() {
@@ -243,6 +274,18 @@ export default {
       this.userEmail = localStorage.getItem('userEmail') || ''
       this.userRole = parseInt(localStorage.getItem('userRole') || '1')
       this.isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+    },
+    toggleDropdown() {
+      this.isDropdownOpen = !this.isDropdownOpen
+    },
+    closeDropdown() {
+      this.isDropdownOpen = false
+    },
+    handleClickOutside(event) {
+      const dropdown = this.$refs.dropdown
+      if (dropdown && !dropdown.contains(event.target)) {
+        this.closeDropdown()
+      }
     },
     handleLogout() {
       localStorage.removeItem('isLoggedIn')
@@ -269,6 +312,7 @@ export default {
   watch: {
     '$route'() {
       this.updateUserData()
+      this.closeDropdown()
     }
   }
 }
@@ -297,7 +341,7 @@ export default {
   padding-right: 30px;
 }
 
-/* Logo - Moved further left */
+/* Logo */
 .logo {
   display: flex;
   align-items: center;
@@ -306,7 +350,7 @@ export default {
   letter-spacing: -0.5px;
   text-decoration: none;
   flex-shrink: 0;
-  margin-right: 30px; /* Space between logo and nav */
+  margin-right: 30px;
 }
 
 .logo-icon {
@@ -426,9 +470,10 @@ export default {
   color: #ff4444;
 }
 
-/* Dropdown (Regular User) */
+/* Dropdown - Click to toggle */
 .dropdown {
   position: relative;
+  display: inline-block;
 }
 
 .dropdown-toggle {
@@ -438,6 +483,9 @@ export default {
   padding: 6px 14px;
   border-radius: 8px;
   background: rgba(255,255,255,0.05);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.3s;
 }
 
 .dropdown-toggle:hover {
@@ -448,23 +496,24 @@ export default {
   font-size: 10px;
   transition: transform 0.3s;
   color: rgba(255,255,255,0.5);
+  margin-left: 4px;
 }
 
-.dropdown:hover .dropdown-arrow {
+.dropdown-arrow--open {
   transform: rotate(180deg);
 }
 
 .dropdown-menu {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   right: 0;
-  margin-top: 8px;
   background: #fff;
   border-radius: 12px;
   min-width: 240px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.15);
   padding: 8px 0;
   animation: slideDown 0.2s ease;
+  z-index: 1001;
 }
 
 @keyframes slideDown {
@@ -488,6 +537,11 @@ export default {
   font-size: 14px;
   font-weight: 500;
   transition: background 0.2s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
 }
 
 .dropdown-item:hover {
@@ -510,7 +564,6 @@ export default {
 
 .logout-item {
   color: #e74c3c;
-  cursor: pointer;
 }
 
 .logout-item:hover {
@@ -602,11 +655,11 @@ export default {
   margin: 8px 0;
 }
 
-.logout-link {
+.mobile-link.logout-link {
   color: #e74c3c;
 }
 
-.logout-link:hover {
+.mobile-link.logout-link:hover {
   color: #e74c3c !important;
 }
 
@@ -649,6 +702,7 @@ export default {
     background: rgba(255,255,255,0.05);
     margin-top: 4px;
     padding: 0;
+    animation: none;
   }
 
   .dropdown-item {
