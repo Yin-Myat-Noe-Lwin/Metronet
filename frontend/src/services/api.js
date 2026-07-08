@@ -137,6 +137,11 @@ export const authService = {
 
 // Address Service
 export const addressService = {
+  async viewAddresses(data) {
+    const response = await apiClient.get('/api/customer-addresses', data)
+    return response.data
+  },
+
   async addAddress(data) {
     const response = await apiClient.post('/api/address', data)
     return response.data
