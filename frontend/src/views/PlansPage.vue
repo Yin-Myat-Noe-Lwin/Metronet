@@ -94,7 +94,7 @@
     </section>
 
     <!-- Subscribe Modal -->
-    <div v-if="showSubscribeModal" class="modal-overlay" @click.self="closeSubscribeModal">
+    <div v-if="showSubscribeModal && selectedPlan" class="modal-overlay" @click.self="closeSubscribeModal">
       <div class="modal-container">
         <div class="modal-header">
           <h3 class="modal-title">Subscribe to {{ selectedPlan?.name }}</h3>
@@ -131,7 +131,7 @@
               <option value="12">12 Months (Save 15%)</option>
             </select>
             <p class="form-hint" v-if="selectedDuration > 1">
-              You'll save {{ calculateSavings(selectedDuration) }}% with this duration
+              💰 You'll save {{ calculateSavings(selectedDuration) }}% with this duration
             </p>
           </div>
 
@@ -154,6 +154,7 @@
     <div v-if="showAddressAlert" class="modal-overlay" @click.self="closeAddressAlert">
       <div class="modal-container alert-modal">
         <div class="modal-header">
+          <div class="modal-icon warning">📍</div>
           <h3 class="modal-title">Primary Address Required</h3>
           <button class="modal-close" @click="closeAddressAlert">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -165,11 +166,9 @@
 
         <div class="modal-body">
           <div class="alert-content">
-            <div class="alert-message">
-              <p class="alert-text">
-                Please add <strong>a primary address</strong> in your profile to subscribe.
-              </p>
-            </div>
+            <p class="alert-text">
+              Please set a primary address in your profile to subscribe.
+            </p>
           </div>
         </div>
 
@@ -177,6 +176,68 @@
           <button class="modal-btn btn-cancel" @click="closeAddressAlert">Cancel</button>
           <button class="modal-btn btn-subscribe" @click="goToProfile">
             Go to Profile
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Already Subscribed Modal -->
+    <div v-if="showAlreadySubscribedModal" class="modal-overlay" @click.self="closeAlreadySubscribedModal">
+      <div class="modal-container alert-modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Already Subscribed</h3>
+          <button class="modal-close" @click="closeAlreadySubscribedModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert-content">
+            <p class="alert-text">
+              You are already subscribed to this plan or have a pending approval.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="modal-btn btn-cancel" @click="closeAlreadySubscribedModal">Close</button>
+          <button class="modal-btn btn-subscribe" @click="goToSubscriptions">
+            View Subscriptions
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div v-if="showSuccessModal" class="modal-overlay" @click.self="closeSuccessModal">
+      <div class="modal-container alert-modal success-modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Subscription Successful!</h3>
+          <button class="modal-close" @click="closeSuccessModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert-content">
+            <p class="alert-text">
+              <strong>{{ successPlanName }}</strong> subscription submitted!
+            </p>
+            <p class="alert-subtext">
+              You'll be notified once approved.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="modal-btn btn-subscribe" @click="goToSubscriptions">
+            View Subscriptions
           </button>
         </div>
       </div>
@@ -215,12 +276,21 @@ export default {
       showAddressAlert: false,
       pendingPlanForSubscription: null,
 
+      // Already Subscribed Modal
+      showAlreadySubscribedModal: false,
+      alreadySubscribedPlan: null,
+
+      // Success Modal
+      showSuccessModal: false,
+      successPlanName: '',
+
       // Toast
       toast: {
         show: false,
         message: '',
         type: 'success'
-      }
+      },
+      toastTimeout: null
     }
   },
   computed: {
@@ -284,33 +354,27 @@ export default {
         return
       }
 
-      // Check if user has primary address
       this.checkAddressAndProceed(plan)
     },
 
     async checkAddressAndProceed(plan) {
       try {
-        // Try to get user's addresses
         const response = await addressService.viewAddresses()
         const addresses = response.data || response || []
 
-        // Check if there's a primary address
         const hasPrimaryAddress = addresses.some(addr => addr.is_primary === 1 || addr.is_primary === true)
 
         if (!hasPrimaryAddress) {
-          // Show address alert modal
           this.pendingPlanForSubscription = plan
           this.showAddressAlert = true
           return
         }
 
-        // If has primary address, proceed to subscription
         this.selectedPlan = plan
         this.selectedDuration = 1
         this.showSubscribeModal = true
       } catch (error) {
         console.error('Error checking address:', error)
-        // If there's an error, show address alert as a precaution
         this.pendingPlanForSubscription = plan
         this.showAddressAlert = true
       }
@@ -321,13 +385,28 @@ export default {
       this.pendingPlanForSubscription = null
     },
 
+    closeAlreadySubscribedModal() {
+      this.showAlreadySubscribedModal = false
+      this.alreadySubscribedPlan = null
+    },
+
+    closeSuccessModal() {
+      this.showSuccessModal = false
+      this.successPlanName = ''
+    },
+
     goToProfile() {
       this.closeAddressAlert()
-      // Navigate to profile page with address section
       this.$router.push({
         path: '/profile',
         query: { section: 'address' }
       })
+    },
+
+    goToSubscriptions() {
+      this.showAlreadySubscribedModal = false
+      this.showSuccessModal = false
+      this.$router.push('/subscriptions')
     },
 
     closeSubscribeModal() {
@@ -343,21 +422,52 @@ export default {
       this.selectedPlanId = this.selectedPlan.id
 
       try {
-        const response = await subscriptionsService.createSubscription(this.selectedPlan.id, {
-          duration_months: this.selectedDuration
-        })
+        const response = await subscriptionsService.createSubscription(
+          this.selectedPlan.id,
+          { duration_months: this.selectedDuration }
+        )
 
         console.log('Subscription response:', response)
 
-        this.showToast(`Successfully subscribed to ${this.selectedPlan.name} plan for ${this.selectedDuration} month(s)!`, 'success')
+        // Close subscribe modal
+        const planName = this.selectedPlan.name
         this.closeSubscribeModal()
 
-        setTimeout(() => {
-          this.$router.push('/subscriptions')
-        }, 2000)
+        // Show success modal
+        this.successPlanName = planName
+        this.showSuccessModal = true
+
       } catch (error) {
         console.error('Subscription error:', error)
-        const errorMessage = error.response?.data?.message || 'Failed to subscribe. Please try again.'
+
+        // Close subscribe modal
+        this.closeSubscribeModal()
+
+        // Get error data from response
+        const errorData = error.response?.data
+        const statusCode = error.response?.status
+
+        // Handle based on status code
+        if (statusCode === 409 || (errorData?.error && errorData.error.includes('Already subscribed'))) {
+          // Already subscribed
+          this.alreadySubscribedPlan = this.selectedPlan
+          this.showAlreadySubscribedModal = true
+          return
+        }
+
+        if (statusCode === 400 || (errorData?.error && errorData.error.includes('primary installation address'))) {
+          // Missing address
+          this.showAddressAlert = true
+          return
+        }
+
+        if (statusCode === 404 || (errorData?.error && errorData.error.includes('Plan not found'))) {
+          this.showToast('Plan not found or inactive.', 'error')
+          return
+        }
+
+        // Show error from response or generic message
+        const errorMessage = errorData?.error || errorData?.message || 'Failed to subscribe. Please try again.'
         this.showToast(errorMessage, 'error')
       } finally {
         this.subscribing = false
@@ -396,11 +506,15 @@ export default {
     },
 
     showToast(message, type = 'success') {
+      if (this.toastTimeout) {
+        clearTimeout(this.toastTimeout)
+      }
+
       this.toast.message = message
       this.toast.type = type
       this.toast.show = true
 
-      setTimeout(() => {
+      this.toastTimeout = setTimeout(() => {
         this.toast.show = false
       }, 4000)
     }
@@ -766,6 +880,10 @@ export default {
   max-width: 450px;
 }
 
+.modal-container.success-modal {
+  max-width: 450px;
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(20px);
@@ -785,9 +903,17 @@ export default {
   border-bottom: 1px solid #f0f0f0;
 }
 
-.modal-header .alert-icon {
-  font-size: 32px;
+.modal-icon {
+  font-size: 28px;
   margin-right: 12px;
+}
+
+.modal-icon.warning {
+  color: #ff9800;
+}
+
+.modal-icon.success {
+  color: #4caf50;
 }
 
 .modal-title {
@@ -827,15 +953,11 @@ export default {
   padding: 12px 0;
 }
 
-.alert-message {
-  margin-bottom: 8px;
-}
-
 .alert-text {
   font-size: 16px;
   color: #1a1a2e;
   line-height: 1.6;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .alert-text strong {
@@ -987,8 +1109,8 @@ export default {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  z-index: 10000;
-  animation: slideUp 0.3s;
+  z-index: 99999;
+  animation: slideUp 0.3s ease;
 }
 
 .toast-content {
@@ -999,6 +1121,7 @@ export default {
   gap: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   max-width: 400px;
+  min-width: 300px;
 }
 
 .toast-content.success {
@@ -1014,10 +1137,12 @@ export default {
 .toast-icon {
   font-weight: 700;
   font-size: 18px;
+  flex-shrink: 0;
 }
 
 .toast-message {
   font-size: 14px;
+  flex: 1;
 }
 
 /* Responsive */
@@ -1056,6 +1181,17 @@ export default {
   .modal-footer {
     flex-direction: column;
   }
+
+  .toast {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .toast-content {
+    max-width: 100%;
+    min-width: auto;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1069,16 +1205,6 @@ export default {
 
   .plan-metrics {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .toast {
-    bottom: 16px;
-    right: 16px;
-    left: 16px;
-  }
-
-  .toast-content {
-    max-width: 100%;
   }
 }
 </style>
