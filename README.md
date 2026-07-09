@@ -58,6 +58,7 @@ cp frontend/.env.example frontend/.env
 
 3. Build and start the Docker containers:
 
+
 ```bash
 docker compose up --build -d
 ```
@@ -66,4 +67,10 @@ docker compose up --build -d
 
 ```bash
 http://localhost:8080
+```
+
+5. Access Kafka UI
+
+```bash
+http://localhost:8081
 ```
