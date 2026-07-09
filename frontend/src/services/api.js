@@ -211,7 +211,7 @@ export const serviceAreasService = {
   },
 }
 
-// ✅ Customer Service - Only View and Delete
+// Only View and Deactivate the customers
 export const customerService = {
   async getCustomers() {
     try {
@@ -317,10 +317,10 @@ export const plansService = {
 
 // Subscriptions Service
 export const subscriptionsService = {
-  // async getSubscriptions() {
-  //   const response = await apiClient.get('/api/subscriptions')
-  //   return response.data
-  // },
+  async createSubscription(id, data) {
+    const response = await apiClient.post(`/api/subscribe/${id}`, data)
+    return response.data
+  },
 
   async getSubscriptions() {
     const response = await apiClient.get('/api/admin/subscriptions')
