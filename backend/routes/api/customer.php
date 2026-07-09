@@ -8,7 +8,7 @@
   use App\Http\Controllers\Api\CustomerController;
   use App\Http\Controllers\Api\PaymentController;
   use App\Http\Controllers\Api\NotificationController;
-
+  use App\Http\Controllers\Api\ServiceAreaController;
 
   Route::get('/plans', [IspPlanController::class, 'index']);
 
@@ -16,12 +16,15 @@
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::get('/customer-addresses', [CustomerAddressController::class, 'viewAddresses']);
     Route::post('/address', [CustomerAddressController::class, 'store']);
     Route::patch('/address/{id}', [CustomerAddressController::class, 'update']);
     Route::delete('/address/{id}', [CustomerAddressController::class, 'destroy']);
 
+    Route::get('/subscriptions', [SubscriptionController::class, 'viewSubscriptions']);
     Route::post('/subscribe/{plan}', [SubscriptionController::class, 'store']);
     Route::post('/service-status', [SubscriptionController::class, 'status']);
+    Route::delete('/subscriptions/{id}', [SubscriptionController::class, 'destroy']);
 
     Route::get('/profile', [CustomerController::class, 'profile']);
     Route::patch('/profile', [CustomerController::class, 'updateProfile']);
