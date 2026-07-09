@@ -37,8 +37,8 @@ class SubscriptionController extends Controller
 
             if(!$plan) {
                 return response()->json([
-                    'message' => 'Plan not found or inactive.'
-                ]);
+                    'error' => 'Plan not found or inactive.'
+                ], 404);
             }
 
             Log::info('plan'.$plan);
@@ -51,8 +51,8 @@ class SubscriptionController extends Controller
 
             if ($existing) {
                 return response()->json([
-                    'message' => 'Already subscribed or pending approval.'
-                ]);
+                    'error' => 'Already subscribed or pending approval.'
+                ], 409);
             }
 
             $address = CustomerAddress::where('customer_id', $customer->id)
@@ -61,8 +61,8 @@ class SubscriptionController extends Controller
 
             if(!$address) {
                 return response()->json([
-                    'message' => 'Please set a primary installation address before subscribing.'
-                ]);
+                    'error' => 'Please set a primary installation address before subscribing.'
+                ], 400);
             }
 
             $subscription = Subscription::create([
@@ -78,13 +78,14 @@ class SubscriptionController extends Controller
             return response()->json([
                 'message' => 'Subscription Successful. Please wait approval from ISP.',
                 'data' => $subscription
-            ]);
+            ], 201);
         } catch (PDOException $e) {
             return response()->json([
                 'message' =>  $e->getMessage()
             ]);
         } catch (QueryException $e) {
-            return response()->json([
+            return response()->
+            json([
                 'message' => $e->getMessage()
             ]);
         } catch (ModelNotFoundException $e) {
@@ -201,6 +202,45 @@ class SubscriptionController extends Controller
                                 ->orderBy('created_at', 'desc')
                                 ->get();
                             });
+
+            return response()->json([
+                'data' => $subscriptions
+            ]);
+        } catch (PDOException $e) {
+            return response()->json([
+                'message' =>  $e->getMessage()
+            ]);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (AuthenticationException $e) {
+            return response()->json([
+                'message' =>  $e->getMessage()
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong.'
+            ]);
+        }
+    }
+
+    public function viewSubscriptions(): JsonResponse
+    {
+        try{
+            $customer = Auth::user();
+
+            $subscriptions = $customer->subscriptions()
+                                        ->with('plan')
+                                        ->get();
 
             return response()->json([
                 'data' => $subscriptions
