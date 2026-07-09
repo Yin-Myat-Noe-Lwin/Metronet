@@ -74,3 +74,8 @@ http://localhost:8080
 ```bash
 http://localhost:8081
 ```
+
+5. Access Kafka UI
+
+```bash
+http://localhost:8081
