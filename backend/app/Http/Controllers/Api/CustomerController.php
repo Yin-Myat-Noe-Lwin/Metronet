@@ -133,7 +133,7 @@ class CustomerController extends Controller
             }
 
             return response()->json([
-                'message' => 'Profile was updated successfully. To verify new mail, check your mail.'
+                'message' => 'Profile was updated successfully.'
             ]);
         } catch (PDOException $e) {
             return response()->json([
