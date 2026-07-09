@@ -322,6 +322,11 @@ export const subscriptionsService = {
     return response.data
   },
 
+  async viewSubscriptions() {
+    const response = await apiClient.get(`/api/subscriptions`)
+    return response.data
+  },
+
   async getSubscriptions() {
     const response = await apiClient.get('/api/admin/subscriptions')
     return response.data
