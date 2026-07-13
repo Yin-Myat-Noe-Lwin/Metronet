@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Cpe;
+use Illuminate\Http\JsonResponse;
 use App\Http\Requests\CpeUpdateRequest;
 use App\Http\Requests\CpeRequest;
 use PDOException;
@@ -13,6 +14,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Cache;
 
 class CpeController extends Controller
 {
