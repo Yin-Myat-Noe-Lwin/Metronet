@@ -154,7 +154,6 @@
     <div v-if="showAddressAlert" class="modal-overlay" @click.self="closeAddressAlert">
       <div class="modal-container alert-modal">
         <div class="modal-header">
-          <div class="modal-icon warning">📍</div>
           <h3 class="modal-title">Primary Address Required</h3>
           <button class="modal-close" @click="closeAddressAlert">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
