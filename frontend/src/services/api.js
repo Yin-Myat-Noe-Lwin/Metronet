@@ -345,26 +345,30 @@ export const invoicesService = {
     return response.data
   },
 
-  async getAdminInvoices() {
-    const response = await apiClient.get('/api/admin/invoices')
-    return response.data
-  },
-
   async getInvoice(id) {
     const response = await apiClient.get(`/api/invoices/${id}`)
     return response.data
   },
-
-  async getAdminInvoice(id) {
-    const response = await apiClient.get(`/api/admin/invoices/${id}`)
+  async downloadInvoice(id) {
+    const response = await apiClient.get(`/api/invoices/${id}/download`, {
+      responseType: 'blob'
+    })
+    return response
+  },
+  async getAdminInvoices() {
+    const response = await apiClient.get('/api/admin/invoices')
     return response.data
-  }
+  },
 }
 
 // Payment Service
-// Payment Service
 export const paymentService = {
-  async payInvoice(invoiceId, data) {
+  async getPaymentMethods() {
+    const response = await apiClient.get('/api/payment-methods')
+    return response.data
+  },
+
+  async payInvoice(invoiceId, data = {}) {
     const response = await apiClient.post(`/api/pay/${invoiceId}`, data)
     return response.data
   },
@@ -374,13 +378,18 @@ export const paymentService = {
     return response.data
   },
 
+  async getPayment(id) {
+    const response = await apiClient.get(`/api/payments/${id}`)
+    return response.data
+  },
+
   async getAdminPayments() {
     const response = await apiClient.get('/api/admin/payments')
     return response.data
   }
 }
-// Notifications Service
-export const notificationsService = {
+
+export const notificationService = {
   async getNotifications() {
     const response = await apiClient.get('/api/notifications')
     return response.data
