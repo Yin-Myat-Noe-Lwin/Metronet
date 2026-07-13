@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 use PDOException;
 use Exception;
@@ -22,7 +24,9 @@ class NotificationController extends Controller
         try {
             $customer = Auth::user();
 
-            $notifications = Notification::where('customer_id', $customer->id)->get();
+            $notifications = Notification::where('customer_id', $customer->id)
+                                            ->orderBy('created_at', 'desc')
+                                            ->get();
 
             return response()->json([
                 'data' => $notifications
@@ -56,34 +60,48 @@ class NotificationController extends Controller
 
     public function markAsRead($id)
     {
-        try{
+        try {
             $customer = Auth::user();
 
+            if (!$customer) {
+                return response()->json([
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
             $notification = $customer->notifications()
-                                    ->where('id', $id)
-                                    ->first();
+                ->where('id', $id)
+                ->first();
 
             if (!$notification) {
                 return response()->json([
                     'message' => 'Notification not found'
-                ]);
+                ], 404);
             }
 
-            if ($notification->status == 1) {
+            if ($notification->is_read == 1) {
                 return response()->json([
-                    'message' => 'Notification is already marked as read.'
-                ]);
+                    'message' => 'Notification is already marked as read.',
+                    'data' => $notification
+                ], 400);
             }
 
-            // update notification status after read by customer
             $notification->update([
-                'status' => 1
+                'is_read' => 1,
+                'read_at' => now()
+            ]);
+
+            Log::info('Notification marked as read', [
+                'notification_id' => $id,
+                'customer_id' => $customer->id
             ]);
 
             return response()->json([
-                'message' => 'Notification marked as read'
+                'message' => 'Notification marked as read',
+                'data' => $notification
             ]);
-        } catch (PDOException $e) {
+
+        }  catch (PDOException $e) {
             return response()->json([
                 'message' =>  $e->getMessage()
             ]);
