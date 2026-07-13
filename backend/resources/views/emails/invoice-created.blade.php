@@ -10,29 +10,29 @@
 
     <h2>MetroNet ISP</h2>
 
-    <p>Dear Customer,</p>
+    <p>Dear {{ $customer->name ?? 'Customer' }},</p>
 
     <p>Your invoice has been generated successfully.</p>
 
     <table border="1" cellpadding="8">
         <tr>
             <td><strong>Invoice Number</strong></td>
-            <td>{{ $invoice->invoice_number }}</td>
+            <td>{{ $invoice_number }}</td>
         </tr>
 
         <tr>
             <td><strong>Amount</strong></td>
-            <td>{{ $invoice->amount }}</td>
+            <td>MMK {{ $amount }}</td>
         </tr>
 
         <tr>
             <td><strong>Due Date</strong></td>
-            <td>{{ $invoice->due_date }}</td>
+            <td>{{ $due_date }}</td>
         </tr>
 
         <tr>
             <td><strong>Status</strong></td>
-            <td>Pending</td>
+            <td>{{ $status }}</td>
         </tr>
     </table>
 
