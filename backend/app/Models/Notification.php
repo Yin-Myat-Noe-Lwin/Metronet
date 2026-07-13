@@ -9,13 +9,23 @@ class Notification extends Model
 {
     protected $fillable = [
         'customer_id',
-        'type',
+        'event_type',
+        'channel',
         'title',
         'message',
         'status',
+        'is_read',
+        'read_at',
         'scheduled_at',
-        'send_status',
+        'sent_status',
         'sent_at'
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
+        'read_at' => 'datetime',
+        'scheduled_at' => 'datetime',
+        'sent_at' => 'datetime',
     ];
 
     public function customer():BelongsTo
