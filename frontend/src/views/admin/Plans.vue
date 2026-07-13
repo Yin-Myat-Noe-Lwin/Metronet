@@ -2,38 +2,53 @@
   <div class="admin-plans">
     <!-- Page Header -->
     <div class="page-header">
-      <h1 class="page-title">Plans Management</h1>
-      <p class="page-subtitle">Create and manage internet service plans</p>
-    </div>
-
-    <!-- Actions -->
-    <div class="page-actions">
-      <div class="search-group">
-        <input
-          type="text"
-          v-model="searchQuery"
-          placeholder="Search plans..."
-          class="search-input"
-          @input="onSearch"
-        >
-        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
+      <div>
+        <h1 class="page-title">Plans Management</h1>
+        <p class="page-subtitle">Create and manage internet service plans</p>
       </div>
-      <div class="action-buttons">
-        <button class="btn-refresh" @click="fetchPlans">
+      <div class="header-actions">
+        <button class="btn-refresh" @click="fetchPlans" :disabled="loading">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10"/>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
           </svg>
-          Refresh
+          {{ loading ? 'Loading...' : 'Refresh' }}
         </button>
         <button class="btn-add" @click="openAddModal">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 5v14M5 12h14"/>
           </svg>
           Add Plan
+        </button>
+      </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="filters-bar">
+      <div class="search-group">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="Search plans..."
+          class="search-input"
+        >
+      </div>
+      <div class="filter-group">
+        <button
+          v-for="filter in filters"
+          :key="filter.key"
+          class="filter-btn"
+          :class="{ active: activeFilter === filter.key }"
+          @click="activeFilter = filter.key"
+        >
+          {{ filter.label }}
+          <span class="count" v-if="getFilterCount(filter.key) > 0">
+            {{ getFilterCount(filter.key) }}
+          </span>
         </button>
       </div>
     </div>
@@ -52,52 +67,83 @@
     </div>
 
     <!-- Plans Grid -->
-    <div v-else class="plans-grid">
+    <div v-else>
       <div v-if="filteredPlans.length === 0" class="empty-state">
-        <p>No plans found</p>
+        <div class="empty-icon">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </div>
+        <h3>{{ searchQuery ? 'No results found' : 'No plans yet' }}</h3>
+        <p>{{ searchQuery ? 'Try adjusting your search term.' : 'Click "Add Plan" to create your first plan.' }}</p>
+        <button v-if="!searchQuery" class="btn-add-empty" @click="openAddModal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Create Plan
+        </button>
       </div>
-      <div v-for="plan in filteredPlans" :key="plan.id" class="plan-card">
-        <div class="plan-card-header">
-          <h3>{{ plan.name }}</h3>
-          <div class="plan-actions">
-            <button class="action-btn edit" @click="editPlan(plan)">Edit</button>
-            <button class="action-btn delete" @click="deletePlan(plan.id)" :disabled="plan.status === 0">Delete</button>
+
+      <div v-else class="plans-grid">
+        <div v-for="plan in filteredPlans" :key="plan.id" class="plan-card">
+          <div class="plan-card-header">
+            <div class="plan-name-wrapper">
+              <h3>{{ plan.name }}</h3>
+              <span class="status-badge" :class="plan.status === 1 ? 'active' : 'inactive'">
+                {{ plan.status === 1 ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            <div class="plan-actions">
+              <button class="action-btn edit" @click="editPlan(plan)" title="Edit Plan">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="action-btn delete" @click="confirmDelete(plan)" title="Delete Plan">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="plan-price">
-          <span class="price-amount">{{ formatPrice(plan.price) }}</span>
-          <span class="price-period">/month</span>
-        </div>
-        <div class="plan-details">
-          <div class="detail-item">
-            <span class="label">Download</span>
-            <span class="value">{{ plan.download_speed }} Mbps</span>
+
+          <div class="plan-price">
+            <span class="price-amount">{{ formatPrice(plan.price) }}</span>
+            <span class="price-period">/month</span>
           </div>
-          <div class="detail-item">
-            <span class="label">Upload</span>
-            <span class="value">{{ plan.upload_speed }} Mbps</span>
+
+          <div class="plan-specs">
+            <div class="spec-item">
+              <span class="spec-label">Download</span>
+              <span class="spec-value">{{ plan.download_speed }} Mbps</span>
+            </div>
+            <div class="spec-divider"></div>
+            <div class="spec-item">
+              <span class="spec-label">Upload</span>
+              <span class="spec-value">{{ plan.upload_speed }} Mbps</span>
+            </div>
           </div>
-          <div class="detail-item">
-            <span class="label">Status</span>
-            <span class="status-badge" :class="plan.status === 1 ? 'active' : 'inactive'">
-              {{ plan.status === 1 ? 'Active' : 'Inactive' }}
-            </span>
+
+          <div class="plan-description" v-if="plan.description">
+            {{ plan.description }}
           </div>
-        </div>
-        <div class="plan-description" v-if="plan.description">
-          {{ plan.description }}
         </div>
       </div>
     </div>
 
     <!-- Add/Edit Modal -->
-    <div class="modal-overlay" v-if="showAddModal || showEditModal" @click.self="closeModals">
-      <div class="modal">
+    <div v-if="showAddModal || showEditModal" class="modal-overlay" @click.self="closeModals">
+      <div class="modal modal-form">
         <div class="modal-header">
           <h2>{{ showEditModal ? 'Edit Plan' : 'Add New Plan' }}</h2>
-          <button class="modal-close" @click="closeModals">✕</button>
+          <button class="modal-close" @click="closeModals">×</button>
         </div>
-        <form @submit.prevent="savePlan" class="modal-form">
+        <form @submit.prevent="savePlan">
           <div class="form-group">
             <label>Plan Name <span class="required">*</span></label>
             <input type="text" v-model="planForm.name" required class="form-input" placeholder="Enter plan name">
@@ -137,12 +183,36 @@
       </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast" v-if="toast.show">
-      <div class="toast-content" :class="toast.type">
-        <span class="toast-icon">{{ toast.type === 'success' ? '✓' : '✕' }}</span>
-        <span class="toast-message">{{ toast.message }}</span>
+    <!-- Delete Confirmation Modal - Clean & Simple -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
+      <div class="modal modal-delete">
+        <div class="delete-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h3 class="delete-title">Deactivate Plan?</h3>
+        <p class="delete-message">
+          Are you sure you want to deactivate "<strong>{{ deletePlanName }}</strong>"?
+          <br>
+          <span class="text-muted">Customers will no longer be able to subscribe to this plan.</span>
+        </p>
+        <div class="delete-actions">
+          <button class="btn-cancel" @click="closeDeleteModal">Cancel</button>
+          <button class="btn-confirm-delete" @click="deletePlan" :disabled="isDeleting">
+            {{ isDeleting ? 'Deactivating...' : 'Yes, Deactivate' }}
+          </button>
+        </div>
       </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div v-if="toast.show" class="toast" :class="toast.type">
+      <span class="toast-icon">{{ toast.type === 'success' ? '✓' : '✕' }}</span>
+      <span class="toast-message">{{ toast.message }}</span>
+      <button class="toast-close" @click="toast.show = false">×</button>
     </div>
   </div>
 </template>
@@ -156,12 +226,21 @@ export default {
     return {
       loading: false,
       isSaving: false,
+      isDeleting: false,
       error: null,
       searchQuery: '',
-      searchTimeout: null,
+      activeFilter: 'all',
+      filters: [
+        { key: 'all', label: 'All' },
+        { key: 'active', label: 'Active' },
+        { key: 'inactive', label: 'Inactive' }
+      ],
       showAddModal: false,
       showEditModal: false,
+      showDeleteModal: false,
       editingId: null,
+      deletePlanId: null,
+      deletePlanName: '',
       plans: [],
       planForm: {
         name: '',
@@ -180,12 +259,23 @@ export default {
   },
   computed: {
     filteredPlans() {
-      if (!this.searchQuery) return this.plans
-      const query = this.searchQuery.toLowerCase()
-      return this.plans.filter(p =>
-        p.name?.toLowerCase().includes(query) ||
-        p.description?.toLowerCase().includes(query)
-      )
+      let filtered = this.plans
+
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase()
+        filtered = filtered.filter(p =>
+          p.name?.toLowerCase().includes(query) ||
+          p.description?.toLowerCase().includes(query)
+        )
+      }
+
+      if (this.activeFilter === 'active') {
+        filtered = filtered.filter(p => p.status === 1)
+      } else if (this.activeFilter === 'inactive') {
+        filtered = filtered.filter(p => p.status === 0)
+      }
+
+      return filtered
     }
   },
   mounted() {
@@ -198,40 +288,23 @@ export default {
 
       try {
         const response = await plansService.getAdminPlans()
-        console.log('✅ Plans API Response:', response)
 
-        // ✅ CRITICAL FIX: Extract data correctly
         let plansData = []
-
-        // Check different response structures
         if (response && response.data && Array.isArray(response.data)) {
-          // Response: { data: [...] }
           plansData = response.data
         } else if (response && Array.isArray(response)) {
-          // Response: [...]
           plansData = response
-        } else if (response && response.data && response.data.data && Array.isArray(response.data.data)) {
-          // Response: { data: { data: [...] } }
-          plansData = response.data.data
-        } else if (response && response.data && typeof response.data === 'object') {
-          // If data is an object with plans property
-          plansData = response.data.plans || []
         }
 
-        // ✅ Remove duplicates based on id
         const seen = new Set()
-        const uniquePlans = plansData.filter(plan => {
+        this.plans = plansData.filter(plan => {
           const duplicate = seen.has(plan.id)
           seen.add(plan.id)
           return !duplicate
         })
 
-        this.plans = uniquePlans
-        console.log('✅ Loaded unique plans:', this.plans.length)
-
       } catch (error) {
-        console.error('❌ Error fetching plans:', error)
-
+        console.error('Error fetching plans:', error)
         if (error.response?.status === 401) {
           this.error = 'Session expired. Please login again.'
           setTimeout(() => {
@@ -248,11 +321,11 @@ export default {
       }
     },
 
-    onSearch() {
-      clearTimeout(this.searchTimeout)
-      this.searchTimeout = setTimeout(() => {
-        // Client-side filtering handled by computed property
-      }, 300)
+    getFilterCount(key) {
+      if (key === 'all') return this.plans.length
+      if (key === 'active') return this.plans.filter(p => p.status === 1).length
+      if (key === 'inactive') return this.plans.filter(p => p.status === 0).length
+      return 0
     },
 
     openAddModal() {
@@ -281,8 +354,38 @@ export default {
       this.showEditModal = true
     },
 
+    confirmDelete(plan) {
+      this.deletePlanId = plan.id
+      this.deletePlanName = plan.name
+      this.showDeleteModal = true
+    },
+
+    closeDeleteModal() {
+      this.showDeleteModal = false
+      this.deletePlanId = null
+      this.deletePlanName = ''
+      this.isDeleting = false
+    },
+
+    async deletePlan() {
+      if (!this.deletePlanId) return
+
+      this.isDeleting = true
+      try {
+        await plansService.deletePlan(this.deletePlanId)
+        this.showToast('Plan deactivated successfully!', 'success')
+        this.closeDeleteModal()
+        this.fetchPlans()
+      } catch (error) {
+        console.error('Error deleting plan:', error)
+        this.showToast(error.response?.data?.message || 'Failed to deactivate plan.', 'error')
+        this.closeDeleteModal()
+      } finally {
+        this.isDeleting = false
+      }
+    },
+
     async savePlan() {
-      // Validate required fields
       if (!this.planForm.name || !this.planForm.price ||
           !this.planForm.download_speed || !this.planForm.upload_speed) {
         this.showToast('Please fill in all required fields.', 'error')
@@ -301,49 +404,22 @@ export default {
           status: parseInt(this.planForm.status)
         }
 
-        let response
         if (this.showEditModal) {
-          // Update existing plan
-          response = await plansService.updatePlan(this.editingId, data)
+          await plansService.updatePlan(this.editingId, data)
           this.showToast('Plan updated successfully!', 'success')
         } else {
-          // Create new plan
-          response = await plansService.createPlan(data)
+          await plansService.createPlan(data)
           this.showToast('Plan added successfully!', 'success')
         }
-
-        console.log('Save response:', response)
 
         this.closeModals()
         this.fetchPlans()
 
       } catch (error) {
         console.error('Error saving plan:', error)
-        const message = error.response?.data?.message || 'Failed to save plan.'
-        this.showToast(message, 'error')
+        this.showToast(error.response?.data?.message || 'Failed to save plan.', 'error')
       } finally {
         this.isSaving = false
-      }
-    },
-
-    async deletePlan(id) {
-      const plan = this.plans.find(p => p.id === id)
-      if (!plan) return
-
-      if (plan.status === 0) {
-        this.showToast('Plan is already inactive.', 'error')
-        return
-      }
-
-      if (!confirm(`Are you sure you want to deactivate "${plan.name}"?`)) return
-
-      try {
-        await plansService.deletePlan(id)
-        this.showToast('Plan deactivated successfully!', 'success')
-        this.fetchPlans()
-      } catch (error) {
-        console.error('Error deleting plan:', error)
-        this.showToast(error.response?.data?.message || 'Failed to deactivate plan.', 'error')
       }
     },
 
@@ -391,62 +467,30 @@ export default {
   max-width: 1200px;
 }
 
+/* ===== PAGE HEADER ===== */
 .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .page-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #0f172a;
   margin: 0 0 4px 0;
 }
 
 .page-subtitle {
-  color: #8892a8;
+  color: #94a3b8;
   font-size: 15px;
   margin: 0;
 }
 
-.page-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
-.search-group {
-  flex: 1;
-  max-width: 400px;
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 16px 10px 42px;
-  border: 2px solid #e8ecf1;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-}
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #8892a8;
-}
-
-.action-buttons {
+.header-actions {
   display: flex;
   gap: 10px;
 }
@@ -456,8 +500,8 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #f0f0f0;
-  color: #555;
+  background: #f1f5f9;
+  color: #475569;
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -466,15 +510,20 @@ export default {
   transition: all 0.3s;
 }
 
-.btn-refresh:hover {
-  background: #e0e0e0;
+.btn-refresh:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-add {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 10px 24px;
   background: #ff6b35;
   color: #fff;
   border: none;
@@ -489,43 +538,96 @@ export default {
   background: #e85a2a;
 }
 
-.btn-primary {
-  padding: 10px 20px;
+/* ===== FILTERS BAR ===== */
+.filters-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  background: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.search-group {
+  flex: 1;
+  max-width: 360px;
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 9px 16px 9px 40px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+  background: #f8fafc;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #ff6b35;
+  background: #fff;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.filter-group {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter-btn:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.filter-btn.active {
   background: #ff6b35;
   color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #e85a2a;
+.filter-btn .count {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.filter-btn:not(.active) .count {
+  background: #f1f5f9;
+  color: #94a3b8;
 }
 
-.btn-secondary {
-  padding: 10px 20px;
-  background: #e8ecf1;
-  color: #555;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.btn-secondary:hover {
-  background: #d0d0d0;
-}
-
+/* ===== LOADING ===== */
 .loading-state {
   text-align: center;
   padding: 60px 20px;
@@ -534,11 +636,11 @@ export default {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e8ecf1;
+  margin: 0 auto 16px;
+  border: 3px solid #e2e8f0;
   border-top-color: #ff6b35;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
 }
 
 @keyframes spin {
@@ -546,9 +648,10 @@ export default {
 }
 
 .loading-state p {
-  color: #8892a8;
+  color: #94a3b8;
 }
 
+/* ===== ERROR ===== */
 .error-state {
   text-align: center;
   padding: 40px 20px;
@@ -560,7 +663,7 @@ export default {
 }
 
 .error-state p {
-  color: #e74c3c;
+  color: #dc2626;
   margin-bottom: 12px;
 }
 
@@ -579,50 +682,145 @@ export default {
   background: #e85a2a;
 }
 
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-}
-
+/* ===== EMPTY STATE - CENTERED ===== */
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   background: #fff;
   border-radius: 12px;
-  color: #8892a8;
+  border: 1px solid #e2e8f0;
+}
+
+.empty-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: #cbd5e1;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.empty-state p {
+  color: #94a3b8;
+  margin: 0 0 20px;
+}
+
+.btn-add-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: #ff6b35;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-add-empty:hover {
+  background: #e85a2a;
+}
+
+/* ===== PLANS GRID ===== */
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
 }
 
 .plan-card {
   background: #fff;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e8ecf1;
+  border: 1px solid #e2e8f0;
   transition: all 0.3s;
 }
 
 .plan-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border-color: #cbd5e1;
 }
 
 .plan-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  align-items: flex-start;
+  margin-bottom: 12px;
 }
 
-.plan-card-header h3 {
-  font-size: 20px;
+.plan-name-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plan-name-wrapper h3 {
+  font-size: 18px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #0f172a;
   margin: 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.status-badge.inactive {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .plan-actions {
   display: flex;
   gap: 4px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.action-btn.edit {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.action-btn.edit:hover {
+  background: #c7d2fe;
+}
+
+.action-btn.delete {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.action-btn.delete:hover {
+  background: #fecaca;
 }
 
 .plan-price {
@@ -636,113 +834,67 @@ export default {
 }
 
 .price-period {
-  color: #8892a8;
+  color: #94a3b8;
   font-size: 14px;
 }
 
-.plan-details {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+.plan-specs {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: #f8f9fa;
+  padding: 12px 16px;
+  background: #f8fafc;
   border-radius: 8px;
+  margin-bottom: 12px;
 }
 
-.detail-item {
+.spec-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  flex: 1;
 }
 
-.detail-item .label {
+.spec-label {
   font-size: 11px;
-  color: #8892a8;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.detail-item .value {
-  font-size: 14px;
+.spec-value {
+  font-size: 15px;
   font-weight: 600;
-  color: #1a1a2e;
-  margin-top: 2px;
+  color: #0f172a;
+}
+
+.spec-divider {
+  width: 1px;
+  height: 30px;
+  background: #e2e8f0;
 }
 
 .plan-description {
-  color: #666;
+  color: #64748b;
   font-size: 14px;
   line-height: 1.5;
-  margin-top: 8px;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f1f5f9;
 }
 
-.status-badge {
-  padding: 2px 10px;
-  border-radius: 50px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.active {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-.status-badge.inactive {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.action-btn {
-  padding: 4px 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.action-btn.edit {
-  background: #fff3e0;
-  color: #e65100;
-}
-
-.action-btn.edit:hover {
-  background: #ffe0b2;
-}
-
-.action-btn.delete {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.action-btn.delete:hover:not(:disabled) {
-  background: #ffcdd2;
-}
-
-.action-btn.delete:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Modal */
+/* ===== MODALS ===== */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
-  animation: fadeIn 0.2s;
+  animation: fadeIn 0.25s ease;
 }
 
 @keyframes fadeIn {
@@ -753,12 +905,11 @@ export default {
 .modal {
   background: #fff;
   border-radius: 16px;
-  padding: 32px;
-  max-width: 500px;
+  max-width: 520px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  animation: slideUp 0.3s;
+  animation: slideUp 0.3s ease;
 }
 
 @keyframes slideUp {
@@ -766,17 +917,108 @@ export default {
   to { transform: translateY(0); opacity: 1; }
 }
 
+.modal-form {
+  padding: 32px;
+}
+
+/* ===== DELETE MODAL - CLEAN & SIMPLE ===== */
+.modal-delete {
+  max-width: 420px;
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.delete-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.delete-icon svg {
+  background: #fef2f2;
+  padding: 12px;
+  border-radius: 50%;
+}
+
+.delete-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.delete-message {
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.delete-message strong {
+  color: #0f172a;
+}
+
+.delete-message .text-muted {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-cancel {
+  padding: 10px 24px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  flex: 1;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.btn-confirm-delete {
+  padding: 10px 24px;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  flex: 1;
+}
+
+.btn-confirm-delete:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.btn-confirm-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== FORM ===== */
 .modal-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 20px;
 }
 
 .modal-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #0f172a;
   margin: 0;
 }
 
@@ -784,41 +1026,36 @@ export default {
   background: none;
   border: none;
   font-size: 24px;
-  color: #8892a8;
+  color: #94a3b8;
   cursor: pointer;
   padding: 4px 8px;
   transition: color 0.3s;
 }
 
 .modal-close:hover {
-  color: #1a1a2e;
-}
-
-.modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  color: #0f172a;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-bottom: 16px;
 }
 
 .form-group label {
   font-weight: 600;
-  color: #333;
+  color: #0f172a;
   font-size: 14px;
 }
 
 .required {
-  color: #e74c3c;
+  color: #dc2626;
 }
 
 .form-input {
   padding: 10px 14px;
-  border: 2px solid #e8ecf1;
+  border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 14px;
   transition: border-color 0.3s;
@@ -847,31 +1084,67 @@ textarea.form-input {
   margin-top: 8px;
 }
 
-/* Toast */
+.btn-primary {
+  padding: 10px 24px;
+  background: #ff6b35;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  flex: 1;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #e85a2a;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 10px 24px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+/* ===== TOAST ===== */
 .toast {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  z-index: 3000;
-  animation: slideUp 0.3s;
-}
-
-.toast-content {
-  padding: 16px 24px;
+  padding: 14px 20px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 3000;
+  animation: slideUp 0.3s ease;
+  min-width: 280px;
 }
 
-.toast-content.success {
-  background: #1a1a2e;
+.toast.success {
+  background: #0f172a;
   color: #fff;
 }
 
-.toast-content.error {
-  background: #e74c3c;
+.toast.error {
+  background: #dc2626;
   color: #fff;
 }
 
@@ -884,9 +1157,32 @@ textarea.form-input {
   font-size: 14px;
 }
 
-/* Responsive */
+.toast-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 20px;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0 4px;
+}
+
+.toast-close:hover {
+  color: #fff;
+}
+
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .page-actions {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions {
+    flex-direction: column;
+  }
+
+  .filters-bar {
     flex-direction: column;
     align-items: stretch;
   }
@@ -895,20 +1191,20 @@ textarea.form-input {
     max-width: none;
   }
 
-  .action-buttons {
-    flex-direction: column;
-  }
-
   .plans-grid {
     grid-template-columns: 1fr;
   }
 
-  .plan-details {
-    grid-template-columns: 1fr 1fr;
+  .modal-delete {
+    padding: 32px 24px;
+  }
+
+  .delete-actions {
+    flex-direction: column;
   }
 
   .modal {
-    padding: 24px;
+    padding: 20px;
   }
 
   .form-row {
@@ -919,6 +1215,7 @@ textarea.form-input {
     bottom: 16px;
     right: 16px;
     left: 16px;
+    min-width: auto;
   }
 }
 
@@ -927,12 +1224,25 @@ textarea.form-input {
     font-size: 22px;
   }
 
-  .plan-details {
-    grid-template-columns: 1fr;
+  .plan-card {
+    padding: 16px;
+  }
+
+  .plan-specs {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .spec-divider {
+    display: none;
   }
 
   .modal {
-    padding: 20px;
+    padding: 16px;
+  }
+
+  .modal-delete {
+    padding: 24px 16px;
   }
 
   .form-actions {
