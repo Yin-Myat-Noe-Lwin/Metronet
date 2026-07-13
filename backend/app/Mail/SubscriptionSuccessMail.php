@@ -2,8 +2,9 @@
 
 namespace App\Mail;
 
+use App\Models\Customer;
+use App\Models\Subscription;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -13,39 +14,53 @@ class SubscriptionSuccessMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct()
+    public $subscription;
+    public $customer;
+    public $plan;
+    public $customerName;
+    public $companyName;
+    public $companyAddress;
+    public $companyPhone;
+    public $companyEmail;
+
+    public function __construct(Subscription $subscription, Customer $customer)
     {
-        //
+        $this->subscription = $subscription;
+        $this->customer = $customer;
+        $this->customerName = $customer->name;
+        $this->plan = $subscription->plan; // ✅ Load the plan relationship
+
+        // Company details
+        $this->companyName = config('app.name', 'MetroNet');
+        $this->companyAddress = 'Yangon, Myanmar';
+        $this->companyPhone = '+95 9 123 456 789';
+        $this->companyEmail = 'info@metronet.com';
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Subscription Success Mail',
+            subject: '🎉 Your Internet Service is Now Active! - ' . $this->companyName,
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
             view: 'emails.subscription-success',
+            with: [
+                'subscription' => $this->subscription,
+                'customer' => $this->customer,
+                'customerName' => $this->customerName,
+                'plan' => $this->plan,
+                'companyName' => $this->companyName,
+                'companyAddress' => $this->companyAddress,
+                'companyPhone' => $this->companyPhone,
+                'companyEmail' => $this->companyEmail,
+            ],
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];
