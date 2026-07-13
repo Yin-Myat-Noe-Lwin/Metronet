@@ -16,6 +16,7 @@ services:
       - kafka
     networks:
       - metronet
+    restart: unless-stopped
 
   supervisor:
     build:
@@ -26,11 +27,34 @@ services:
     command: supervisord -c /etc/supervisor.conf
     restart: always
     depends_on:
-      - db
-      - redis
-      - kafka
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     networks:
       - metronet
+    volumes:
+      - ./backend:/app
+      - ./backend/docker/supervisord.conf:/etc/supervisor/supervisord.conf:ro
+      - ./backend/storage/logs:/var/log/supervisor
+      - ./backend/storage/logs:/app/storage/logs
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=your_app_key_here
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=localMetronet
+      - DB_USERNAME=leona
+      - DB_PASSWORD=123456
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BROKERS=kafka:9092
 
   db:
     image: mysql:8
@@ -67,14 +91,24 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     networks:
-      - metronet
+      metronet:
+        aliases:
+          - kafka-broker
+          - kafka
 
   kafka-init:
     image: apache/kafka:latest
     container_name: kafka-init
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "
@@ -84,7 +118,7 @@ services:
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic service.activated --partitions 1 --replication-factor 1;
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic invoice.created --partitions 1 --replication-factor 1;
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic payment.success --partitions 1 --replication-factor 1;
-
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic subscription.cancelled --partitions 1 --replication-factor 1;
       echo 'Kafka topics created successfully';
       "
     networks:
