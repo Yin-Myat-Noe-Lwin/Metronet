@@ -18,9 +18,16 @@ class Subscription extends Model
         'auto_renew'
     ];
 
-    public function customers() :HasMany
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    public function customer(): BelongsTo
     {
-        return $this->hasMany(Customer::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function plan() :BelongsTo
