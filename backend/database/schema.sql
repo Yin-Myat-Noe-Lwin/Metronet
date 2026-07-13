@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS `cache_locks`;
 
 DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `cpe_assignments`;
+DROP TABLE IF EXISTS `payment_methods`;
 DROP TABLE IF EXISTS `payments`;
 DROP TABLE IF EXISTS `invoices`;
 DROP TABLE IF EXISTS `subscriptions`;
@@ -80,15 +81,6 @@ CREATE TABLE `customers` (
     `updated_at` timestamp NULL DEFAULT NULL
 );
 
-INSERT INTO customers
-(name, phone_num, email, status, role, password, created_at, updated_at)
-VALUES
-('Elizabeth', '09123456789', 'elizabeth@gmail.com', 1, 1, 'password', NOW(), NOW()),
-('Leona Louisa', '0980888088', 'leonalouisa@gmail.com', 1, 0, 'password', NOW(), NOW()),
-('Emily', '09676767677', 'emily@gmail.com', 1, 0, 'password', NOW(), NOW()),
-('Billy', '09121212122', 'billy@gmail.com', 1, 1, 'password', NOW(), NOW()),
-('Zoey', '09000000000', 'zoey@gmail.com', 1, 1, 'password', NOW(), NOW());
-
 CREATE TABLE `customer_addresses` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `customer_id` BIGINT UNSIGNED NOT NULL,
@@ -116,16 +108,6 @@ CREATE TABLE `isp_plans` (
     `updated_at` timestamp NULL DEFAULT NULL
 );
 
-INSERT INTO isp_plans
-(name, description, price, status, upload_speed, download_speed, created_at, updated_at)
-VALUES
-('Home Starter', 'Basic internet for browsing, messaging and social media. Best for 1–2 users.', 25000.00, 1, 10, 20, NOW(), NOW()),
-('Home Basic', 'Stable internet for streaming, online classes and daily home usage.', 35000.00, 1, 15, 30, NOW(), NOW()),
-('Home Plus', 'Fast HD streaming, video calls and light gaming for small families.', 55000.00, 1, 25, 50, NOW(), NOW()),
-('Fiber Family', 'High-speed fiber for multiple devices, streaming and online learning.', 75000.00, 1, 35, 70, NOW(), NOW()),
-('Premium Ultra', 'Ultra-fast internet for 4K streaming, gaming and smart home use.', 95000.00, 1, 50, 100, NOW(), NOW()),
-('Business Pro', 'Enterprise-grade stable connection for offices and heavy usage.', 120000.00, 1, 75, 150, NOW(), NOW());
-
 CREATE TABLE `service_areas` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `region` VARCHAR(30) NOT NULL,
@@ -135,20 +117,6 @@ CREATE TABLE `service_areas` (
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL
 );
-
-INSERT INTO service_areas
-(region, city, township, status, created_at, updated_at)
-VALUES
-('Yangon', 'Yangon', 'Dala', 1, NOW(), NOW()),
-('Yangon', 'Yangon', 'Hlaing', 1, NOW(), NOW()),
-('Yangon', 'Yangon', 'Bahan', 1, NOW(), NOW()),
-('Yangon', 'Yangon', 'Kamayut', 1, NOW(), NOW()),
-('Mandalay', 'Mandalay', 'Chanayethazan', 1, NOW(), NOW()),
-('Mandalay', 'Mandaly', 'Aungmyethazan', 1, NOW(), NOW()),
-('Mandalay', 'Mandalay', 'Pyigyitagon', 1, NOW(), NOW()),
-('Naypyidaw', 'Naypyidaw', 'Zabuthiri', 1, NOW(), NOW()),
-('Naypyidaw', 'Naypyidaw', 'Pyinmana', 1, NOW(), NOW()),
-('Shan', 'Shan', 'Taunggyi', 1, NOW(), NOW());
 
 CREATE TABLE `subscriptions` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -180,12 +148,26 @@ CREATE TABLE `invoices` (
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
 );
 
+CREATE TABLE `payment_methods` (
+    `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL,
+    `icon` VARCHAR(255) NULL COMMENT 'Icon file path or URL',
+    `icon_type` TINYINT NOT NULL DEFAULT 1 COMMENT '1=emoji, 2=image_url, 3=uploaded_file',
+    `description` VARCHAR(255) NULL,
+    `payment_details` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0=No extra details needed, 1=Requires payment details',
+    `fields` JSON NULL COMMENT 'JSON schema for required payment fields',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '0=Inactive, 1=Active',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL
+);
+
 CREATE TABLE `payments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `customer_id` BIGINT UNSIGNED NOT NULL,
     `invoice_id` BIGINT UNSIGNED NOT NULL,
     `amount` DECIMAL(10,2) NOT NULL,
-    `method` TINYINT NOT NULL COMMENT '1=card, 2=bank, 3=cash 4=mock',
+    `method` TINYINT UNSIGNED NOT NULL COMMENT 'References payment_methods.id',
+    `payment_details` JSON NULL COMMENT 'Stores payment method specific details like card info, bank details, etc.',
     `transaction_ref` VARCHAR(100) NULL,
     `status` TINYINT NOT NULL COMMENT '0=pending 1=success 2=failed',
     `paid_at` TIMESTAMP NULL DEFAULT NULL,
@@ -194,7 +176,9 @@ CREATE TABLE `payments` (
     CONSTRAINT fk_payment_customer
     FOREIGN KEY (customer_id) REFERENCES customers(id),
     CONSTRAINT fk_payment_invoice
-    FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+    FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+    CONSTRAINT `fk_payment_method`
+    FOREIGN KEY (`method`) REFERENCES `payment_methods`(`id`) ON DELETE RESTRICT
 );
 
 CREATE TABLE `cpes` (
@@ -205,6 +189,82 @@ CREATE TABLE `cpes` (
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
 );
+
+CREATE TABLE `cpe_assignments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `cpe_id` BIGINT UNSIGNED NOT NULL,
+    `subscription_id` BIGINT UNSIGNED NOT NULL,
+    `assigned_at` timestamp NOT NULL,
+    `unassigned_at` timestamp NULL DEFAULT NULL,
+    `status` TINYINT NOT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    CONSTRAINT fk_assignments_cpe_id
+    FOREIGN KEY (cpe_id) REFERENCES cpes(id),
+    CONSTRAINT fk_assignments_subscription_id
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+);
+
+CREATE TABLE `notifications` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `customer_id` BIGINT UNSIGNED NOT NULL,
+    `event_type` TINYINT NOT NULL COMMENT '1=invoice_created, 2=payment_success, 3=subscription_approved, 4=service_activated, 5=subscription_cancelled',
+    `channel` TINYINT NOT NULL DEFAULT 1 COMMENT '1=email, 2=sms, 3=in_app',
+    `title` VARCHAR(100) NOT NULL,
+    `message` TEXT,
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=active',
+    `is_read` TINYINT DEFAULT 0,
+    `read_at` TIMESTAMP NULL,
+    `scheduled_at` TIMESTAMP NULL,
+    `sent_status` TINYINT DEFAULT 0 COMMENT '0=pending 1=sent 2=failed',
+    `sent_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    CONSTRAINT fk_notifications_customer_id
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+
+INSERT INTO customers
+(name, phone_num, email, status, role, password, created_at, updated_at)
+VALUES
+('Elizabeth', '09123456789', 'elizabeth@gmail.com', 1, 1, '\$2y\$12\$6gJ8bZyujtrGBc536ZQZiulY1JNBppWPjTZ0gaCoUM2kwCW8HIhfq', NOW(), NOW()),
+('Leona Louisa', '0980888088', 'leonalouisa@gmail.com', 1, 0, '\$2y\$12\$XhDgFdTNnU4I2psyI7JTzeWc/tmbykl7eo1Wke/4uU.jmXTfN596K', NOW(), NOW()),
+('Emily', '09676767677', 'emily@gmail.com', 1, 0, '\$2y\$12\$2RCBemfIWVKa9a9NT7ECNOGd7OW9VsZiL2mFK7J5eyXhfbRl8ykXK', NOW(), NOW()),
+('Zoey', '09000000000', 'zoey@gmail.com', 1, 1, '\$2y\$12\$2RCBemfIWVKa9a9NT7ECNOGd7OW9VsZiL2mFK7J5eyXhfbRl8ykXK', NOW(), NOW());
+
+INSERT INTO isp_plans
+(name, description, price, status, upload_speed, download_speed, created_at, updated_at)
+VALUES
+('Home Starter', 'Basic internet for browsing, messaging and social media. Best for 1–2 users.', 25000.00, 1, 10, 20, NOW(), NOW()),
+('Home Basic', 'Stable internet for streaming, online classes and daily home usage.', 35000.00, 1, 15, 30, NOW(), NOW()),
+('Home Plus', 'Fast HD streaming, video calls and light gaming for small families.', 55000.00, 1, 25, 50, NOW(), NOW()),
+('Fiber Family', 'High-speed fiber for multiple devices, streaming and online learning.', 75000.00, 1, 35, 70, NOW(), NOW()),
+('Premium Ultra', 'Ultra-fast internet for 4K streaming, gaming and smart home use.', 95000.00, 1, 50, 100, NOW(), NOW()),
+('Business Pro', 'Enterprise-grade stable connection for offices and heavy usage.', 120000.00, 1, 75, 150, NOW(), NOW());
+
+INSERT INTO service_areas
+(region, city, township, status, created_at, updated_at)
+VALUES
+('Yangon', 'Yangon', 'Dala', 1, NOW(), NOW()),
+('Yangon', 'Yangon', 'Hlaing', 1, NOW(), NOW()),
+('Yangon', 'Yangon', 'Bahan', 1, NOW(), NOW()),
+('Yangon', 'Yangon', 'Kamayut', 1, NOW(), NOW()),
+('Mandalay', 'Mandalay', 'Chanayethazan', 1, NOW(), NOW()),
+('Mandalay', 'Mandalay', 'Aungmyethazan', 1, NOW(), NOW()),
+('Mandalay', 'Mandalay', 'Pyigyitagon', 1, NOW(), NOW()),
+('Naypyidaw', 'Naypyidaw', 'Zabuthiri', 1, NOW(), NOW()),
+('Naypyidaw', 'Naypyidaw', 'Pyinmana', 1, NOW(), NOW()),
+('Shan', 'Shan', 'Taunggyi', 1, NOW(), NOW());
+
+INSERT INTO `payment_methods`
+(`name`, `icon`, `icon_type`, `description`, `payment_details`, `fields`, `is_active`, `created_at`, `updated_at`)
+VALUES
+('Credit / Debit Card', '💳', 1, 'Pay with credit or debit card', 1, '{"card_number":"required","expiry":"required","cvv":"required","card_holder":"required"}', 1, NOW(), NOW()),
+('Bank Transfer', '🏦', 1, 'Direct bank transfer to our account', 1, '{"bank_name":"required","account_number":"required","account_holder":"required"}', 1, NOW(), NOW()),
+('Cash Payment', '💰', 1, 'Pay with cash at our office', 0, NULL, 1, NOW(), NOW()),
+('KBZ Pay', '📱', 1, 'Pay with KBZ Pay mobile wallet', 1, '{"phone_number":"required"}', 1, NOW(), NOW()),
+('Wave Money', '📱', 1, 'Pay with Wave Money mobile wallet', 1, '{"phone_number":"required"}', 1, NOW(), NOW()),
+('CB Pay', '📱', 1, 'Pay with CB Pay mobile wallet', 1, '{"phone_number":"required"}', 1, NOW(), NOW());
 
 INSERT INTO cpes
 (serial_number, mac_address, status, created_at, updated_at)
@@ -239,37 +299,3 @@ VALUES
 ('CPE-104928573', '8A:CE:02:46:68:AC', 0, NOW(), NOW()),
 ('CPE-236790415', '9B:DF:13:57:79:BD', 0, NOW(), NOW()),
 ('CPE-348105729', 'BC:E0:24:68:8A:CE', 0, NOW(), NOW());
-
-CREATE TABLE `cpe_assignments` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `cpe_id` BIGINT UNSIGNED NOT NULL,
-    `subscription_id` BIGINT UNSIGNED NOT NULL,
-    `assigned_at` timestamp NOT NULL,
-    `unassigned_at` timestamp NULL DEFAULT NULL,
-    `status` TINYINT NOT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    CONSTRAINT fk_assignments_cpe_id
-    FOREIGN KEY (cpe_id) REFERENCES cpes(id),
-    CONSTRAINT fk_assignments_subscription_id
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
-);
-
-CREATE TABLE `notifications` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `customer_id` BIGINT UNSIGNED NOT NULL,
-    `event_type` TINYINT NOT NULL COMMENT '1=invoice_created, 2=payment_success, 3=subscription_approved, 4=service_activated',
-    `channel` TINYINT NOT NULL DEFAULT 1 COMMENT '1=email, 2=sms, 3=in_app',
-    `title` VARCHAR(100) NOT NULL,
-    `message` TEXT,
-    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=active',
-    `is_read` TINYINT DEFAULT 0,
-    `read_at` TIMESTAMP NULL,
-    `scheduled_at` TIMESTAMP NULL,
-    `sent_status` TINYINT DEFAULT 0 COMMENT '0=pending 1=sent 2=failed',
-    `sent_at` TIMESTAMP NULL,
-    `created_at` TIMESTAMP NULL,
-    `updated_at` TIMESTAMP NULL,
-    CONSTRAINT fk_notifications_customer_id
-    FOREIGN KEY (customer_id) REFERENCES customers(id)
-);
