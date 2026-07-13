@@ -33,8 +33,10 @@
 
     Route::get('/invoices', [InvoiceController::class, 'index']);
     Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
+    Route::get('/invoices/{id}/download', [InvoiceController::class, 'download']);
 
     Route::post('/pay/{invoice}', [PaymentController::class, 'pay']);
+    Route::get('/payment-methods', [PaymentController::class, 'getPaymentMethods']);
     Route::get('/payments', [PaymentController::class, 'index']);
 
     Route::get('/notifications', [NotificationController::class, 'index']);
