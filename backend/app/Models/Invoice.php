@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
@@ -21,8 +22,13 @@ class Invoice extends Model
         return $this->belongsTo(Subscription::class);
     }
 
-    public function payments(): HasMany
+    public function payment(): HasOne
     {
-        return $this->HasMany(Payment::class);
+        return $this->hasOne(Payment::class);
+    }
+
+    public function customer()
+    {
+        return $this->hasOneThrough(Customer::class, Subscription::class, 'id', 'id', 'subscription_id', 'customer_id');
     }
 }
