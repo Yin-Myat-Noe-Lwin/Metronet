@@ -208,7 +208,7 @@ CREATE TABLE `cpe_assignments` (
 CREATE TABLE `notifications` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `customer_id` BIGINT UNSIGNED NOT NULL,
-    `event_type` TINYINT NOT NULL COMMENT '1=invoice_created, 2=payment_success, 3=subscription_approved, 4=service_activated, 5=subscription_cancelled',
+    `event_type` TINYINT NOT NULL COMMENT '1=invoice_created, 2=payment_success, 3=subscription_approved, 4=service_activated, 5=subscription_cancelled, 6=plan_updated, 7=plan_deleted',
     `channel` TINYINT NOT NULL DEFAULT 1 COMMENT '1=email, 2=sms, 3=in_app',
     `title` VARCHAR(100) NOT NULL,
     `message` TEXT,
