@@ -15,9 +15,8 @@
       </template>
 
       <nav class="nav">
-        <!-- Show different navigation based on user role -->
+        <!-- Admin Navigation -->
         <template v-if="isAdmin">
-          <!-- Admin Navigation -->
           <router-link
             to="/admin/customers"
             class="nav-link"
@@ -40,8 +39,21 @@
           >
             Subscriptions
           </router-link>
+          <router-link
+            to="/admin/payments"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Payments
+          </router-link>
+          <router-link
+            to="/admin/cpes"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            CPEs
+          </router-link>
 
-          <!-- Admin User Avatar -->
           <div class="admin-user">
             <span class="avatar-initials">{{ userInitials }}</span>
             <span class="user-name">{{ displayName }}</span>
@@ -49,7 +61,7 @@
           </div>
         </template>
 
-        <!-- Regular User Navigation -->
+        <!-- Customer Navigation -->
         <template v-else-if="isLoggedIn && !isAdmin">
           <router-link
             to="/"
@@ -67,7 +79,29 @@
             Plans
           </router-link>
 
-          <!-- Dropdown - Click to toggle -->
+          <!-- Notification Bell -->
+          <router-link
+            to="/notifications"
+            class="nav-link nav-notification"
+            active-class="nav-link--active"
+          >
+            <span class="bell-icon" :class="{ 'bell-ring': notificationCount > 0 }">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span
+                v-if="notificationCount > 0"
+                class="notification-badge"
+                :class="{ 'badge-pulse': notificationCount > 0 }"
+              >
+                {{ notificationCount > 99 ? '99+' : notificationCount }}
+              </span>
+            </span>
+            <span class="bell-label">Notifications</span>
+          </router-link>
+
+          <!-- User Dropdown -->
           <div
             class="dropdown"
             ref="dropdown"
@@ -121,25 +155,6 @@
                 </span>
                 Invoices
               </router-link>
-              <router-link to="/payments" class="dropdown-item" @click="closeDropdown">
-                <span class="dropdown-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                  </svg>
-                </span>
-                Payments
-              </router-link>
-              <router-link to="/notifications" class="dropdown-item" @click="closeDropdown">
-                <span class="dropdown-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                  </svg>
-                </span>
-                Notifications
-                <span class="badge" v-if="notificationCount > 0">{{ notificationCount }}</span>
-              </router-link>
               <div class="dropdown-divider"></div>
               <a @click="handleLogout" class="dropdown-item logout-item">
                 <span class="dropdown-icon">
@@ -155,7 +170,7 @@
           </div>
         </template>
 
-        <!-- Not Logged In -->
+        <!-- Guest Navigation -->
         <template v-else>
           <router-link
             to="/"
@@ -190,29 +205,28 @@
         <router-link to="/admin/customers" class="mobile-link" @click="isMobileMenuOpen = false">Customers</router-link>
         <router-link to="/admin/plans" class="mobile-link" @click="isMobileMenuOpen = false">Plans</router-link>
         <router-link to="/admin/subscriptions" class="mobile-link" @click="isMobileMenuOpen = false">Subscriptions</router-link>
+        <router-link to="/admin/payments" class="mobile-link" @click="isMobileMenuOpen = false">Payments</router-link>
+        <router-link to="/admin/cpes" class="mobile-link" @click="isMobileMenuOpen = false">CPEs</router-link>
         <div class="mobile-divider"></div>
         <a @click="handleLogout" class="mobile-link logout-link">Logout</a>
       </template>
 
-      <!-- Regular User Mobile Menu -->
+      <!-- Customer Mobile Menu -->
       <template v-else-if="isLoggedIn && !isAdmin">
         <router-link to="/" class="mobile-link" @click="isMobileMenuOpen = false">Home</router-link>
         <router-link to="/plans" class="mobile-link" @click="isMobileMenuOpen = false">Plans</router-link>
         <div class="mobile-divider"></div>
         <router-link to="/profile" class="mobile-link" @click="isMobileMenuOpen = false">Profile</router-link>
-        <router-link to="/addresses" class="mobile-link" @click="isMobileMenuOpen = false">Addresses</router-link>
         <router-link to="/subscriptions" class="mobile-link" @click="isMobileMenuOpen = false">Subscriptions</router-link>
         <router-link to="/invoices" class="mobile-link" @click="isMobileMenuOpen = false">Invoices</router-link>
-        <router-link to="/payments" class="mobile-link" @click="isMobileMenuOpen = false">Payments</router-link>
         <router-link to="/notifications" class="mobile-link" @click="isMobileMenuOpen = false">
-          Notifications
-          <span class="badge" v-if="notificationCount > 0">{{ notificationCount }}</span>
+          <span>Notifications</span>
         </router-link>
         <div class="mobile-divider"></div>
         <a @click="handleLogout" class="mobile-link logout-link">Logout</a>
       </template>
 
-      <!-- Not Logged In Mobile Menu -->
+      <!-- Guest Mobile Menu -->
       <template v-else>
         <router-link to="/" class="mobile-link" @click="isMobileMenuOpen = false">Home</router-link>
         <router-link to="/plans" class="mobile-link" @click="isMobileMenuOpen = false">Plans</router-link>
@@ -247,7 +261,7 @@
       </div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- ✅ Toast Notification -->
     <div v-if="toastMessage" class="toast" :class="toastType">
       <span class="toast-icon">
         <svg v-if="toastType === 'toast-success'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -267,21 +281,34 @@
 </template>
 
 <script>
+import { notificationService } from '../services/api'
+
 export default {
   name: 'NavBar',
   data() {
     return {
+      // UI State
       isDropdownOpen: false,
       isMobileMenuOpen: false,
       showLogoutModal: false,
+
+      // Notification
       notificationCount: 0,
+      previousNotificationCount: 0,
+
+      // ✅ Toast
       toastMessage: null,
       toastType: 'toast-success',
       toastTimeout: null,
+
+      // User State
       isLoggedIn: localStorage.getItem('isLoggedIn') === 'true',
       userName: localStorage.getItem('userName') || '',
       userEmail: localStorage.getItem('userEmail') || '',
-      userRole: parseInt(localStorage.getItem('userRole') || '1')
+      userRole: parseInt(localStorage.getItem('userRole') || '1'),
+
+      // Polling
+      pollInterval: null
     }
   },
   computed: {
@@ -307,50 +334,160 @@ export default {
   },
   mounted() {
     this.fetchNotificationCount()
-    window.addEventListener('userDataUpdated', this.updateUserData)
-    document.addEventListener('click', this.handleClickOutside)
+    this.startPolling()
+    this.setupEventListeners()
   },
   beforeUnmount() {
-    window.removeEventListener('userDataUpdated', this.updateUserData)
-    document.removeEventListener('click', this.handleClickOutside)
-    if (this.toastTimeout) {
-      clearTimeout(this.toastTimeout)
-    }
+    this.cleanup()
   },
   methods: {
+    // ==================== SETUP ====================
+    setupEventListeners() {
+      window.addEventListener('userDataUpdated', this.updateUserData)
+      window.addEventListener('notification-updated', this.handleNotificationUpdate)
+      window.addEventListener('show-toast', this.handleShowToast)
+      document.addEventListener('click', this.handleClickOutside)
+    },
+
+    cleanup() {
+      window.removeEventListener('userDataUpdated', this.updateUserData)
+      window.removeEventListener('notification-updated', this.handleNotificationUpdate)
+      window.removeEventListener('show-toast', this.handleShowToast)
+      document.removeEventListener('click', this.handleClickOutside)
+      this.stopPolling()
+      if (this.toastTimeout) {
+        clearTimeout(this.toastTimeout)
+      }
+    },
+
+    // ==================== USER DATA ====================
     updateUserData() {
       this.userName = localStorage.getItem('userName') || ''
       this.userEmail = localStorage.getItem('userEmail') || ''
       this.userRole = parseInt(localStorage.getItem('userRole') || '1')
       this.isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+
+      if (this.isLoggedIn && !this.isAdmin) {
+        this.fetchNotificationCount()
+        this.startPolling()
+      } else {
+        this.notificationCount = 0
+        this.stopPolling()
+      }
     },
+
+    // ==================== NOTIFICATIONS ====================
+    handleNotificationUpdate(event) {
+      if (event && event.detail) {
+        this.updateNotificationCount(event.detail.count)
+      } else {
+        this.fetchNotificationCount()
+      }
+    },
+
+    // ✅ Handle show-toast event from notifications page
+    handleShowToast(event) {
+      if (event && event.detail) {
+        this.showToast(event.detail.message, event.detail.type || 'toast-success')
+      }
+    },
+
+    async fetchNotificationCount() {
+      if (!this.isLoggedIn || this.isAdmin) return
+
+      try {
+        const response = await notificationService.getNotifications()
+        const notifications = response.data || response || []
+        const newCount = notifications.filter(n => !n.is_read).length
+
+        this.updateNotificationCount(newCount)
+
+      } catch (error) {
+        console.error('Failed to fetch notification count:', error)
+      }
+    },
+
+    // ✅ Update notification count with toast if new notifications arrive
+    updateNotificationCount(newCount) {
+      const oldCount = this.notificationCount
+      this.notificationCount = newCount
+
+      // ✅ Show toast if new notifications arrived
+      if (newCount > oldCount && oldCount > 0) {
+        const diff = newCount - oldCount
+        const message = diff === 1
+          ? '🔔 You have 1 new notification!'
+          : `🔔 You have ${diff} new notifications!`
+        this.showToast(message, 'toast-success')
+      }
+
+      // ✅ Store previous count
+      this.previousNotificationCount = oldCount
+    },
+
+    startPolling() {
+      this.stopPolling()
+      if (this.isLoggedIn && !this.isAdmin) {
+        this.pollInterval = setInterval(() => {
+          this.fetchNotificationCount()
+        }, 30000)
+      }
+    },
+
+    stopPolling() {
+      if (this.pollInterval) {
+        clearInterval(this.pollInterval)
+        this.pollInterval = null
+      }
+    },
+
+    // ==================== TOAST ====================
+    showToast(message, type = 'toast-success') {
+      // ✅ Clear existing timeout
+      if (this.toastTimeout) {
+        clearTimeout(this.toastTimeout)
+      }
+
+      this.toastMessage = message
+      this.toastType = type
+
+      // ✅ Auto-hide after 4 seconds
+      this.toastTimeout = setTimeout(() => {
+        this.toastMessage = null
+      }, 4000)
+    },
+
+    // ==================== DROPDOWN ====================
     toggleDropdown() {
       this.isDropdownOpen = !this.isDropdownOpen
     },
+
     closeDropdown() {
       this.isDropdownOpen = false
     },
+
     handleClickOutside(event) {
       const dropdown = this.$refs.dropdown
       if (dropdown && !dropdown.contains(event.target)) {
         this.closeDropdown()
       }
     },
+
+    // ==================== LOGOUT ====================
     handleLogout() {
-      // Show confirmation modal
       this.showLogoutModal = true
       this.closeDropdown()
       this.isMobileMenuOpen = false
     },
+
     closeLogoutModal() {
       this.showLogoutModal = false
     },
-    confirmLogout() {
-      // Close modal
-      this.showLogoutModal = false
 
-      // Show loading state on logout button if needed
-      // Perform logout
+    confirmLogout() {
+      this.showLogoutModal = false
+      this.stopPolling()
+
       localStorage.removeItem('isLoggedIn')
       localStorage.removeItem('userEmail')
       localStorage.removeItem('userName')
@@ -363,39 +500,29 @@ export default {
       this.userName = ''
       this.userEmail = ''
       this.userRole = 1
+      this.notificationCount = 0
       this.isDropdownOpen = false
       this.isMobileMenuOpen = false
 
-      // Show success toast
       this.showToast('Successfully logged out!', 'toast-success')
-
-      // Redirect to home after a moment
       setTimeout(() => {
         this.$router.push('/')
       }, 500)
-    },
-    showToast(message, type = 'toast-success') {
-      this.toastMessage = message
-      this.toastType = type
-
-      // Clear existing timeout
-      if (this.toastTimeout) {
-        clearTimeout(this.toastTimeout)
-      }
-
-      // Auto-hide after 3 seconds
-      this.toastTimeout = setTimeout(() => {
-        this.toastMessage = null
-      }, 3000)
-    },
-    fetchNotificationCount() {
-      // You can replace with API call
     }
   },
   watch: {
     '$route'() {
       this.updateUserData()
       this.closeDropdown()
+    },
+    isLoggedIn(val) {
+      if (val) {
+        this.fetchNotificationCount()
+        this.startPolling()
+      } else {
+        this.notificationCount = 0
+        this.stopPolling()
+      }
     }
   }
 }
@@ -424,7 +551,6 @@ export default {
   padding-right: 30px;
 }
 
-/* Logo */
 .logo {
   display: flex;
   align-items: center;
@@ -449,7 +575,6 @@ export default {
   background-clip: text;
 }
 
-/* Navigation */
 .nav {
   display: flex;
   align-items: center;
@@ -512,7 +637,6 @@ export default {
   white-space: nowrap;
 }
 
-/* Admin User */
 .admin-user {
   display: flex;
   align-items: center;
@@ -553,7 +677,6 @@ export default {
   color: #ff4444;
 }
 
-/* Dropdown */
 .dropdown {
   position: relative;
   display: inline-block;
@@ -657,19 +780,6 @@ export default {
   color: #e74c3c;
 }
 
-.badge {
-  background: #e74c3c;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 1px 8px;
-  border-radius: 50px;
-  margin-left: auto;
-  min-width: 20px;
-  text-align: center;
-}
-
-/* Mobile Toggle */
 .mobile-toggle {
   display: none;
   background: none;
@@ -706,7 +816,6 @@ export default {
   bottom: -6px;
 }
 
-/* Mobile Menu */
 .mobile-menu {
   display: none;
   background: #1a1a2e;
@@ -746,7 +855,6 @@ export default {
   color: #e74c3c !important;
 }
 
-/* Logout Confirmation Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -854,7 +962,7 @@ export default {
   background: #e85a2a;
 }
 
-/* Toast Notification */
+/* ✅ Toast Notification - Enhanced */
 .toast {
   position: fixed;
   bottom: 30px;
@@ -871,6 +979,7 @@ export default {
   z-index: 3000;
   animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   max-width: 400px;
+  min-width: 280px;
 }
 
 @keyframes slideInRight {
@@ -897,6 +1006,7 @@ export default {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  font-size: 18px;
 }
 
 .toast-close {
@@ -914,7 +1024,90 @@ export default {
   color: #fff;
 }
 
-/* Responsive */
+/* ===== NOTIFICATION BELL STYLES ===== */
+.nav-notification {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  position: relative;
+  text-decoration: none;
+  color: rgba(255,255,255,0.8);
+  transition: color 0.3s;
+  border-radius: 8px;
+}
+
+.nav-notification:hover {
+  color: #ff6b35;
+}
+
+.bell-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bell-ring {
+  animation: bellRing 0.5s ease-in-out 3;
+}
+
+@keyframes bellRing {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(15deg); }
+  20% { transform: rotate(-15deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-10deg); }
+  50% { transform: rotate(5deg); }
+  60% { transform: rotate(-5deg); }
+  70% { transform: rotate(2deg); }
+  80% { transform: rotate(-2deg); }
+  90% { transform: rotate(1deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ff6b35;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #1a1a2e;
+  animation: badgePop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.badge-pulse {
+  animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@keyframes badgePop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.bell-label {
+  font-size: 14px;
+}
+
+/* ===== RESPONSIVE ===== */
 @media (max-width: 992px) {
   .nav {
     gap: 16px;
@@ -973,17 +1166,28 @@ export default {
     color: #e74c3c;
   }
 
-  .badge {
-    background: #e74c3c;
-    color: #fff;
-  }
-
   .dropdown-icon {
     color: rgba(255,255,255,0.5);
   }
 
   .admin-user {
     padding: 4px 8px;
+  }
+
+  .nav-notification {
+    padding: 4px 6px;
+  }
+
+  .bell-label {
+    display: none;
+  }
+
+  .notification-badge {
+    top: -4px;
+    right: -6px;
+    font-size: 9px;
+    min-width: 16px;
+    height: 16px;
   }
 
   .modal-container {
