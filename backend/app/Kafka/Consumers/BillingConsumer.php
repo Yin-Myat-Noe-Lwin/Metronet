@@ -1,41 +1,77 @@
 <?php
 
-  use Illuminate\Support\Facades\Log;
-  use App\Models\Subscription;
-  use App\Models\IspPlan;
-  use App\Models\Invoice;
-  use Junges\Kafka\Facades\Kafka;
+namespace App\Kafka\Consumers;
 
-  class BillingConsumer {
+use Illuminate\Support\Facades\Log;
+use App\Models\Subscription;
+use App\Models\IspPlan;
+use App\Models\Invoice;
+use Junges\Kafka\Facades\Kafka;
+use Throwable;
 
-    public function handle($message) {
+class BillingConsumer
+{
+    public function handle($message)
+    {
+        try {
+            Log::info('BillingConsumer processing started');
 
-        $data = $message->getBody();
+            $data = $message->getBody();
+            Log::info('Message data:', $data);
 
-        $subscription = Subscription::where('id', $data['subscription_id'])->first();
+            if (!isset($data['subscription_id'])) {
+                Log::error('Missing subscription_id in message');
+                return;
+            }
 
-        if(!$subscription) {
-          return;
+            Log::info('Looking for subscription: ' . $data['subscription_id']);
+
+            $subscription = Subscription::find($data['subscription_id']);
+
+            if (!$subscription) {
+                Log::warning('Subscription not found: ' . $data['subscription_id']);
+                return;
+            }
+
+            Log::info('Subscription found: ' . $subscription->id);
+
+            $plan = IspPlan::find($subscription->plan_id);
+
+            if (!$plan) {
+                Log::warning('Plan not found for subscription: ' . $subscription->id);
+                return;
+            }
+
+            Log::info('Plan found: ' . $plan->id . ', Price: ' . $plan->price);
+
+            Log::info('Creating invoice...');
+
+            $invoice = Invoice::create([
+                'invoice_number' => 'INV-' . time() . '-' . $subscription->id,
+                'subscription_id' => $subscription->id,
+                'amount' => $plan->price,
+                'due_date' => now()->addDays(7),
+                'status' => 0
+            ]);
+
+            Log::info('Invoice created: ' . $invoice->id);
+
+            Log::info('Publishing to invoice.created...');
+
+            Kafka::publish()
+                ->onTopic('invoice.created')
+                ->withBodyKey('invoice_id', $invoice->id)
+                ->withBodyKey('subscription_id', $subscription->id)
+                ->withBodyKey('customer_id', $subscription->customer_id)
+                ->withBodyKey('amount', $invoice->amount)
+                ->send();
+
+            Log::info('BillingConsumer completed successfully');
+
+        } catch (Throwable $e) {
+            Log::error('BillingConsumer error: ' . $e->getMessage());
+            Log::error('Trace: ' . $e->getTraceAsString());
+            throw $e;
         }
-
-        $plan = IspPlan::where('id', $subscription->plan_id)->first();
-
-        // invoice data is created
-        $invoice = Invoice::create([
-                    'invoice_number' => 'INV-'.time(),
-                    'subscription_id' => $subscription->id,
-                    'amount' => $plan->price,
-                    'due_date' => now()->addDays(7),
-                    'status' => 0
-                    ]);
-
-        // publishing kafka topics
-        Kafka::publish()
-              ->onTopic('invoice.created')
-              ->withBodyKey('invoice_id', $invoice->id)
-              ->withBodyKey('subscription_id', $subscription->id)
-              ->withBodyKey('customer_id', $subscription->customer_id)
-              ->withBodyKey('amount', $invoice->amount)
-              ->send();
     }
-  }
+}
