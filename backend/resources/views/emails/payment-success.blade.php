@@ -3,44 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <title>Payment Successful</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            color: #ff6b35;
+            font-size: 28px;
+            margin: 0;
+        }
+        .header .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+            margin: 4px 0 0;
+        }
+    </style>
 </head>
 <body>
 
-    <div>
-        <h2>Payment Successful</h2>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>{{ $companyName }}</h1>
+            <p class="subtitle">Internet Service Provider</p>
+        </div>
 
-        <p>
-            Dear Customer,
-        </p>
+        <!-- Your Original Content -->
+        <div>
+            <h2>Payment Successful</h2>
 
-        <p>
-            We are happy to inform you that your payment has been successfully received.
-        </p>
+            <p>
+                Dear {{ $customerName }},
+            </p>
 
-        <hr>
+            <p>
+                We are happy to inform you that your payment has been successfully received.
+            </p>
 
-        <h3>Payment Details</h3>
+            <hr>
 
-        <p><strong>Payment ID:</strong> {{ $payment->id }}</p>
-        <p><strong>Transaction Ref:</strong> {{ $payment->transaction_ref }}</p>
-        <p><strong>Amount:</strong> {{ $payment->amount }}</p>
-        <p><strong>Paid At:</strong> {{ $payment->paid_at }}</p>
+            <h3>Payment Details</h3>
 
-        <hr>
+            <p><strong>Payment ID:</strong> {{ $payment->id }}</p>
+            <p><strong>Transaction Ref:</strong> {{ $transactionRef }}</p>
+            <p><strong>Amount:</strong> {{ $amount }} MMK</p>
+            <p><strong>Paid At:</strong> {{ $paidAt }}</p>
 
-        <p>
-            Your subscription is now active and you can continue using our service without interruption.
-        </p>
+            <hr>
 
-        <p>
-            Thank you for choosing Metronet ISP
-        </p>
+            <p>
+                Your subscription is now active and you can continue using our service without interruption.
+            </p>
 
-        <hr>
+            <p>
+                Thank you for choosing {{ $companyName }}
+            </p>
 
-        <p>
-            © {{ date('Y') }} Metronet ISP. All rights reserved.
-        </p>
+            <hr>
+
+            <p>
+                © {{ date('Y') }} {{ $companyName }}. All rights reserved.
+            </p>
+        </div>
     </div>
 
 </body>
