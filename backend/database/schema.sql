@@ -26,7 +26,7 @@ CREATE TABLE `jobs` (
     `available_at` INT UNSIGNED NOT NULL,
     `created_at` INT UNSIGNED NOT NULL,
     INDEX `jobs_queue_index` (`queue`)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `job_batches` (
     `id` VARCHAR(255) NOT NULL PRIMARY KEY,
@@ -39,7 +39,7 @@ CREATE TABLE `job_batches` (
     `cancelled_at` INT NULL,
     `created_at` INT NOT NULL,
     `finished_at` INT NULL
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `failed_jobs` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -49,21 +49,21 @@ CREATE TABLE `failed_jobs` (
     `payload` LONGTEXT NOT NULL,
     `exception` LONGTEXT NOT NULL,
     `failed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cache` (
     `key` VARCHAR(255) NOT NULL PRIMARY KEY,
     `value` MEDIUMTEXT NOT NULL,
     `expiration` INT NOT NULL,
     INDEX `cache_expiration_index` (`expiration`)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cache_locks` (
     `key` VARCHAR(255) NOT NULL PRIMARY KEY,
     `owner` VARCHAR(255) NOT NULL,
     `expiration` INT NOT NULL,
     INDEX `cache_locks_expiration_index` (`expiration`)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `customers` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -79,7 +79,7 @@ CREATE TABLE `customers` (
     `email_verified_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `customer_addresses` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -94,7 +94,7 @@ CREATE TABLE `customer_addresses` (
     `updated_at` timestamp NULL DEFAULT NULL,
     CONSTRAINT fk_addresses_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `isp_plans` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -107,7 +107,7 @@ CREATE TABLE `isp_plans` (
     `download_speed` INT UNSIGNED NOT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `service_areas` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -117,7 +117,7 @@ CREATE TABLE `service_areas` (
     `status` TINYINT DEFAULT 1 COMMENT '1 = active, 0 = inactive',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `subscriptions` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -134,7 +134,7 @@ CREATE TABLE `subscriptions` (
     FOREIGN KEY (customer_id) REFERENCES customers(id),
     CONSTRAINT fk_subscriptions_plan_id
     FOREIGN KEY (plan_id) REFERENCES isp_plans(id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `invoices` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -147,7 +147,7 @@ CREATE TABLE `invoices` (
     `updated_at` TIMESTAMP NULL,
     CONSTRAINT fk_invoice_subscription
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payment_methods` (
     `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -160,7 +160,7 @@ CREATE TABLE `payment_methods` (
     `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '0=Inactive, 1=Active',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -180,7 +180,7 @@ CREATE TABLE `payments` (
     FOREIGN KEY (invoice_id) REFERENCES invoices(id),
     CONSTRAINT `fk_payment_method`
     FOREIGN KEY (`method`) REFERENCES `payment_methods`(`id`) ON DELETE RESTRICT
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cpes` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -189,7 +189,7 @@ CREATE TABLE `cpes` (
     `status` TINYINT NOT NULL COMMENT '0=Available, 1=Assigned, 2=Faulty, 3=Maintenance, 4=Retired',
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cpe_assignments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -204,7 +204,7 @@ CREATE TABLE `cpe_assignments` (
     FOREIGN KEY (cpe_id) REFERENCES cpes(id),
     CONSTRAINT fk_assignments_subscription_id
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `notifications` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -223,7 +223,7 @@ CREATE TABLE `notifications` (
     `updated_at` TIMESTAMP NULL,
     CONSTRAINT fk_notifications_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO customers
 (name, phone_num, email, status, role, password, created_at, updated_at)
