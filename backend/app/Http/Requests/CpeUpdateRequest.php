@@ -26,13 +26,23 @@ class CpeUpdateRequest extends FormRequest
             'serial_number' => [
             'sometimes',
             'string',
+            'max:100',
             Rule::unique('cpes', 'serial_number')->ignore($this->route('id'))
         ],
         'mac_address' => [
             'sometimes',
             'string',
-            Rule::unique('cpes', 'mac_address')->ignore($this->route('id'))
+            'max:100',
+            Rule::unique('cpes', 'mac_address')->ignore($this->route('id')),
+            'regex:/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/',
         ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'mac_address.regex' => 'Invalid Mac Address'
         ];
     }
 }
