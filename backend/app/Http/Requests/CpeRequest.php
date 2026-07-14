@@ -22,8 +22,22 @@ class CpeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'serial_number' => 'required|string|unique:cpes,serial_number',
-            'mac_address'   => 'required|string|unique:cpes,mac_address',
+            'serial_number' => 'required|string|max:100|unique:cpes,serial_number',
+            'mac_address'   => [
+                'required',
+                'string',
+                'max:100',
+                'uniques:cpes,mac_addresses',
+                'regex:/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/',
+            ]
+
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'mac_address.regex' => 'Invalid Mac Address'
         ];
     }
 }
