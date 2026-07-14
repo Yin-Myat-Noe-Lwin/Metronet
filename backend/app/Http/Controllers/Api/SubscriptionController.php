@@ -45,7 +45,7 @@ class SubscriptionController extends Controller
 
             Log::info('Plan found: ' . $plan->name);
 
-            // ✅ Check if customer has ACTIVE (1) or PENDING (0) subscription
+            // Check if customer has ACTIVE (1) or PENDING (0) subscription
             // This allows resubscription if previous was cancelled (4) or expired (3)
             $existing = Subscription::where('customer_id', $customer->id)
                 ->where('plan_id', $planId)
@@ -63,7 +63,7 @@ class SubscriptionController extends Controller
                 ], 409);
             }
 
-            // ✅ Check if there's a cancelled subscription (for logging only)
+            // Check if there's a cancelled subscription (for logging only)
             $cancelled = Subscription::where('customer_id', $customer->id)
                 ->where('plan_id', $planId)
                 ->where('status', 4)
@@ -86,7 +86,7 @@ class SubscriptionController extends Controller
                 ], 400);
             }
 
-            // ✅ Create NEW subscription
+            // Create NEW subscription
             $subscription = Subscription::create([
                 'customer_id' => $customer->id,
                 'plan_id' => $planId,
@@ -95,7 +95,7 @@ class SubscriptionController extends Controller
                 'end_date' => now()->addMonths((int)$request->duration_months)
             ]);
 
-            Log::info('✅ New subscription created', [
+            Log::info('New subscription created', [
                 'subscription_id' => $subscription->id,
                 'customer_id' => $customer->id,
                 'plan_id' => $planId,
@@ -237,7 +237,7 @@ class SubscriptionController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($subscription) {
-                    // ✅ Map status integer to string
+                    // Map status integer to string
                     $statusMap = [
                         0 => 'pending',
                         1 => 'active',
@@ -332,9 +332,8 @@ class SubscriptionController extends Controller
         try {
             $customer = Auth::user();
 
-            // ✅ Load the plan relationship
             $subscription = $customer->subscriptions()
-                ->with('plan') // ✅ Load plan
+                ->with('plan')
                 ->where('id', $id)
                 ->first();
 
@@ -344,7 +343,7 @@ class SubscriptionController extends Controller
                 ], 404);
             }
 
-            // ✅ Check if THIS subscription is already cancelled
+            // Check if THIS subscription is already cancelled
             if ($subscription->status == 4) {
                 return response()->json([
                     'message' => 'This subscription is already cancelled.',
@@ -384,7 +383,7 @@ class SubscriptionController extends Controller
                 ->where('status', 0)
                 ->update(['status' => 3]);
 
-            // ✅ Cancel THIS subscription
+            // Cancel THIS subscription
             $subscription->update([
                 'status' => 4
             ]);
@@ -395,9 +394,9 @@ class SubscriptionController extends Controller
                 'status_after' => 4
             ]);
 
-            // ✅ Publish to Kafka (with error handling)
+            // Publish to Kafka (with error handling)
             try {
-                $plan = $subscription->plan; // ✅ Get plan from subscription
+                $plan = $subscription->plan; // Get plan from subscription
 
                 Kafka::publish()
                     ->onTopic('subscription.cancelled')
@@ -406,12 +405,11 @@ class SubscriptionController extends Controller
                     ->withBodyKey('plan_name', $plan->name ?? 'N/A')
                     ->send();
 
-                Log::info('✅ Kafka message published', [
+                Log::info('Kafka message published', [
                     'subscription_id' => $subscription->id
                 ]);
             } catch (\Exception $e) {
-                Log::error('❌ Kafka publish failed: ' . $e->getMessage());
-                // Don't fail the cancellation if Kafka fails
+                Log::error('Kafka publish failed: ' . $e->getMessage());
             }
 
             return response()->json([

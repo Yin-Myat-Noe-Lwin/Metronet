@@ -221,7 +221,7 @@ class IspPlanController extends Controller
 
             Cache::forget('active_isp_plans');
 
-            // ✅ Notify customers about plan deactivation
+            // Notify customers about plan deactivation
             try {
                 Kafka::publish()
                     ->onTopic('plan.deactivated')
@@ -229,11 +229,11 @@ class IspPlanController extends Controller
                     ->withBodyKey('plan_name', $plan->name)
                     ->send();
 
-                Log::info('✅ Plan deactivation notification published', [
+                Log::info('Plan deactivation notification published', [
                     'plan_id' => $plan->id
                 ]);
             } catch (\Exception $e) {
-                Log::error('❌ Failed to publish plan deactivation: ' . $e->getMessage());
+                Log::error('Failed to publish plan deactivation: ' . $e->getMessage());
             }
 
             return response()->json([
