@@ -21,7 +21,7 @@ class CpeController extends Controller
     public function index(): JsonResponse
     {
         try{
-            $cpes = Cache::remember('cpes_list', 60, function () {
+            $cpes = Cache::remember('cpes_list', 60 * 60, function () {
                 return Cpe::orderBy('created_at', 'desc')->get();
             });
 
@@ -145,6 +145,7 @@ class CpeController extends Controller
     {
         $cpe = Cpe::where('id', $id)->first();
 
+        // if cpe assigned, can't delete
         if ($cpe->status == 1) {
             return response()->json([
                 'message' => 'CPE is assigned and cannot be deleted'
