@@ -68,7 +68,7 @@ CREATE TABLE `cache_locks` (
 CREATE TABLE `customers` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(50) NOT NULL,
-    `phone_num` VARCHAR(30) NOT NULL UNIQUE,
+    `phone_num` VARCHAR(13) NOT NULL UNIQUE,
     `email` VARCHAR(100) NOT NULL UNIQUE,
     `pending_email` VARCHAR(255) NULL,
     `status` TINYINT NOT NULL COMMENT '0=Inactive,1=Active',
@@ -101,6 +101,7 @@ CREATE TABLE `isp_plans` (
     `name` VARCHAR(255) NOT NULL,
     `description` VARCHAR(100) NOT NULL,
     `price` decimal(10,2) NOT NULL,
+    `validity_months` INT UNSIGNED NOT NULL DEFAULT 1,
     `status` TINYINT NOT NULL COMMENT '0=Inactive,1=Active',
     `upload_speed` INT UNSIGNED NOT NULL,
     `download_speed` INT UNSIGNED NOT NULL,
@@ -235,7 +236,7 @@ VALUES
 INSERT INTO isp_plans
 (name, description, price, status, upload_speed, download_speed, created_at, updated_at)
 VALUES
-('Home Starter', 'Basic internet for browsing, messaging and social media. Best for 1–2 users.', 25000.00, 1, 10, 20, NOW(), NOW()),
+('Home Starter', 'Basic internet for browsing, messaging and social media. Best for 1-2 users.', 25000.00, 1, 10, 20, NOW(), NOW()),
 ('Home Basic', 'Stable internet for streaming, online classes and daily home usage.', 35000.00, 1, 15, 30, NOW(), NOW()),
 ('Home Plus', 'Fast HD streaming, video calls and light gaming for small families.', 55000.00, 1, 25, 50, NOW(), NOW()),
 ('Fiber Family', 'High-speed fiber for multiple devices, streaming and online learning.', 75000.00, 1, 35, 70, NOW(), NOW()),
