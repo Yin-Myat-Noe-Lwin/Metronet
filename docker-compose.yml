@@ -4,10 +4,14 @@ services:
   backend:
     image: scarletwitch22801/metronet-backend:latest
     container_name: backend
+    env_file:
+      - ./backend/.env
     ports:
       - "8080:8000"
     working_dir: /app
     command: php artisan serve --host=0.0.0.0
+    volumes:
+    - ./backend:/app
     depends_on:
       - db
       - redis
