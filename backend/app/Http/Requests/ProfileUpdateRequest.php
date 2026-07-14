@@ -30,6 +30,7 @@ class ProfileUpdateRequest extends FormRequest
             'phone_num' => [
                 'sometimes',
                 'string',
+                'max:13',
                 'regex:/^(09|\+959|959)[0-9]{7,9}$/',
                 Rule::unique('customers', 'phone_num')->ignore($customerId),
             ],
