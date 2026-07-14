@@ -30,19 +30,19 @@ class AuthController extends Controller
             $verificationToken = Str::random(64);
 
             // Check if auto_verify is true
-            $isAutoVerify = $request->boolean('auto_verify');
+            $isAutoVerify = config('metronet.auto_verify');
+
+            Log::info('Auto Verify Status'. $isAutoVerify);
 
             $customer = Customer::create([
                 'name' => $request->name,
                 'phone_num' => $request->phone_num,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'status' => $isAutoVerify ? 1 : 0, 
+                'status' => $isAutoVerify ? 1 : 0,
                 'verification_token' => $verificationToken,
                 'verification_token_expires_at' => now()->addHours(6)
             ]);
-
-            $token = Auth::login($customer);
 
             // Only send verification email if not auto-verified
             if (!$isAutoVerify) {
@@ -56,7 +56,7 @@ class AuthController extends Controller
 
                 $message = 'Your account was created successfully. Please verify your email.';
             } else {
-                $message = 'Your account was created and verified successfully. (Test mode)';
+                $message = 'Your account was created and verified successfully.';
             }
 
             return response()->json([
@@ -210,7 +210,7 @@ class AuthController extends Controller
             ], 403);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong.'
+                'message' => $e->getMessage()
             ], 500);
         }
     }
