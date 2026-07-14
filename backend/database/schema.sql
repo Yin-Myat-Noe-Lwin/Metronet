@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS `invoices`;
 DROP TABLE IF EXISTS `subscriptions`;
 DROP TABLE IF EXISTS `customer_addresses`;
 
+DROP TABLE IF EXISTS `service_areas`;
 DROP TABLE IF EXISTS `cpes`;
 DROP TABLE IF EXISTS `isp_plans`;
 DROP TABLE IF EXISTS `customers`;
