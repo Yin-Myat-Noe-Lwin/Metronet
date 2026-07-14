@@ -88,7 +88,6 @@ class ServiceAreaController extends Controller
     public function viewAreas(): JsonResponse
     {
         try {
-            // Use pluck directly without get() for better performance
             $regions = ServiceArea::where('status', 1)
                 ->select('region')
                 ->distinct()
