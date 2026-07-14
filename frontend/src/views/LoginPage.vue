@@ -83,15 +83,6 @@
             <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
           </div>
 
-          <!-- Options -->
-          <div class="form-options">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="form.remember">
-              <span>Remember me</span>
-            </label>
-            <router-link to="/forgot-password" class="forgot-link">Forgot password?</router-link>
-          </div>
-
           <!-- Submit Button -->
           <button type="submit" class="login-btn" :disabled="isLoading">
             <span v-if="isLoading" class="spinner"></span>
