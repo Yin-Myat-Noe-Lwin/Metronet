@@ -159,7 +159,7 @@ export default {
 
       // Validate fields
       if (!this.validateAll()) {
-        this.errorMessage = 'Please fix the errors above'
+        this.errorMessage = 'Please check the highlighted fields and provide the correct information.'
         return
       }
 
