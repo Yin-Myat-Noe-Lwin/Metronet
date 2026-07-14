@@ -29,8 +29,6 @@ services:
         condition: service_started
       kafka:
         condition: service_healthy
-      kafka-init:
-        condition: service_completed_successfully
     networks:
       - metronet
     volumes:
@@ -93,37 +91,28 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    entrypoint: >
+      /bin/sh -c "
+      /etc/kafka/docker/run &
+
+      echo 'Waiting for Kafka..........';
+      until /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1; do
+        sleep 2;
+      done;
+
+      echo 'Creating topics..........';
+      for topic in payment.success subscription.cancelled plan.update plan.deactivated subscription.auto.cancelled payment.reminder  service.activated invoice.created; do
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic $$topic --partitions 1 --replication-factor 1;
+      done;
+
+      echo 'All topics created successfully';
+      wait
+      "
     networks:
       metronet:
         aliases:
           - kafka-broker
           - kafka
-
-  kafka-init:
-    image: apache/kafka:latest
-    container_name: kafka-init
-    depends_on:
-      kafka:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "
-      echo 'Waiting for Kafka...';
-      sleep 10;
-
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic service.activated --partitions 1 --replication-factor 1;
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic invoice.created --partitions 1 --replication-factor 1;
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic payment.success --partitions 1 --replication-factor 1;
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic subscription.cancelled --partitions 1 --replication-factor 1;
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic plan.updated --partitions 1 --replication-factor 1;
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic plan.deactivated --partitions 1 --replication-factor 1;
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic subscription.auto.cancelled --partitions 1 --replication-factor 1;
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic payment.reminder --partitions 1 --replication-factor 1;
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic subscription.auto.cancelled --partitions 1 --replication-factor 1;
-      echo 'Kafka topics created successfully';
-      "
-    networks:
-      - metronet
 
   kafka-ui:
     container_name: kafka-ui
