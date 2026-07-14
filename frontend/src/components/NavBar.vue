@@ -17,42 +17,6 @@
       <nav class="nav">
         <!-- Admin Navigation -->
         <template v-if="isAdmin">
-          <router-link
-            to="/admin/customers"
-            class="nav-link"
-            active-class="nav-link--active"
-            exact-active-class="nav-link--active"
-          >
-            Customers
-          </router-link>
-          <router-link
-            to="/admin/plans"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Plans
-          </router-link>
-          <router-link
-            to="/admin/subscriptions"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Subscriptions
-          </router-link>
-          <router-link
-            to="/admin/payments"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Payments
-          </router-link>
-          <router-link
-            to="/admin/cpes"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            CPEs
-          </router-link>
 
           <div class="admin-user">
             <span class="avatar-initials">{{ userInitials }}</span>
@@ -200,19 +164,8 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" v-show="isMobileMenuOpen">
-      <!-- Admin Mobile Menu -->
-      <template v-if="isAdmin">
-        <router-link to="/admin/customers" class="mobile-link" @click="isMobileMenuOpen = false">Customers</router-link>
-        <router-link to="/admin/plans" class="mobile-link" @click="isMobileMenuOpen = false">Plans</router-link>
-        <router-link to="/admin/subscriptions" class="mobile-link" @click="isMobileMenuOpen = false">Subscriptions</router-link>
-        <router-link to="/admin/payments" class="mobile-link" @click="isMobileMenuOpen = false">Payments</router-link>
-        <router-link to="/admin/cpes" class="mobile-link" @click="isMobileMenuOpen = false">CPEs</router-link>
-        <div class="mobile-divider"></div>
-        <a @click="handleLogout" class="mobile-link logout-link">Logout</a>
-      </template>
-
       <!-- Customer Mobile Menu -->
-      <template v-else-if="isLoggedIn && !isAdmin">
+      <template v-if="isLoggedIn && !isAdmin">
         <router-link to="/" class="mobile-link" @click="isMobileMenuOpen = false">Home</router-link>
         <router-link to="/plans" class="mobile-link" @click="isMobileMenuOpen = false">Plans</router-link>
         <div class="mobile-divider"></div>
