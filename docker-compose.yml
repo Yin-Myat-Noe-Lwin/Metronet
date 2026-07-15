@@ -156,6 +156,21 @@ services:
       - kafka
       - redis
 
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend/dist:/app/frontend/dist
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - metronet
+    depends_on:
+      - backend
+      - frontend
+
 volumes:
   mysql_data:
 
