@@ -7,23 +7,6 @@
           <h1 class="page-title">My Invoices</h1>
           <p class="page-subtitle">View and manage your billing history</p>
         </div>
-        <div class="header-actions">
-          <button @click="downloadStatement" class="btn-statement">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Statement
-          </button>
-          <button @click="refreshInvoices" class="btn-refresh" :disabled="loading">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 4 23 10 17 10"/>
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-            </svg>
-            {{ loading ? 'Loading...' : 'Refresh' }}
-          </button>
-        </div>
       </div>
 
       <!-- Stats -->
