@@ -26,6 +26,7 @@ class BillingConsumer
 
             Log::info('Looking for subscription: ' . $data['subscription_id']);
 
+            // find the subscription
             $subscription = Subscription::find($data['subscription_id']);
 
             if (!$subscription) {
@@ -35,6 +36,7 @@ class BillingConsumer
 
             Log::info('Subscription found: ' . $subscription->id);
 
+            // after subscription is found, find the related isp plan
             $plan = IspPlan::find($subscription->plan_id);
 
             if (!$plan) {
@@ -46,6 +48,7 @@ class BillingConsumer
 
             Log::info('Creating invoice...');
 
+            // create an invoice for customer's subscription
             $invoice = Invoice::create([
                 'invoice_number' => 'INV-' . time() . '-' . $subscription->id,
                 'subscription_id' => $subscription->id,
@@ -58,6 +61,7 @@ class BillingConsumer
 
             Log::info('Publishing to invoice.created...');
 
+            // publish invoice.created topic
             Kafka::publish()
                 ->onTopic('invoice.created')
                 ->withBodyKey('invoice_id', $invoice->id)
