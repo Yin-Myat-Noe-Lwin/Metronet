@@ -10,6 +10,8 @@ use Throwable;
 
 class ServiceActivatedConsumerCommand extends Command
 {
+    protected $signature = 'kafka:service-activated-consume';
+
     public function handle()
     {
         Log::info('ServiceActivatedConsumerCommand started');
