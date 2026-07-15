@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 
 class PlanUpdatedConsumerCommand extends Command
 {
+    protected $signature = 'kafka:plan-updated-consume';
+
     public function handle()
     {
         Log::info('PlanUpdatedConsumer started');
