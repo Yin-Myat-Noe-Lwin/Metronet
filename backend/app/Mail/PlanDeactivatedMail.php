@@ -45,8 +45,8 @@ class PlanDeactivatedMail extends Mailable
     public function envelope(): Envelope
     {
         $subject = $this->isPending
-            ? '⚠️ Subscription Cancelled - Plan Discontinued'
-            : '⚠️ Plan Discontinued - Action Required';
+            ? 'Subscription Cancelled - Plan Discontinued'
+            : 'Plan Discontinued - Action Required';
 
         return new Envelope(
             subject: $subject . ' - ' . $this->companyName,

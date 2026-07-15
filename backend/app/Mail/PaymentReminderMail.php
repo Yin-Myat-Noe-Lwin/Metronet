@@ -2,60 +2,55 @@
 
 namespace App\Mail;
 
-use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Subscription;
+use App\Models\Customer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SubscriptionSuccessMail extends Mailable
+class PaymentReminderMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $invoice;
     public $subscription;
     public $customer;
-    public $plan;
     public $customerName;
+    public $daysLeft;
     public $companyName;
-    public $companyAddress;
-    public $companyPhone;
-    public $companyEmail;
 
-    public function __construct(Subscription $subscription, Customer $customer)
+    public function __construct(Invoice $invoice, Subscription $subscription, Customer $customer, int $daysLeft)
     {
+        $this->invoice = $invoice;
         $this->subscription = $subscription;
         $this->customer = $customer;
         $this->customerName = $customer->name;
-        $this->plan = $subscription->plan;
-        // Company details
+        $this->daysLeft = $daysLeft;
         $this->companyName = config('app.name', 'MetroNet');
-        $this->companyAddress = 'Yangon, Myanmar';
-        $this->companyPhone = '+95 9 123 456 789';
-        $this->companyEmail = 'info@metronet.com';
     }
 
     public function envelope(): Envelope
     {
+        $urgency = $this->daysLeft <= 1 ? 'URGENT: ' : '';
         return new Envelope(
-            subject: 'Your Internet Service is Now Active! - ' . $this->companyName,
+            subject: $urgency . 'Payment Reminder - ' . $this->companyName,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.subscription-success',
+            view: 'emails.payment-reminder',
             with: [
+                'invoice' => $this->invoice,
                 'subscription' => $this->subscription,
                 'customer' => $this->customer,
                 'customerName' => $this->customerName,
-                'plan' => $this->plan,
+                'daysLeft' => $this->daysLeft,
                 'companyName' => $this->companyName,
-                'companyAddress' => $this->companyAddress,
-                'companyPhone' => $this->companyPhone,
-                'companyEmail' => $this->companyEmail,
             ],
         );
     }

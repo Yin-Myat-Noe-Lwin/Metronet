@@ -59,7 +59,7 @@ class PlanUpdatedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '📋 Plan Updated - ' . $this->companyName,
+            subject: 'Plan Updated - ' . $this->companyName,
         );
     }
 

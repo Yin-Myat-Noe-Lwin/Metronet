@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Payment;
+use App\Models\Customer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -28,7 +29,7 @@ class PaymentSuccessMail extends Mailable
         $this->payment = $payment;
 
         // Get customer name
-        $customer = \App\Models\Customer::find($payment->customer_id);
+        $customer = Customer::find($payment->customer_id);
         $this->customerName = $customer ? $customer->name : 'Customer';
 
         // Format data
