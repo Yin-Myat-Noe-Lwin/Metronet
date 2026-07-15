@@ -31,37 +31,9 @@ class PaymentController extends Controller
         try {
             $methods = PaymentMethod::where('is_active', 1)->get();
 
-            $methods->transform(function ($method) {
-                // Ensure proper encoding for emojis
-                if ($method->icon_type == 1) {
-                    $encoded = mb_convert_encoding($method->icon, 'UTF-8', 'auto');
-
-                    if (strpos($encoded, '&#') !== false) {
-                        $encoded = html_entity_decode($encoded, ENT_QUOTES, 'UTF-8');
-                    }
-
-                    $method->icon = preg_replace('/[\x00-\x1F\x7F-\x9F]/u', '', $encoded);
-
-                } elseif ($method->icon_type == 2) {
-                    $method->icon = $method->icon;
-                } elseif ($method->icon_type == 3) {
-                    $method->icon = asset('storage/' . $method->icon);
-                }
-
-                if ($method->description) {
-                    $method->description = mb_convert_encoding($method->description, 'UTF-8', 'auto');
-                }
-
-                if ($method->name) {
-                    $method->name = mb_convert_encoding($method->name, 'UTF-8', 'auto');
-                }
-
-                return $method;
-            });
-
             return response()->json([
                 'data' => $methods
-            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            ], 200);
 
         } catch (Exception $e) {
             return response()->json([
