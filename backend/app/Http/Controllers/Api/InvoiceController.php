@@ -135,75 +135,6 @@ class InvoiceController extends Controller
         }
     }
 
-    public function download($id)
-    {
-        try {
-            $customer = Auth::user();
-
-            if (!$customer) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthenticated'
-                ], 401);
-            }
-
-            $invoice = Invoice::where('id', $id)
-                ->whereHas('subscription', function ($q) use ($customer) {
-                    $q->where('customer_id', $customer->id);
-                })
-                ->with(['subscription.plan', 'subscription.customer'])
-                ->first();
-
-            if (!$invoice) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invoice not found'
-                ], 404);
-            }
-
-            // Get customer data
-            $customer = $invoice->subscription->customer;
-            $plan = $invoice->subscription->plan;
-
-            // Prepare data for PDF
-            $data = [
-                'invoice' => $invoice,
-                'customer' => $customer,
-                'plan' => $plan,
-                'invoice_number' => $invoice->invoice_number ?? 'INV-' . str_pad($invoice->id, 6, '0', STR_PAD_LEFT),
-                'amount' => number_format($invoice->amount, 2),
-                'status' => $this->getStatusText($invoice->status),
-                'due_date' => $invoice->due_date ? date('F d, Y', strtotime($invoice->due_date)) : 'N/A',
-                'created_date' => $invoice->created_at ? date('F d, Y', strtotime($invoice->created_at)) : 'N/A',
-                'paid_date' => $invoice->paid_at ? date('F d, Y', strtotime($invoice->paid_at)) : 'N/A',
-                'company_name' => config('app.name', 'MetroNet'),
-                'company_address' => 'Yangon, Myanmar',
-                'company_phone' => '+95 9 123 456 789',
-                'company_email' => 'info@metronet.com',
-            ];
-
-            // Generate PDF
-            $pdf = Pdf::loadView('pdf.invoice', $data);
-
-            // Set paper size
-            $pdf->setPaper('A4', 'portrait');
-
-            // Return PDF download
-            return $pdf->download($data['invoice_number'] . '.pdf');
-
-        } catch (PDOException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Database error: ' . $e->getMessage()
-            ], 500);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Download failed: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
     private function getStatusText($status)
     {
         $map = [
@@ -218,7 +149,7 @@ class InvoiceController extends Controller
     public function viewInvoices(): JsonResponse
     {
         try {
-            // ✅ Load all invoices with relationships
+            // Load all invoices
             $invoices = Invoice::with([
                 'subscription.customer',
                 'subscription.plan',
