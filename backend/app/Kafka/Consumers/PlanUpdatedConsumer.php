@@ -9,6 +9,7 @@ use App\Models\Subscription;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PlanUpdatedMail;
+use Throwable;
 
 class PlanUpdatedConsumer
 {
@@ -36,7 +37,7 @@ class PlanUpdatedConsumer
                 return;
             }
 
-            // Build notification message
+            // create notification message in email
             $message = "📋 Plan '{$plan->name}' has been updated.";
 
             $changes = [];
@@ -104,7 +105,7 @@ class PlanUpdatedConsumer
                         'email' => $customer->email
                     ]);
 
-                } catch (\Exception $e) {
+                } catch (Throwable $e) {
                     Log::error('Failed to notify customer: ' . $customer->id . ' - ' . $e->getMessage());
                 }
             }
@@ -114,9 +115,10 @@ class PlanUpdatedConsumer
                 'customers_notified' => $customers->count()
             ]);
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             Log::error('PlanUpdatedConsumer failed: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
+            throw $e;
         }
     }
 }

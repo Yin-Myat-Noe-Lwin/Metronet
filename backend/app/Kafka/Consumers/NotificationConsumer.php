@@ -58,7 +58,7 @@ class NotificationConsumer
                 Log::error($e->getTraceAsString());
             }
 
-            // Create notification - MATCHES YOUR SCHEMA EXACTLY
+            // Create notification
             try {
                 Notification::create([
                     'customer_id' => $customer->id,

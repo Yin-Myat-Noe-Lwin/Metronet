@@ -8,6 +8,7 @@ use App\Models\Notification;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SubscriptionCancelledMail;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SubscriptionCancelledConsumer
 {
@@ -16,29 +17,29 @@ class SubscriptionCancelledConsumer
         try {
             $data = $message->getBody();
 
-            Log::info('📥 SubscriptionCancelledConsumer received', ['data' => $data]);
+            Log::info('SubscriptionCancelledConsumer received', ['data' => $data]);
 
             // Find subscription
             $subscription = Subscription::with('plan')->find($data['subscription_id']);
             if (!$subscription) {
-                Log::error('❌ Subscription not found', ['subscription_id' => $data['subscription_id']]);
+                Log::error('Subscription not found', ['subscription_id' => $data['subscription_id']]);
                 return;
             }
 
             // Find customer
             $customer = Customer::find($data['customer_id']);
             if (!$customer) {
-                Log::error('❌ Customer not found', ['customer_id' => $data['customer_id']]);
+                Log::error('Customer not found', ['customer_id' => $data['customer_id']]);
                 return;
             }
 
-            Log::info('👤 Customer found', [
+            Log::info('Customer found', [
                 'customer_id' => $customer->id,
                 'email' => $customer->email,
                 'name' => $customer->name
             ]);
 
-            // ✅ CREATE IN-APP NOTIFICATION
+            // CREATE NOTIFICATION
             try {
                 Notification::create([
                     'customer_id' => $customer->id,
@@ -56,36 +57,36 @@ class SubscriptionCancelledConsumer
                     'updated_at' => now()
                 ]);
 
-                Log::info('✅ Cancellation notification created', [
+                Log::info('Cancellation notification created', [
                     'subscription_id' => $subscription->id,
                     'customer_id' => $customer->id
                 ]);
-            } catch (\Exception $e) {
-                Log::error('❌ Failed to create notification: ' . $e->getMessage());
+            } catch (Throwable $e) {
+                Log::error('Failed to create notification: ' . $e->getMessage());
             }
 
-            // ✅ SEND EMAIL
+            // SEND EMAIL to customer about subscription cancellation
             try {
                 if ($customer->email) {
                     Mail::to($customer->email)
                         ->send(new SubscriptionCancelledMail($subscription, $customer));
 
-                    Log::info('📧 Cancellation email sent', [
+                    Log::info('Cancellation email sent', [
                         'subscription_id' => $subscription->id,
                         'email' => $customer->email
                     ]);
                 }
-            } catch (\Exception $e) {
-                Log::error('❌ Failed to send email: ' . $e->getMessage());
+            } catch (Throwable $e) {
+                Log::error('Failed to send email: ' . $e->getMessage());
             }
 
-            Log::info('✅ SubscriptionCancelledConsumer completed successfully', [
+            Log::info('SubscriptionCancelledConsumer completed successfully', [
                 'subscription_id' => $subscription->id,
                 'customer_id' => $customer->id
             ]);
 
-        } catch (\Exception $e) {
-            Log::error('❌ SubscriptionCancelledConsumer failed', [
+        } catch (Throwable $e) {
+            Log::error('SubscriptionCancelledConsumer failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

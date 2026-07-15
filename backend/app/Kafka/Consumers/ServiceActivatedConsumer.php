@@ -8,6 +8,7 @@ use App\Models\Notification;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SubscriptionSuccessMail;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ServiceActivatedConsumer
 {
@@ -16,29 +17,29 @@ class ServiceActivatedConsumer
         try {
             $data = $message->getBody();
 
-            Log::info('📥 ServiceActivatedConsumer received', ['data' => $data]);
+            Log::info('ServiceActivatedConsumer received', ['data' => $data]);
 
-            // ✅ Find subscription
+            // Find subscription
             $subscription = Subscription::with('plan')->find($data['subscription_id']);
             if (!$subscription) {
-                Log::error('❌ Subscription not found', ['subscription_id' => $data['subscription_id']]);
+                Log::error('Subscription not found', ['subscription_id' => $data['subscription_id']]);
                 return;
             }
 
-            // ✅ Find customer
+            // Find customer
             $customer = Customer::find($data['customer_id']);
             if (!$customer) {
-                Log::error('❌ Customer not found', ['customer_id' => $data['customer_id']]);
+                Log::error('Customer not found', ['customer_id' => $data['customer_id']]);
                 return;
             }
 
-            Log::info('👤 Customer found', [
+            Log::info('Customer found', [
                 'customer_id' => $customer->id,
                 'email' => $customer->email,
                 'name' => $customer->name
             ]);
 
-            // ✅ SEND EMAIL
+            // SEND EMAIL
             try {
                 if ($customer->email) {
                     Mail::to($customer->email)
@@ -49,20 +50,20 @@ class ServiceActivatedConsumer
                         'email' => $customer->email
                     ]);
                 }
-            } catch (\Exception $e) {
-                Log::error('❌ Failed to send email', [
+            } catch (Throwable $e) {
+                Log::error('Failed to send email', [
                     'subscription_id' => $subscription->id,
                     'error' => $e->getMessage()
                 ]);
             }
 
-            // ✅ CREATE NOTIFICATION
+            // CREATE NOTIFICATION
             try {
                 Notification::create([
                     'customer_id' => $customer->id,
                     'event_type' => 4, // 4=service_activated
                     'channel' => 1,    // 1=email
-                    'title' => 'Service Activated! 🎉',
+                    'title' => 'Service Activated!',
                     'message' => 'Your internet service has been activated successfully! You can now enjoy high-speed internet.',
                     'status' => 1,      // active
                     'is_read' => 0,     // unread
@@ -74,24 +75,25 @@ class ServiceActivatedConsumer
                     'updated_at' => now()
                 ]);
 
-                Log::info('✅ Notification created for customer: ' . $customer->id);
-            } catch (\Exception $e) {
-                Log::error('❌ Failed to create notification', [
+                Log::info('Notification created for customer: ' . $customer->id);
+            } catch (Throwable $e) {
+                Log::error('Failed to create notification', [
                     'subscription_id' => $subscription->id,
                     'error' => $e->getMessage()
                 ]);
             }
 
-            Log::info('✅ ServiceActivatedConsumer completed successfully', [
+            Log::info('ServiceActivatedConsumer completed successfully', [
                 'subscription_id' => $subscription->id,
                 'customer_id' => $customer->id
             ]);
 
-        } catch (\Exception $e) {
-            Log::error('❌ ServiceActivatedConsumer failed', [
+        } catch (Throwable $e) {
+            Log::error('ServiceActivatedConsumer failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+            throw $e;
         }
     }
 }

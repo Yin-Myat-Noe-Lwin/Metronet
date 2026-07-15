@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use App\Mail\PaymentSuccessMail;
-use Exception;
+use Throwable;
 
 class PaymentConsumer
 {
@@ -18,81 +18,81 @@ class PaymentConsumer
         try {
             $data = $message->getBody();
 
-            Log::info('📥 PaymentConsumer received', ['data' => $data]);
+            Log::info('PaymentConsumer received', ['data' => $data]);
 
             // Validate required fields
             if (!isset($data['payment_id']) || !isset($data['customer_id'])) {
-                Log::error('❌ Missing required fields', ['data' => $data]);
+                Log::error('Missing required fields', ['data' => $data]);
                 return;
             }
 
             // Prevent duplicate processing
             $lockKey = 'payment_processed_' . $data['payment_id'];
             if (Cache::has($lockKey)) {
-                Log::info('⏭️ Duplicate payment message skipped', ['payment_id' => $data['payment_id']]);
+                Log::info('Duplicate payment message skipped', ['payment_id' => $data['payment_id']]);
                 return;
             }
 
-            // ✅ Find payment with more detailed logging
-            Log::info('🔍 Looking for payment', ['payment_id' => $data['payment_id']]);
+            // Find payment
+            Log::info('Looking for payment', ['payment_id' => $data['payment_id']]);
 
             $payment = Payment::find($data['payment_id']);
 
             if (!$payment) {
-                Log::error('❌ Payment NOT FOUND in database', [
+                Log::error('Payment NOT FOUND in database', [
                     'payment_id' => $data['payment_id'],
-                    'all_payments' => Payment::pluck('id')->toArray() // Log all payment IDs for debugging
+                    'all_payments' => Payment::pluck('id')->toArray() // Log all payment IDs
                 ]);
                 return;
             }
 
-            Log::info('💰 Payment found', [
+            Log::info('Payment found', [
                 'payment_id' => $payment->id,
                 'amount' => $payment->amount,
                 'status' => $payment->status,
                 'customer_id' => $payment->customer_id
             ]);
 
-            // ✅ Find customer
+            // Find customer
             $customer = Customer::find($data['customer_id']);
             if (!$customer) {
-                Log::error('❌ Customer NOT FOUND', [
+                Log::error('Customer NOT FOUND', [
                     'customer_id' => $data['customer_id']
                 ]);
                 return;
             }
 
-            Log::info('👤 Customer found', [
+            Log::info('Customer found', [
                 'customer_id' => $customer->id,
                 'email' => $customer->email,
                 'name' => $customer->name
             ]);
 
-            // ✅ SEND EMAIL
+            // SEND EMAIL to customer about payment
             try {
                 if ($customer->email) {
-                    Log::info('📧 Attempting to send email to: ' . $customer->email);
+                    Log::info('Attempting to send email to: ' . $customer->email);
 
                     Mail::to($customer->email)->send(new PaymentSuccessMail($payment));
 
-                    Log::info('✅ Payment success email sent successfully', [
+                    Log::info('Payment success email sent successfully', [
                         'payment_id' => $payment->id,
                         'email' => $customer->email
                     ]);
                 } else {
-                    Log::warning('⚠️ No email address for customer', [
+                    Log::warning('No email address for customer', [
                         'customer_id' => $customer->id
                     ]);
                 }
-            } catch (Exception $e) {
-                Log::error('❌ Failed to send payment email', [
+            } catch (Throwable $e) {
+                Log::error('Failed to send payment email', [
                     'payment_id' => $payment->id,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
             }
 
-            // ✅ CREATE NOTIFICATION
+            // CREATE NOTIFICATION
             try {
                 $notification = Notification::create([
                     'customer_id' => $customer->id,
@@ -110,13 +110,13 @@ class PaymentConsumer
                     'updated_at' => now()
                 ]);
 
-                Log::info('✅ Payment notification created', [
+                Log::info('Payment notification created', [
                     'payment_id' => $payment->id,
                     'notification_id' => $notification->id,
                     'customer_id' => $customer->id
                 ]);
             } catch (Exception $e) {
-                Log::error('❌ Failed to create notification', [
+                Log::error('Failed to create notification', [
                     'payment_id' => $payment->id,
                     'error' => $e->getMessage()
                 ]);
@@ -125,16 +125,18 @@ class PaymentConsumer
             // Mark as processed
             Cache::put($lockKey, true, 86400);
 
-            Log::info('✅ PaymentConsumer finished successfully', [
+            Log::info('PaymentConsumer finished successfully', [
                 'payment_id' => $payment->id
             ]);
 
-        } catch (Exception $e) {
-            Log::error('❌ PaymentConsumer failed', [
+        } catch (Throwable $e) {
+            Log::error('PaymentConsumer failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'data' => $message->getBody() ?? null
             ]);
+
+            throw $e;
         }
     }
 }

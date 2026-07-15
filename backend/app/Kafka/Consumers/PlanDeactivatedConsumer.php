@@ -9,6 +9,7 @@ use App\Models\Subscription;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PlanDeactivatedMail;
+use Throwable;
 
 class PlanDeactivatedConsumer
 {
@@ -17,7 +18,7 @@ class PlanDeactivatedConsumer
         try {
             $data = $message->getBody();
 
-            Log::info('📥 PlanDeactivatedConsumer received', ['data' => $data]);
+            Log::info('PlanDeactivatedConsumer received', ['data' => $data]);
 
             $plan = IspPlan::find($data['plan_id']);
             if (!$plan) {
@@ -111,7 +112,7 @@ class PlanDeactivatedConsumer
                         Mail::to($customer->email)->send(
                             new PlanDeactivatedMail($plan, $customer, $subscription, $isPending, $isActive)
                         );
-                        Log::info('📧 Plan deactivation email sent', [
+                        Log::info('Plan deactivation email sent', [
                             'customer_id' => $customer->id,
                             'email' => $customer->email,
                             'is_pending' => $isPending,
@@ -119,7 +120,7 @@ class PlanDeactivatedConsumer
                         ]);
                     }
 
-                } catch (\Exception $e) {
+                } catch (Throwable $e) {
                     Log::error('Failed to notify customer: ' . $customer->id . ' - ' . $e->getMessage());
                 }
             }
@@ -129,7 +130,7 @@ class PlanDeactivatedConsumer
                 'customers_notified' => $customers->count()
             ]);
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             Log::error('PlanDeactivatedConsumer failed: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
         }
