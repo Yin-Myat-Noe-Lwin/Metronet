@@ -12,12 +12,33 @@ class ServiceActivatedConsumerCommand extends Command
 
     public function handle()
     {
-        Kafka::consumer()
-            ->subscribe('service.activated')
-            ->handler(function ($message) {
-                (new ServiceActivatedConsumer())->handle($message);
-            })
-            ->build()
-            ->consume();
+        Log::info('ServiceActivatedConsumerCommand started');
+
+        try {
+             $consumer = Kafka::consumer()
+                ->withBrokers('kafka:9092')
+                ->withConsumerGroupId('service-activation-group')
+                ->subscribe('service.activated')
+                ->withHandler(function ($message) {
+                    try {
+                        Log::info('Kafka message received', $message->getBody());
+
+                        (new ServiceActivatedConsumer())->handle($message);
+
+                        Log::info('Message processed successfully');
+                    } catch (Throwable $e) {
+                        Log::error('Handler error: ' . $e->getMessage());
+                    }
+                })
+                ->build();
+
+            Log::info('Consumer built successfully');
+
+            $consumer->consume();
+
+        } catch (Throwable $e) {
+            Log::error('Service Activation Consumer Error: ' . $e->getMessage());
+            return 1;
+        }
     }
 }

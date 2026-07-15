@@ -9,12 +9,8 @@ use Illuminate\Support\Facades\Log;
 
 class PlanUpdatedConsumerCommand extends Command
 {
-    protected $signature = 'kafka:plan-updated-consume';
-    protected $description = 'Consume plan updated events';
-
     public function handle()
     {
-        $this->info('Starting Plan Updated Consumer...');
         Log::info('PlanUpdatedConsumer started');
 
         try {
@@ -24,20 +20,19 @@ class PlanUpdatedConsumerCommand extends Command
                 ->subscribe('plan.updated')
                 ->withHandler(function ($message) {
                     try {
-                        Log::info('📥 Plan updated message received', $message->getBody());
+                        Log::info('Plan updated message received', $message->getBody());
                         (new PlanUpdatedConsumer())->handle($message);
                     } catch (\Exception $e) {
-                        Log::error('❌ Handler error: ' . $e->getMessage());
+                        Log::error('Handler error: ' . $e->getMessage());
                     }
                 })
                 ->build();
 
             $consumer->consume();
 
-        } catch (\Exception $e) {
-            Log::error('❌ PlanUpdatedConsumer crashed: ' . $e->getMessage());
-            $this->error('Error: ' . $e->getMessage());
-            throw $e;
+        } catch (Throwable $e) {
+            Log::error('Plan Updated Consumer Command error: ' . $e->getMessage());
+            return 1;
         }
     }
 }

@@ -3,31 +3,31 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Kafka\Consumers\BillingConsumer;
+use App\Kafka\Consumers\AutoCancelledConsumer;
 use Junges\Kafka\Facades\Kafka;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class BillingConsumerCommand extends Command
+class AutoCancelledConsumerCommand extends Command
 {
-    protected $signature = 'kafka:billing-consume';
+    protected $signature = 'kafka:auto-cancelled-consume';
 
     public function handle()
     {
-        Log::info('BillingConsumerCommand started');
+        Log::info('AutoCancelledConsumerCommand started');
 
         try {
             $consumer = Kafka::consumer()
                 ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('billing-group')
-                ->subscribe('service.activated')
+                ->withConsumerGroupId('auto-cancelled-group')
+                ->subscribe('subscription.auto.cancelled')
                 ->withHandler(function ($message) {
                     try {
-                        Log::info('Kafka message received', $message->getBody());
+                        Log::info('Auto-cancelled message received', $message->getBody());
 
-                        (new BillingConsumer())->handle($message);
+                        (new AutoCancelledConsumer())->handle($message);
 
-                        Log::info('Message processed successfully');
+                        Log::info('Auto-cancelled message processed successfully');
                     } catch (Throwable $e) {
                         Log::error('Handler error: ' . $e->getMessage());
                     }
@@ -35,12 +35,10 @@ class BillingConsumerCommand extends Command
                 ->build();
 
             $this->info('Consumer built, starting to consume...');
-            Log::info('Consumer built successfully');
-
             $consumer->consume();
 
         } catch (Throwable $e) {
-            Log::error('Billing Consumer Command error: ' . $e->getMessage());
+            Log::error('Auto cancelled consumer error: ' . $e->getMessage());
             return 1;
         }
     }
