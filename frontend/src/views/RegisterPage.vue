@@ -138,17 +138,6 @@
             <span v-if="errors.password_confirmation" class="field-error">{{ errors.password_confirmation }}</span>
           </div>
 
-          <!-- Auto Verify Email (Testing Only) -->
-          <div class="form-group checkbox-group">
-            <label class="checkbox-label" :class="{ 'checkbox-error': errors.auto_verify }">
-              <input type="checkbox" v-model="form.autoVerify">
-              <span>
-                <strong>Auto Verify Email</strong>
-                <span class="checkbox-hint">(Testing only - skip email verification)</span>
-              </span>
-            </label>
-          </div>
-
           <!-- Terms -->
           <label class="checkbox-label" :class="{ 'checkbox-error': errors.terms }">
             <input type="checkbox" v-model="form.agreeTerms" @change="validateField('terms')">
