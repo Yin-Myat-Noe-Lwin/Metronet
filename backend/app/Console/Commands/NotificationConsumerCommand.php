@@ -3,44 +3,36 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Services\KafkaConsumerService;
 use App\Kafka\Consumers\NotificationConsumer;
-use Junges\Kafka\Facades\Kafka;
 use Illuminate\Support\Facades\Log;
-use Throwable;
 
 class NotificationConsumerCommand extends Command
 {
     protected $signature = 'kafka:notification-consume';
 
+    public function __construct(
+        private KafkaConsumerService $kafkaConsumer,
+        private NotificationConsumer $consumer
+    ) {
+        parent::__construct();
+    }
+
     public function handle()
     {
         Log::info('NotificationConsumerCommand started');
 
-        try {
-             $consumer = Kafka::consumer()
-                ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('notification-group')
-                ->subscribe('invoice.created')
-                ->withHandler(function ($message) {
-                    try {
-                        Log::info('Kafka message received', $message->getBody());
+        $this->kafkaConsumer->consume(
 
-                        (new NotificationConsumer())->handle($message);
+            config('kafka.consumers.invoice_created.group_id'),
+            config('kafka.consumers.invoice_created.topic'),
 
-                        Log::info('Message processed successfully');
-                    } catch (Throwable $e) {
-                        Log::error('Handler error: ' . $e->getMessage());
-                    }
-                })
-                ->build();
+            function($message){
 
-            Log::info('Consumer built successfully');
+                $this->consumer->handle($message);
 
-            $consumer->consume();
+            }
 
-        } catch (Throwable $e) {
-            Log::error('Fatal consumer error: ' . $e->getMessage());
-            return 1;
-        }
+        );
     }
 }
