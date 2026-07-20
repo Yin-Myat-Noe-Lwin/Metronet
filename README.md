@@ -106,13 +106,14 @@ cp frontend/.env.example frontend/.env
 
 
 ```bash
-docker compose up --build -d
+docker compose pull
+docker compose up -d
 ```
 
 4. Access the application:
 
 ```bash
-http://localhost:8080
+http://localhost
 ```
 
 5. Access Kafka UI
