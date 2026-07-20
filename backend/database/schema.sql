@@ -214,7 +214,6 @@ CREATE TABLE `notifications` (
     `channel` TINYINT NOT NULL DEFAULT 1 COMMENT '1=email, 2=sms, 3=in_app',
     `title` VARCHAR(100) NOT NULL,
     `message` TEXT,
-    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=active',
     `is_read` TINYINT DEFAULT 0,
     `read_at` TIMESTAMP NULL,
     `scheduled_at` TIMESTAMP NULL,
