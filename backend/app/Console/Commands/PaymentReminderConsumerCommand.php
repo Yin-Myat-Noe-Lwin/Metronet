@@ -18,9 +18,9 @@ class PaymentReminderConsumerCommand extends Command
 
         try {
             $consumer = Kafka::consumer()
-                ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('payment-reminder-group')
-                ->subscribe('payment.reminder')
+                ->withBrokers(config('kafka.brokers'))
+                ->withConsumerGroupId(config('kafka.consumers.payment_reminder.group_id'))
+                ->subscribe(config('kafka.consumers.payment_reminder.topic'))
                 ->withHandler(function ($message) {
                     try {
                         Log::info('Payment reminder message received', $message->getBody());

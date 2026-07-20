@@ -18,9 +18,9 @@ class SubscriptionCancelledConsumerCommand extends Command
 
         try {
              $consumer = Kafka::consumer()
-                ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('subscription-cancelled-group')
-                ->subscribe('subscription.cancelled')
+                ->withBrokers(config('kafka.brokers'))
+                ->withConsumerGroupId(config('kafka.consumers.service_cancelled.group_id'))
+                ->subscribe(config('kafka.consumers.service_cancelled.topic'))
                 ->withHandler(function ($message) {
                     try {
                         $body = $message->getBody();

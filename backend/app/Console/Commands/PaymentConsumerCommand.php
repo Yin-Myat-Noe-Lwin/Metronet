@@ -17,9 +17,9 @@ class PaymentConsumerCommand extends Command
 
         try {
             $consumer = Kafka::consumer()
-                ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('payment-group')
-                ->subscribe('payment.success')
+                ->withBrokers(config('kafka.brokers'))
+                ->withConsumerGroupId(config('kafka.consumers.payment_completed.group_id'))
+                ->subscribe(config('kafka.consumers.payment_completed.topic'))
                 ->withHandler(function ($message) {
                     try {
                         // Get the message body

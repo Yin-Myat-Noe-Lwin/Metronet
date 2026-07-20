@@ -17,9 +17,9 @@ class PlanUpdatedConsumerCommand extends Command
 
         try {
             $consumer = Kafka::consumer()
-                ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('plan-updated-group')
-                ->subscribe('plan.updated')
+                ->withBrokers(config('kafka.brokers'))
+                ->withConsumerGroupId(config('kafka.consumers.plan_updated.group_id'))
+                ->subscribe(config('kafka.consumers.plan_updated.topic'))
                 ->withHandler(function ($message) {
                     try {
                         Log::info('Plan updated message received', $message->getBody());

@@ -18,9 +18,9 @@ class PlanDeactivatedConsumerCommand extends Command
 
         try {
             $consumer = Kafka::consumer()
-                ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('plan-deactivated-group')
-                ->subscribe('plan.deactivated')
+                ->withBrokers(config('kafka.brokers'))
+                ->withConsumerGroupId(config('kakfka.consumers.plan_deactivated.group_id'))
+                ->subscribe(config('kakfka.consumers.plan_deactivated.topic'))
                 ->withHandler(function ($message) {
                     try {
                         Log::info('Plan deactivated message received', $message->getBody());

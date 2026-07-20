@@ -18,9 +18,9 @@ class AutoCancelledConsumerCommand extends Command
 
         try {
             $consumer = Kafka::consumer()
-                ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('auto-cancelled-group')
-                ->subscribe('subscription.auto.cancelled')
+                ->withBrokers(config('kakfka.brokers'))
+                ->withConsumerGroupId(config('kafka.consumers.service_auto_cancellation.group_id'))
+                ->subscribe(config('kafka.consumers.service_auto_cancellation.topic'))
                 ->withHandler(function ($message) {
                     try {
                         Log::info('Auto-cancelled message received', $message->getBody());
