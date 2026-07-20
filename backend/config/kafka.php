@@ -6,6 +6,73 @@ return [
      */
     'brokers' => env('KAFKA_BROKERS', 'kafka:9092'),
 
+    'securityProtocol' => env(
+        'KAFKA_SECURITY_PROTOCOL',
+        'PLAINTEXT'
+    ),
+
+    'auto_commit' => env(
+        'KAFKA_AUTO_COMMIT',
+        true
+    ),
+
+    'consumer_options' => [
+        'session.timeout.ms' => env(
+            'KAFKA_CONSUMER_SESSION_TIMEOUT_MS',
+            60000
+        ),
+
+        'heartbeat.interval.ms' => env(
+            'KAFKA_CONSUMER_HEARTBEAT_INTERVAL_MS',
+            10000
+        ),
+
+        'enable.auto.commit' => env(
+            'KAFKA_AUTO_COMMIT',
+            false
+        ),
+
+        'auto.offset.reset' => env(
+            'KAFKA_OFFSET_RESET',
+            'latest'
+        ),
+    ],
+
+    'consumers' => [
+        'service_activated' => [
+            'group_id' => 'service-activated-group',
+            'topic' => 'service.activated'
+        ],
+        'invoice_created' => [
+            'group_id' => 'invoice-group',
+            'topic' => 'invoice.created'
+        ],
+        'service_cancelled' => [
+            'group_id' => 'service-cancelled-group',
+            'topic' => 'service.cancelled'
+        ],
+        'service_auto_cancellation' => [
+            'group_id' => 'service-autocancelled-group',
+            'topic' => 'service.auto.cancelled'
+        ],
+        'plan_updated' => [
+            'group_id' => 'plan-updated-group',
+            'topic' => 'plan.updated'
+        ],
+        'plan_deactivated' => [
+            'group_id' => 'plan-deactivated-group',
+            'topic' => 'plan.deactivated'
+        ],
+        'payment_reminder' => [
+            'group_id' => 'payment-reminder-group',
+            'topic' => 'payment.reminder'
+        ],
+        'payment_completed' => [
+            'group_id' => 'payment-group',
+            'topic' => 'payment.completed'
+        ],
+    ],
+
     /*
      | Default security protocol
      */
@@ -26,9 +93,9 @@ return [
      | establishing that each partition is only consumed by a single consumer from the group.
      | This config defines the consumer group id you want to use for your project.
      */
-    'consumer_group_id' => env('KAFKA_CONSUMER_GROUP_ID', 'group'),
+    // 'consumer_group_id' => env('KAFKA_CONSUMER_GROUP_ID', 'group'),
 
-    'consumer_timeout_ms' => env('KAFKA_CONSUMER_DEFAULT_TIMEOUT', 2000),
+    // 'consumer_timeout_ms' => env('KAFKA_CONSUMER_DEFAULT_TIMEOUT', 2000),
 
     /*
      | After the consumer receives its assignment from the coordinator,
