@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   backend:
-    image: scarletwitch22801/backend:latest
+    image: scarletwitch22801/backend-image:latest
     container_name: backend
     env_file:
       - ./backend/.env
@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
 
   supervisor:
-    image: scarletwitch22801/backend:latest
+    image: scarletwitch22801/backend-image:latest
     container_name: supervisor
     working_dir: /app
     command: supervisord -c /etc/supervisor.conf
@@ -148,6 +148,16 @@ services:
       - metronet
     depends_on:
       - backend
+      - frontend-build
+
+  frontend-build:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run build"
+    networks:
+      - metronet
 
 volumes:
   mysql_data:
