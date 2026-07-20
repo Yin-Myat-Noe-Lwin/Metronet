@@ -61,7 +61,6 @@ class PaymentReminderConsumer
                     'channel' => 1,
                     'title' => '⚠️ Payment Reminder',
                     'message' => "Your invoice #{$invoice->invoice_number} of " . number_format($invoice->amount, 2) . " MMK is due. Please pay within {$daysLeft} days to avoid subscription cancellation.",
-                    'status' => 1,
                     'is_read' => 0,
                     'read_at' => null,
                     'scheduled_at' => null,

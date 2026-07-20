@@ -89,7 +89,6 @@ class PlanDeactivatedConsumer
                         'channel' => 1,
                         'title' => $notificationTitle,
                         'message' => $notificationMessage,
-                        'status' => 1,
                         'is_read' => 0,
                         'read_at' => null,
                         'scheduled_at' => null,

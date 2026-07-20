@@ -100,7 +100,6 @@ class PaymentConsumer
                     'channel' => 1,
                     'title' => 'Payment Successful',
                     'message' => 'Your payment of ' . number_format($payment->amount, 2) . ' MMK has been received successfully. Transaction ID: ' . ($payment->transaction_ref ?? 'N/A'),
-                    'status' => 1,
                     'is_read' => 0,
                     'read_at' => null,
                     'scheduled_at' => null,

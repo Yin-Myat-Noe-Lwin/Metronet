@@ -81,7 +81,6 @@ class PlanUpdatedConsumer
                         'channel' => 1,
                         'title' => 'Plan Updated',
                         'message' => $message,
-                        'status' => 1,
                         'is_read' => 0,
                         'read_at' => null,
                         'scheduled_at' => null,

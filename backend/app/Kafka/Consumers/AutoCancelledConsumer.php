@@ -61,7 +61,6 @@ class AutoCancelledConsumer
                     'channel' => 1,
                     'title' => '⚠️ Subscription Auto-Cancelled',
                     'message' => "Your subscription to '{$planName}' has been automatically cancelled due to unpaid invoice for 7 days. Please contact support to reactivate.",
-                    'status' => 1,
                     'is_read' => 0,
                     'read_at' => null,
                     'scheduled_at' => null,

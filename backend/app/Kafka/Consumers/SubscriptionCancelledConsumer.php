@@ -47,7 +47,6 @@ class SubscriptionCancelledConsumer
                     'channel' => 1,    // email
                     'title' => 'Subscription Cancelled',
                     'message' => "Your subscription to '{$data['plan_name']}' has been cancelled successfully. If this was a mistake, please contact support.",
-                    'status' => 1,
                     'is_read' => 0,
                     'read_at' => null,
                     'scheduled_at' => null,
