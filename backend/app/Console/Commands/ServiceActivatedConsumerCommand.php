@@ -3,42 +3,31 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Junges\Kafka\Facades\Kafka;
+use App\Services\KafkaConsumerService;
 use App\Kafka\Consumers\ServiceActivatedConsumer;
 use Illuminate\Support\Facades\Log;
-use Throwable;
 
 class ServiceActivatedConsumerCommand extends Command
 {
     protected $signature = 'kafka:service-activated-consume';
 
+    public function __construct(
+        private KafkaConsumerService $kafkaConsumer,
+        private ServiceActivatedConsumer $consumer
+    ) {
+        parent::__construct();
+    }
+
     public function handle()
     {
-        Log::info('ServiceActivatedConsumerCommand started');
+        Log::info('Service Activated Consumer Command started');
 
-        try {
-            $consumer = Kafka::consumer()
-                ->withBrokers('kafka:9092')
-                ->withConsumerGroupId('service-activated-group')
-                ->subscribe('service.activated')
-                ->withHandler(function ($message) {
-                    try {
-                        Log::info('Service Activated message received', $message->getBody());
-
-                        (new ServiceActivatedConsumer())->handle($message);
-
-                        Log::info('Service Activated message processed successfully');
-                    } catch (Throwable $e) {
-                        Log::error('Handler error: ' . $e->getMessage());
-                    }
-                })
-                ->build();
-
-            $consumer->consume();
-
-        } catch (Throwable $e) {
-            Log::error('Service Activated Consumer Command error: ' . $e->getMessage());
-            return 1;
-        }
+        $this->kafkaConsumer->consume(
+            config('kafka.consumers.service_activated.group_id'),
+            config('kafka.consumers.service_activated.topic'),
+            function($message) {
+                $this->consumer->handle($message);
+            }
+        );
     }
 }
