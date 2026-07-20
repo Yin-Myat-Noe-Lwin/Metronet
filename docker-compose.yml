@@ -2,16 +2,13 @@ version: '3.9'
 
 services:
   backend:
-    image: scarletwitch22801/metronet-backend:latest
+    image: scarletwitch22801/backend:latest
     container_name: backend
     env_file:
       - ./backend/.env
-    ports:
-      - "8080:8000"
     working_dir: /app
-    command: php artisan serve --host=0.0.0.0
     volumes:
-    - ./backend:/app
+      - backend_code:/app
     depends_on:
       - db
       - redis
@@ -21,10 +18,13 @@ services:
     restart: unless-stopped
 
   supervisor:
-    image: scarletwitch22801/metronet-backend:latest
+    image: scarletwitch22801/backend:latest
     container_name: supervisor
     working_dir: /app
     command: supervisord -c /etc/supervisor.conf
+    volumes:
+      - ./backend:/app
+      - ./backend/storage/logs:/var/log/supervisor
     restart: always
     depends_on:
       db:
@@ -35,11 +35,6 @@ services:
         condition: service_healthy
     networks:
       - metronet
-    volumes:
-      - ./backend:/app
-      - ./backend/docker/supervisord.conf:/etc/supervisor/supervisord.conf:ro
-      - ./backend/storage/logs:/var/log/supervisor
-      - ./backend/storage/logs:/app/storage/logs
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
@@ -140,39 +135,23 @@ services:
     networks:
       - metronet
 
-  frontend:
-    image: scarletwitch22801/metronet-frontend:latest
-    container_name: frontend
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    networks:
-      - metronet
-    depends_on:
-      - db
-      - backend
-      - kafka
-      - redis
-
   nginx:
     image: nginx:alpine
     container_name: nginx
     ports:
       - "80:80"
     volumes:
-      - ./backend:/app/backend
+      - backend_code:/app/backend
       - ./frontend/dist:/app/frontend/dist
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     networks:
       - metronet
     depends_on:
       - backend
-      - frontend
 
 volumes:
   mysql_data:
+  backend_code:
 
 networks:
   metronet:
