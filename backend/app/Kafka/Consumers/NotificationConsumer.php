@@ -47,12 +47,12 @@ class NotificationConsumer
             }
 
             // find customer
-            $customer = Customer::find($invoice->customer_id);
+            $customer = Customer::find($data['customer_id']);
 
             // if no customer found
             if (!$customer) {
                 Log::error('Customer not found', [
-                    'customer_id' => $invoice->customer_id
+                    'customer_id' => $customer->id
                 ]);
                 return;
             }
