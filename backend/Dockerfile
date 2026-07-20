@@ -40,11 +40,10 @@ COPY docker/supervisord.conf /etc/supervisor.conf
 
 ENV COMPOSER_MEMORY_LIMIT=-1
 
-RUN mkdir -p /var/log/supervisor \
-    && chmod -R 777 /var/log/supervisor \
-    && mkdir -p /app/storage/logs \
-    && chmod -R 777 /app/storage/logs
+RUN mkdir -p /app/storage/logs \
+    && chown -R www-data:www-data /app/storage /app/bootstrap/cache \
+    && chmod -R 775 /app/storage /app/bootstrap/cache
 
-EXPOSE 8000
+EXPOSE 9000
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0"]
+CMD ["php-fpm"]
