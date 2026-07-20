@@ -2,94 +2,36 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\LoginRequest;
-use App\Http\Requests\RegisterRequest;
-use App\Mail\VerifyRegisterMail;
-use App\Models\Customer;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Log\Logger;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
-use PDOException;
-use Exception;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\QueryException;
+
+use App\Http\Requests\RegisterRequest;
+
+use App\Services\Interfaces\AuthServiceInterface;
 
 class AuthController extends Controller
 {
+
+    public function __construct(
+        private AuthServiceInterface $authService
+    )
+    {
+
+    }
+
     public function register(RegisterRequest $request): JsonResponse
     {
-        try {
-            $verificationToken = Str::random(64);
+        $result = $this->authService
+                        ->register($request->validated());
 
-            // Check if auto_verify is true
-            $isAutoVerify = config('metronet.auto_verify');
+        Log::info('Registered Customer:', $result);
 
-            Log::info('Auto Verify Status'. $isAutoVerify);
-
-            $customer = Customer::create([
-                'name' => $request->name,
-                'phone_num' => $request->phone_num,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'status' => $isAutoVerify ? 1 : 0,
-                'verification_token' => $verificationToken,
-                'verification_token_expires_at' => now()->addHours(6)
-            ]);
-
-            // Only send verification email if not auto-verified
-            if (!$isAutoVerify) {
-                $verificationUrl = 'http://localhost:5173/verify-email?token='
-                                    . $verificationToken;
-
-                Log::info('verification url: ' . $verificationUrl);
-
-                Mail::to($customer->email)
-                    ->send(new verifyRegisterMail($verificationUrl));
-
-                $message = 'Your account was created successfully. Please verify your email.';
-            } else {
-                $message = 'Your account was created and verified successfully.';
-            }
-
-            return response()->json([
-                'message' => $message,
-                'customer' => $customer,
-                'auto_verified' => $isAutoVerify
-            ]);
-
-        } catch (PDOException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], 500);
-        } catch (QueryException $e) {
-            return response()->json([
-                'message' => 'Database operation failed.'
-            ], 500);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Record not found.'
-            ], 404);
-        } catch (AuthenticationException $e) {
-            return response()->json([
-                'message' => 'Authentication failed.'
-            ], 401);
-        } catch (AuthorizationException $e) {
-            return response()->json([
-                'message' => 'You are not authorized to perform this action.'
-            ], 403);
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Something went wrong.'
-            ], 500);
-        }
+        return response()->json([
+            'message' => $result['message'],
+            'customer' => $result['customer'],
+            'auto_verified' => $result['auto_verified']
+        ]);
     }
 
     public function verifyEmail(Request $request):JsonResponse
@@ -190,7 +132,7 @@ class AuthController extends Controller
 
         } catch (PDOException $e) {
             return response()->json([
-                'message' => 'Database Connection Error'
+                'message' => $e->getMessage()
             ], 500);
         } catch (QueryException $e) {
             return response()->json([
