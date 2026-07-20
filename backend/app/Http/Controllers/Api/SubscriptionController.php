@@ -22,9 +22,15 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Junges\Kafka\Facades\Kafka;
+use App\Services\KafkaProducerService;
 
 class SubscriptionController extends Controller
 {
+    public function __construct(
+        KafkaProducerService $kafkaProducer
+    )
+    {}
+
     public function store(SubscriptionRequest $request, $planId): JsonResponse
     {
         try {
@@ -398,12 +404,14 @@ class SubscriptionController extends Controller
             try {
                 $plan = $subscription->plan; // Get plan from subscription
 
-                Kafka::publish()
-                    ->onTopic('subscription.cancelled')
-                    ->withBodyKey('subscription_id', $subscription->id)
-                    ->withBodyKey('customer_id', $customer->id)
-                    ->withBodyKey('plan_name', $plan->name ?? 'N/A')
-                    ->send();
+                $kafkaProducer->publish(
+                    config('kafka.consumers.service_cancelled.topic'),
+                    [
+                        'subscription_id' => $subscription->id,
+                        'customer_id' => $customer->id,
+                        'plan_name' => $plan->name ?? 'N/A',
+                    ]
+                );
 
                 Log::info('Kafka message published', [
                     'subscription_id' => $subscription->id
