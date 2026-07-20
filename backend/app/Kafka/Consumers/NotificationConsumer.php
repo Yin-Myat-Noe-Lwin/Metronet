@@ -2,90 +2,95 @@
 
 namespace App\Kafka\Consumers;
 
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use App\Models\Subscription;
 use App\Models\Customer;
 use App\Models\Invoice;
-use App\Models\Notification;
 use App\Mail\InvoiceCreatedMail;
+use App\Services\EmailService;
+use App\Services\NotificationService;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class NotificationConsumer
 {
-    public function handle($message)
+
+    public function __construct(
+        private EmailService $emailService,
+        private NotificationService $notificationService
+    ) {
+    }
+
+    public function handle($message): void
     {
         try {
-            Log::info('NotificationConsumer processing started');
+            Log::info('Notification Consumer started');
 
             $data = $message->getBody();
-            Log::info('Message data:', $data);
 
+            Log::info('Kafka message received', [
+                'data' => $data
+            ]);
+
+            // if there is no invoice id in data
             if (!isset($data['invoice_id'])) {
-                Log::error('Missing invoice_id in message');
+                Log::error('Missing invoice_id');
                 return;
             }
 
             $invoice = Invoice::find($data['invoice_id']);
 
+            // if no invoice data in db
             if (!$invoice) {
-                Log::warning('Invoice not found: ' . $data['invoice_id']);
-                return;
-            }
-
-            $subscription = Subscription::find($invoice->subscription_id);
-
-            if (!$subscription) {
-                Log::warning('Subscription not found for invoice: ' . $invoice->id);
-                return;
-            }
-
-            $customer = Customer::find($subscription->customer_id);
-
-            if (!$customer) {
-                Log::warning('Customer not found for subscription: ' . $subscription->id);
-                return;
-            }
-
-            Log::info('Sending invoice email to: ' . $customer->email);
-
-            // Send email to customer about invoice
-            try {
-                Mail::to($customer->email)->send(new InvoiceCreatedMail($invoice));
-                Log::info('Email sent successfully to: ' . $customer->email);
-            } catch (Throwable $e) {
-                Log::error('Failed to send email: ' . $e->getMessage());
-                Log::error($e->getTraceAsString());
-            }
-
-            // Create notification
-            try {
-                Notification::create([
-                    'customer_id' => $customer->id,
-                    'event_type' => 1,           // 1=invoice_created
-                    'channel' => 1,               // 1=email
-                    'title' => 'Invoice Created',
-                    'message' => 'Your invoice #' . ($invoice->invoice_number ?? $invoice->id) . ' has been generated for ' . number_format($invoice->amount, 2) . ' MMK.',
-                    'status' => 1,                // 1=active
-                    'is_read' => 0,               // 0=unread
-                    'read_at' => null,
-                    'scheduled_at' => null,
-                    'sent_status' => 1,           // 1=sent
-                    'sent_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now()
+                Log::error('Invoice not found', [
+                    'invoice_id' => $data['invoice_id']
                 ]);
-                Log::info('Notification created for customer: ' . $customer->id);
-            } catch (Throwable $e) {
-                Log::error('Failed to create notification: ' . $e->getMessage());
+                return;
             }
 
-            Log::info('NotificationConsumer completed successfully');
+            // find customer
+            $customer = Customer::find($invoice->customer_id);
 
+            // if no customer found
+            if (!$customer) {
+                Log::error('Customer not found', [
+                    'customer_id' => $invoice->customer_id
+                ]);
+                return;
+            }
+
+            $this->emailService->send(
+                $customer,
+                new InvoiceCreatedMail($invoice)
+            );
+
+            $this->notificationService->create([
+                'customer_id' => $customer->id,
+                'event_type' => 1,
+                'channel' => 1,
+                'title' => 'Invoice Created',
+                'message' =>
+                    'Your invoice #' .
+                    $invoice->invoice_number .
+                    ' has been generated for ' .
+                    number_format($invoice->amount,2) .
+                    ' MMK.'
+            ]);
+
+            Log::info('Invoice notification process completed', [
+                'invoice_id' => $invoice->id,
+                'customer_id' => $customer->id
+            ]);
         } catch (Throwable $e) {
-            Log::error('NotificationConsumer error: ' . $e->getMessage());
-            Log::error('Trace: ' . $e->getTraceAsString());
+            Log::error('Notification Consumer failed', [
+
+                'error' => $e->getMessage(),
+
+                'trace' => $e->getTraceAsString()
+
+            ]);
+
             throw $e;
         }
+
     }
+
 }
