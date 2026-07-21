@@ -8,11 +8,6 @@ services:
       - ./backend/.env
     working_dir: /app
     volumes:
-      - ./backend/app:/app/app
-      - ./backend/routes:/app/routes
-      - ./backend/config:/app/config
-      - ./backend/storage:/app/storage
-      - ./backend/public:/app/public
       - frontend_dist:/app/frontend/dist
     depends_on:
       - db
@@ -28,7 +23,6 @@ services:
     working_dir: /app
     command: supervisord -c /etc/supervisor.conf
     volumes:
-      - ./backend:/app
       - ./backend/storage/logs:/var/log/supervisor
     restart: always
     depends_on:
@@ -146,7 +140,6 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./backend/public:/app/public:ro
       - frontend_dist:/app/frontend/dist:ro
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
