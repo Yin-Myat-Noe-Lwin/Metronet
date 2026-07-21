@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 use App\Http\Requests\RegisterRequest;
 
-use App\Services\Interfaces\AuthServiceInterface;
+use App\Contracts\AuthServiceInterface;
 
 use App\Http\Controllers\Controller;
 
