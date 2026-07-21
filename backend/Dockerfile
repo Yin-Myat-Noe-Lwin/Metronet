@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     libjpeg62-turbo-dev \
     libpng-dev \
     libxml2-dev \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
     && docker-php-ext-install pdo pdo_mysql zip pcntl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd \
@@ -28,21 +31,32 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-COPY composer.json composer.lock ./
+COPY backend/composer.json backend/composer.lock ./
 
 RUN composer install --no-interaction --no-progress --no-scripts --no-autoloader
 
-COPY . /app
+COPY backend /app
 
 RUN composer dump-autoload --optimize
 
-COPY docker/supervisord.conf /etc/supervisor.conf
+COPY backend/docker/supervisord.conf /etc/supervisor.conf
 
 ENV COMPOSER_MEMORY_LIMIT=-1
 
 RUN mkdir -p /app/storage/logs \
     && chown -R www-data:www-data /app/storage /app/bootstrap/cache \
     && chmod -R 775 /app/storage /app/bootstrap/cache
+
+# Frontend
+COPY frontend /app/frontend
+
+WORKDIR /app/frontend
+
+RUN npm install
+RUN npm run build
+
+
+WORKDIR /app
 
 EXPOSE 9000
 
