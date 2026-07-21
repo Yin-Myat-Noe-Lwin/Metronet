@@ -148,7 +148,6 @@ services:
       - metronet
     depends_on:
       - backend
-      - frontend-build
 
 volumes:
   mysql_data:
