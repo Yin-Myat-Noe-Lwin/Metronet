@@ -33,9 +33,9 @@ WORKDIR /app
 
 COPY backend/composer.json backend/composer.lock ./
 
-RUN composer install --no-interaction --no-progress --no-scripts --no-autoloader
-
 COPY backend /app
+
+RUN composer install --no-interaction --no-progress --no-scripts --no-autoloader
 
 RUN composer dump-autoload --optimize
 
