@@ -144,7 +144,6 @@ services:
     volumes:
       - frontend_dist:/app/frontend/dist
       - ./backend:/app
-      - ./frontend/dist:/app/frontend/dist
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     networks:
       - metronet
