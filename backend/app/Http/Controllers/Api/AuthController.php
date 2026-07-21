@@ -10,6 +10,8 @@ use App\Http\Requests\RegisterRequest;
 
 use App\Services\Interfaces\AuthServiceInterface;
 
+use App\Http\Controllers\Controller;
+
 class AuthController extends Controller
 {
 
