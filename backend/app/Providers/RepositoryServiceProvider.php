@@ -5,7 +5,7 @@
     use Illuminate\Support\ServiceProvider;
 
     use App\Repositories\CustomerRepository;
-    use App\Repositories\Interfaces\CustomerRepositoryInterface;
+    use App\Contracts\CustomerRepositoryInterface;
 
     use App\Services\AuthService;
     use App\Contracts\AuthServiceInterface;
