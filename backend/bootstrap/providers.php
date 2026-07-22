@@ -5,5 +5,5 @@ use App\Providers\RegisterServiceProvider;
 
 return [
     AppServiceProvider::class,
-    RegisterServiceProvider::class
+    RepositoryServiceProvider::class
 ];
