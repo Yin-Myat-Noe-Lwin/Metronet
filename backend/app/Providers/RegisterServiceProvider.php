@@ -12,7 +12,7 @@
 
     class RepositoryServiceProvider extends ServiceProvider
     {
-        public function register()
+        public function register(): void
         {
             $this->app->bind(
                 CustomerRepositoryInterface::class,
