@@ -8,7 +8,7 @@
     use App\Repositories\Interfaces\CustomerRepositoryInterface;
 
     use App\Services\AuthService;
-    use App\Services\Interfaces\AuthServiceInterface;
+    use App\Contracts\AuthServiceInterface;
 
     class RepositoryServiceProvider extends ServiceProvider
     {
