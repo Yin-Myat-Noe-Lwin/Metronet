@@ -7,10 +7,26 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\LoginRequest;
+
+use App\Models\Customer;
 
 use App\Contracts\AuthServiceInterface;
 
 use App\Http\Controllers\Controller;
+
+use App\Mail\VerifyRegisterMail;
+use Illuminate\Log\Logger;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use PDOException;
+use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 
 class AuthController extends Controller
 {
