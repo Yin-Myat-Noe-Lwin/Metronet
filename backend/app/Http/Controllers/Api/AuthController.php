@@ -43,7 +43,7 @@ class AuthController extends Controller
         $result = $this->authService
                         ->register($request->validated());
 
-        Log::info('Registered Customer:', $result);
+        Log::info("Registration successsful");
 
         return response()->json([
             'message' => $result['message'],
