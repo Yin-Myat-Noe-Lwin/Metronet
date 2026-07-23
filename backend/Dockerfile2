@@ -1,0 +1,48 @@
+FROM php:8.3-fpm
+
+RUN apt-get update && apt-get install -y \
+    git curl unzip zip \
+    libzip-dev \
+    librdkafka-dev \
+    pkg-config \
+    g++ gcc make autoconf \
+    supervisor \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libxml2-dev \
+    && docker-php-ext-install pdo pdo_mysql zip pcntl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pecl channel-update pecl.php.net \
+    && pecl install redis \
+    && docker-php-ext-enable redis
+
+RUN pecl install rdkafka \
+    && docker-php-ext-enable rdkafka
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www
+
+COPY composer.json composer.lock ./
+
+RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts
+
+COPY . .
+
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+RUN composer dump-autoload --optimize
+
+COPY docker/supervisord.conf /etc/supervisor.conf
+
+ENV COMPOSER_MEMORY_LIMIT=-1
+
+EXPOSE 9000
+
+CMD ["php-fpm"]
