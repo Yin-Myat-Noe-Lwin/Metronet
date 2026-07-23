@@ -34,10 +34,20 @@ class ServiceActivatedConsumer
                     $data['subscription_id']
                 );
 
+            Log::info('Subscription found', [
+                'subscription_id' => $subscription->id,
+                'status' => $subscription->status,
+            ]);
+
             $customer = $this->subscriptionService
                                 ->getCustomer(
                                     $data['customer_id']
                                 );
+
+            Log::info('Customer found', [
+                'customer id' => $customer->id,
+                'email' => $customer->email,
+            ]);
 
             // Send email
             $this->emailService->send(
