@@ -2,13 +2,15 @@ version: '3.9'
 
 services:
   backend:
-    image: scarletwitch22801/metronet-backend:latest
+    image: scarletwitch22801/backend-without-nignx:latest
     container_name: backend
     env_file:
       - ./backend/.env
-    working_dir: /app
+    working_dir: /var/www
     volumes:
-      - frontend_dist:/app/frontend/dist
+      - ./backend:/var/www
+    ports:
+      - "8080:8000"
     depends_on:
       - db
       - redis
@@ -18,11 +20,12 @@ services:
     restart: unless-stopped
 
   supervisor:
-    image: scarletwitch22801/metronet-backend:latest
+    image: scarletwitch22801/backend-without-nignx:latest
     container_name: supervisor
-    working_dir: /app
+    working_dir: /var/www
     command: supervisord -c /etc/supervisor.conf
     volumes:
+      - ./backend:/var/www
       - ./backend/storage/logs:/var/log/supervisor
     restart: always
     depends_on:
@@ -99,7 +102,7 @@ services:
       done;
 
       echo 'Creating topics..........';
-      for topic in payment.success subscription.cancelled plan.update plan.deactivated subscription.auto.cancelled payment.reminder  service.activated invoice.created; do
+      for topic in service.activated invoice.created service.cancelled service.auto.cancelled plan.updated plan.deactivated payment.reminder payment.completed; do
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic $$topic --partitions 1 --replication-factor 1;
       done;
 
@@ -134,22 +137,25 @@ services:
     networks:
       - metronet
 
-  nginx:
-    image: nginx:alpine
-    container_name: nginx
+  frontend:
+    image: scarletwitch22801/frontend-without-nginx:latest
+    container_name: frontend
     ports:
-      - "80:80"
+      - "5173:5173"
     volumes:
-      - frontend_dist:/app/frontend/dist:ro
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend:/var/www
+      - frontend_node_modules:/var/www/node_modules
     networks:
       - metronet
     depends_on:
+      - db
       - backend
+      - kafka
+      - redis
 
 volumes:
   mysql_data:
-  frontend_dist:
+  frontend_node_modules:
 
 networks:
   metronet:
