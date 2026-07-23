@@ -1,4 +1,5 @@
-FROM php:8.3-fpm
+# FROM php:8.3-fpm
+FROM php:8.3-cli
 
 RUN apt-get update && apt-get install -y \
     git curl unzip zip \
@@ -11,9 +12,6 @@ RUN apt-get update && apt-get install -y \
     libjpeg62-turbo-dev \
     libpng-dev \
     libxml2-dev \
-    gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs \
     && docker-php-ext-install pdo pdo_mysql zip pcntl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd \
@@ -29,35 +27,22 @@ RUN pecl install rdkafka \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /app
+WORKDIR /var/www
 
-COPY backend/composer.json backend/composer.lock ./
+COPY composer.json composer.lock ./
 
-COPY backend /app
+COPY . /var/www
 
 RUN composer install --no-interaction --no-progress --no-scripts --no-autoloader
 
 RUN composer dump-autoload --optimize
 
-COPY backend/docker/supervisord.conf /etc/supervisor.conf
+COPY docker/supervisord.conf /etc/supervisor.conf
 
 ENV COMPOSER_MEMORY_LIMIT=-1
 
-RUN mkdir -p /app/storage/logs \
-    && chown -R www-data:www-data /app/storage /app/bootstrap/cache \
-    && chmod -R 775 /app/storage /app/bootstrap/cache
+WORKDIR /var/www
 
-# Frontend
-COPY frontend /app/frontend
+EXPOSE 8000
 
-WORKDIR /app/frontend
-
-RUN npm install
-RUN npm run build
-
-
-WORKDIR /app
-
-EXPOSE 9000
-
-CMD ["php-fpm"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
