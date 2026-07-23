@@ -33,7 +33,7 @@
             Log::info('Auto Verify Status:'. $isAutoVerify);
 
             $customer = $this->customerRepository->create([
-                'name' => $dat['name'],
+                'name' => $data['name'],
                 'phone_num' => $data['phone_num'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
@@ -59,11 +59,11 @@
                 $message = 'Your account was created and verified successfully.';
             }
 
-            return response()->json([
+            return [
                 'message' => $message,
                 'customer' => $customer,
                 'auto_verified' => $isAutoVerify
-            ]);
+            ];
 
         }
     }
