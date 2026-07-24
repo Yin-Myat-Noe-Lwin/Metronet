@@ -64,10 +64,14 @@ System for ISP Management
 ## Kafka & Supervisor
 
 ### Kafka Topics
-- `service.activated` - Triggered when subscription is activated
-- `invoice.created` - Triggered when invoice is created
-- `payment.success` - Triggered when payment is successful
-- `subscription.cancelled` - Triggered when subscription is cancelled
+- `service.activated` - Triggered when subscription is activated.
+- `invoice.created` - Triggered when invoice is created.
+- `service.cancelled` - Triggered when the service is cancelled by customer.
+- `plan.updated` = Triggered when plan is updated by admin.
+- `plan.deactivated` - Triggered when plan is deactivated by admin.
+- `payment.reminder` - Triggered when customer's subscription payment due date is near.
+- `subscription.auto.cancelled` - Triggered when customer's subscription payment due date is over and subscription got cancelled.
+- `payment.completed` - Triggered when payment is successful.
 
 ### Supervisor Processes
 Supervisor runs and monitors the following processes:
