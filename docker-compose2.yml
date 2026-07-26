@@ -27,6 +27,7 @@ services:
     command: supervisord -c /etc/supervisor.conf
     volumes:
       - ./backend:/var/www
+      - ./backend/docker/supervisord.conf:/etc/supervisor.conf:ro
       - ./backend/storage/logs:/var/log/supervisor
     restart: always
     depends_on:
