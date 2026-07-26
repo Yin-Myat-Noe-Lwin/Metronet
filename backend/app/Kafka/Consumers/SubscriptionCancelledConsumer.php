@@ -5,6 +5,9 @@ namespace App\Kafka\Consumers;
 use App\Models\Subscription;
 use App\Models\Customer;
 use App\Models\Notification;
+use App\Services\SubscriptionService;
+use App\Services\EmailService;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SubscriptionCancelledMail;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +15,13 @@ use Throwable;
 
 class SubscriptionCancelledConsumer
 {
+    public function __construct(
+        private SubscriptionService $subscriptionService,
+        private EmailService $emailService,
+        private NotificationService $notificationService
+    )
+    {}
+
     public function handle($message)
     {
         try {
@@ -20,64 +30,38 @@ class SubscriptionCancelledConsumer
             Log::info('SubscriptionCancelledConsumer received', ['data' => $data]);
 
             // Find subscription
-            $subscription = Subscription::with('plan')->find($data['subscription_id']);
-            if (!$subscription) {
-                Log::error('Subscription not found', ['subscription_id' => $data['subscription_id']]);
-                return;
-            }
+            $subscription = $this->subscriptionService->getSubscription($data['subscription_id']);
 
-            // Find customer
-            $customer = Customer::find($data['customer_id']);
-            if (!$customer) {
-                Log::error('Customer not found', ['customer_id' => $data['customer_id']]);
-                return;
-            }
-
-            Log::info('Customer found', [
-                'customer_id' => $customer->id,
-                'email' => $customer->email,
-                'name' => $customer->name
+            Log::info('Subscription found', [
+                'subscription_id' => $subscription->id,
+                'status' => $subscription->status,
             ]);
 
-            // CREATE NOTIFICATION
-            try {
-                Notification::create([
-                    'customer_id' => $customer->id,
-                    'event_type' => 5, // subscription_cancelled
-                    'channel' => 1,    // email
-                    'title' => 'Subscription Cancelled',
-                    'message' => "Your subscription to '{$data['plan_name']}' has been cancelled successfully. If this was a mistake, please contact support.",
-                    'is_read' => 0,
-                    'read_at' => null,
-                    'scheduled_at' => null,
-                    'sent_status' => 1,
-                    'sent_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
+            // Find customer
+            $customer = $this->subscriptionService->getCustomer($data['customer_id']);
 
-                Log::info('Cancellation notification created', [
-                    'subscription_id' => $subscription->id,
-                    'customer_id' => $customer->id
-                ]);
-            } catch (Throwable $e) {
-                Log::error('Failed to create notification: ' . $e->getMessage());
-            }
+            Log::info('Customer found', [
+                'customer id' => $customer->id,
+                'customer email' => $customer->email,
+            ]);
 
-            // SEND EMAIL to customer about subscription cancellation
-            try {
-                if ($customer->email) {
-                    Mail::to($customer->email)
-                        ->send(new SubscriptionCancelledMail($subscription, $customer));
+            // Send email
+            $this->emailService->send(
+                $customer,
+                new SubscriptionCancelledMail(
+                    $subscription,
+                    $customer
+                )
+            );
 
-                    Log::info('Cancellation email sent', [
-                        'subscription_id' => $subscription->id,
-                        'email' => $customer->email
-                    ]);
-                }
-            } catch (Throwable $e) {
-                Log::error('Failed to send email: ' . $e->getMessage());
-            }
+            // create notification
+            $this->notificationService->create([
+                'customer_id' => $customer->id,
+                'event_type' => 5, // subscription cancelled
+                'channel' => 1, // email channel
+                'title' => 'Subscription Cancelled',
+                'message' => "Your subscription to '{$data['plan_name']}' has been cancelled successfully. If this was a mistake, please contact support.",
+            ]);
 
             Log::info('SubscriptionCancelledConsumer completed successfully', [
                 'subscription_id' => $subscription->id,
@@ -89,6 +73,8 @@ class SubscriptionCancelledConsumer
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+
+            throw $e;
         }
     }
 }
