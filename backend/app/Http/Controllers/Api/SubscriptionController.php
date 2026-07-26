@@ -258,7 +258,7 @@ class SubscriptionController extends Controller
                     ];
                     $subscription->status_text = $statusMap[$subscription->status] ?? 'unknown';
 
-                    // ✅ Add formatted dates
+                    // Add formatted dates
                     $subscription->formatted_created_at = $subscription->created_at?->format('M d, Y');
                     $subscription->formatted_start_date = $subscription->start_date?->format('M d, Y');
                     $subscription->formatted_end_date = $subscription->end_date?->format('M d, Y');
