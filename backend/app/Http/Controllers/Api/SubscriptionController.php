@@ -27,9 +27,8 @@ use App\Services\KafkaProducerService;
 class SubscriptionController extends Controller
 {
     public function __construct(
-        KafkaProducerService $kafkaProducer
-    )
-    {}
+        private KafkaProducerService $kafkaProducer
+    ) {}
 
     public function store(SubscriptionRequest $request, $planId): JsonResponse
     {
@@ -108,7 +107,13 @@ class SubscriptionController extends Controller
                 'status' => $subscription->status
             ]);
 
+            Log::info('before job started');
+
             ProcessSubscriptionJob::dispatch($subscription->id);
+
+            Log::info('after job started');
+
+            Log::info('New subscription created');
 
             return response()->json([
                 'message' => 'Subscription Successful. Please wait approval from ISP.',
@@ -404,7 +409,7 @@ class SubscriptionController extends Controller
             try {
                 $plan = $subscription->plan; // Get plan from subscription
 
-                $kafkaProducer->publish(
+                $this->kafkaProducer->publish(
                     config('kafka.consumers.service_cancelled.topic'),
                     [
                         'subscription_id' => $subscription->id,
