@@ -58,6 +58,8 @@ class ServiceActivatedConsumer
                 )
             );
 
+            Log::info('Creating notification...');
+
             // Create notification
             $this->notificationService->create([
                 'customer_id' => $customer->id,
@@ -66,6 +68,8 @@ class ServiceActivatedConsumer
                 'title' => 'Service Activated!',
                 'message' => 'Your internet service has been activated successfully! You can now enjoy high-speed internet.',
             ]);
+
+            Log::info('Notification created successfully');
 
             Log::info('Service activation completed', [
                 'subscription_id' => $subscription->id,
