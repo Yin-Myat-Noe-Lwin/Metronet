@@ -106,21 +106,33 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-3. Build and start the Docker containers:
-
+3. Build and start the Docker containers without nginx:
 
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
-4. Access the application:
+4. Access the application without nginx:
+
+```bash
+http://localhost:5173
+```
+
+5. Build and start the Docker containers with nginx:
+
+```bash
+docker compose -f docker-compose2.yml pull
+docker compose -f docker-compose2.yml up -d
+```
+
+6. Access the application:
 
 ```bash
 http://localhost
 ```
 
-5. Access Kafka UI
+7. Access Kafka UI
 
 ```bash
 http://localhost:8081
