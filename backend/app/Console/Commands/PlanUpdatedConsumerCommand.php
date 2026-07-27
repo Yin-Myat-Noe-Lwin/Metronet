@@ -6,35 +6,29 @@ use Illuminate\Console\Command;
 use App\Kafka\Consumers\PlanUpdatedConsumer;
 use Junges\Kafka\Facades\Kafka;
 use Illuminate\Support\Facades\Log;
+use App\Services\KafkaConsumerService;
 
 class PlanUpdatedConsumerCommand extends Command
 {
     protected $signature = 'kafka:plan-updated-consume';
 
+    public function __construct(
+        private KafkaConsumerService $kafkaConsumer,
+        private PlanUpdatedConsumer $consumer
+    ) {
+        parent::__construct();
+    }
+
     public function handle()
     {
         Log::info('PlanUpdatedConsumer started');
 
-        try {
-            $consumer = Kafka::consumer()
-                ->withBrokers(config('kafka.brokers'))
-                ->withConsumerGroupId(config('kafka.consumers.plan_updated.group_id'))
-                ->subscribe(config('kafka.consumers.plan_updated.topic'))
-                ->withHandler(function ($message) {
-                    try {
-                        Log::info('Plan updated message received', $message->getBody());
-                        (new PlanUpdatedConsumer())->handle($message);
-                    } catch (\Exception $e) {
-                        Log::error('Handler error: ' . $e->getMessage());
-                    }
-                })
-                ->build();
-
-            $consumer->consume();
-
-        } catch (Throwable $e) {
-            Log::error('Plan Updated Consumer Command error: ' . $e->getMessage());
-            return 1;
-        }
+        $this->kafkaConsumer->consume(
+            config('kafka.consumers.plan_updated.group_id'),
+            config('kafka.consumers.plan_updated.topic'),
+            function($message) {
+                $this->consumer->handle($message);
+            }
+        );
     }
 }
