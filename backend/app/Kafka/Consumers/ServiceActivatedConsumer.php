@@ -3,6 +3,7 @@
 namespace App\Kafka\Consumers;
 
 use App\Services\SubscriptionService;
+use App\Services\CustomerService;
 use App\Services\EmailService;
 use App\Services\NotificationService;
 use App\Mail\SubscriptionSuccessMail;
@@ -13,6 +14,7 @@ class ServiceActivatedConsumer
 {
 
     public function __construct(
+        private CustomerService $customerService,
         private SubscriptionService $subscriptionService,
         private EmailService $emailService,
         private NotificationService $notificationService
@@ -39,7 +41,7 @@ class ServiceActivatedConsumer
                 'status' => $subscription->status,
             ]);
 
-            $customer = $this->subscriptionService
+            $customer = $this->customerService
                                 ->getCustomer(
                                     $data['customer_id']
                                 );
