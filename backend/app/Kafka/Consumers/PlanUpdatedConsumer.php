@@ -9,10 +9,17 @@ use App\Models\Subscription;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PlanUpdatedMail;
+use App\Services\EmailService;
+use App\Services\NotificationService;
 use Throwable;
 
 class PlanUpdatedConsumer
 {
+    public function __construct(
+        private EmailService $emailService,
+        private NotificationService $notificationService
+    ) {}
+
     public function handle($message)
     {
         try {
@@ -75,33 +82,32 @@ class PlanUpdatedConsumer
                         ->whereIn('status', [0, 1])
                         ->first();
 
-                    Notification::create([
-                        'customer_id' => $customer->id,
-                        'event_type' => 6,
-                        'channel' => 1,
-                        'title' => 'Plan Updated',
-                        'message' => $message,
-                        'is_read' => 0,
-                        'read_at' => null,
-                        'scheduled_at' => null,
-                        'sent_status' => 1,
-                        'sent_at' => now(),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-
-                    Log::info('Plan update notification created', [
-                        'customer_id' => $customer->id,
-                        'plan_id' => $plan->id
-                    ]);
-
-                    Mail::to($customer->email)->send(
-                        new PlanUpdatedMail($plan, $customer, $data, $subscription?->end_date)
+                    $this->emailService->send(
+                        $customer,
+                        new PlanUpdatedMail(
+                            $plan,
+                            $customer,
+                            $data,
+                            $subscription?->end_date
+                        )
                     );
 
                     Log::info('Plan update email sent', [
                         'customer_id' => $customer->id,
                         'email' => $customer->email
+                    ]);
+
+                    $this->notificationService->create([
+                        'customer_id' => $customer->id,
+                        'event_type' => 6, // plan updated
+                        'channel' => 1, // email channel
+                        'title' => 'Plan Updated',
+                        'message' => $message,
+                    ]);
+
+                    Log::info('Plan update notification created', [
+                        'customer_id' => $customer->id,
+                        'plan_id' => $plan->id
                     ]);
 
                 } catch (Throwable $e) {
