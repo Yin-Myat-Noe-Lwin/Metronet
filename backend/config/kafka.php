@@ -4,7 +4,7 @@ return [
     /*
      | Your kafka brokers url.
      */
-    'brokers' => env('KAFKA_BROKERS', 'kafka:9092'),
+    'brokers' => env('KAFKA_BROKERS'),
 
     'securityProtocol' => env(
         'KAFKA_SECURITY_PROTOCOL',
@@ -40,36 +40,36 @@ return [
 
     'consumers' => [
         'service_activated' => [
-            'group_id' => 'service-activated-group',
-            'topic' => 'service.activated'
+            'group_id' => env('KAFKA_SERVICE_ACTIVATED_GROUP', 'service-activated-group'),
+            'topic' => env('KAFKA_SERVICE_ACTIVATED_TOPIC', 'service.activated'),
         ],
         'invoice_created' => [
-            'group_id' => 'invoice-group',
-            'topic' => 'invoice.created'
+            'group_id' => env('KAFKA_INVOICE_GROUP', 'invoice-group'),
+            'topic' => env('KAFKA_INVOICE_TOPIC', 'invoice.created'),
         ],
         'service_cancelled' => [
-            'group_id' => 'service-cancelled-group',
-            'topic' => 'service.cancelled'
+            'group_id' => env('KAFKA_SERVICE_CANCELLED_GROUP', 'service-cancelled-group'),
+            'topic' => env('KAFKA_SERVICE_CANCELLED_TOPIC', 'service.cancelled'),
         ],
         'service_auto_cancellation' => [
-            'group_id' => 'service-autocancelled-group',
-            'topic' => 'service.auto.cancelled'
+            'group_id' => env('KAFKA_SERVICE_AUTOCANCELLED_GROUP', 'service-autocancelled-group'),
+            'topic' => env('KAFKA_SERVICE_AUTOCANCELLED_TOPIC', 'service.auto.cancelled'),
         ],
         'plan_updated' => [
-            'group_id' => 'plan-updated-group',
-            'topic' => 'plan.updated'
+            'group_id' => env('KAFKA_PLAN_UPDATED_GROUP', 'plan-updated-group'),
+            'topic' => env('KAFKA_PLAN_UPDATED_TOPIC', 'plan.updated'),
         ],
         'plan_deactivated' => [
-            'group_id' => 'plan-deactivated-group',
-            'topic' => 'plan.deactivated'
+            'group_id' => env('KAFKA_PLAN_DEACTIVATED_GROUP', 'plan-deactivated-group'),
+            'topic' => env('KAFKA_PLAN_DEACTIVATED_TOPIC', 'plan.deactivated'),
         ],
         'payment_reminder' => [
-            'group_id' => 'payment-reminder-group',
-            'topic' => 'payment.reminder'
+            'group_id' => env('KAFKA_PAYMENT_REMINDER_GROUP', 'payment-reminder-group'),
+            'topic' => env('KAFKA_PAYMENT_REMINDER_TOPIC', 'payment.reminder'),
         ],
         'payment_completed' => [
-            'group_id' => 'payment-group',
-            'topic' => 'payment.completed'
+            'group_id' => env('KAFKA_PAYMENT_GROUP', 'payment-group'),
+            'topic' => env('KAFKA_PAYMENT_TOPIC', 'payment.completed'),
         ],
     ],
 
