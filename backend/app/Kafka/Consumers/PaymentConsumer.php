@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use App\Mail\PaymentSuccessMail;
 use App\Services\PaymentService;
+use App\Services\CustomerService;
 use App\Services\SubscriptionService;
 use App\Services\EmailService;
 use App\Services\NotificationService;
@@ -18,6 +19,7 @@ use Throwable;
 class PaymentConsumer
 {
     public function __construct(
+        private CustomerService $customerService,
         private PaymentService $paymentService,
         private SubscriptionService $subscriptionService,
         private EmailService $emailService,
@@ -43,7 +45,7 @@ class PaymentConsumer
                 'customer_id' => $payment->customer_id
             ]);
 
-            $customer = $this->subscriptionService
+            $customer = $this->customerService
                                 ->getCustomer(
                                     $data['customer_id']
                                 );
