@@ -11,4 +11,12 @@ class SubscriptionService
     {
         return Customer::findOrFail($customerId);
     }
+
+    public function getCustomersByPlan(int $planId)
+    {
+        return Customer::whereHas('subscriptions', function ($q) use ($planId) {
+            $q->where('plan_id', $planId)
+              ->whereIn('status', [0,1]);
+        })->get();
+    }
 }
