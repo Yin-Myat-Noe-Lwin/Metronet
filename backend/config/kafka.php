@@ -79,25 +79,6 @@ return [
     'securityProtocol' => env('KAFKA_SECURITY_PROTOCOL', 'PLAINTEXT'),
 
     /*
-     | Default sasl configuration
-     */
-    'sasl' => [
-        'mechanisms' => env('KAFKA_MECHANISMS', 'PLAINTEXT'),
-        'username' => env('KAFKA_USERNAME', null),
-        'password' => env('KAFKA_PASSWORD', null),
-    ],
-
-    /*
-     | Kafka consumers belonging to the same consumer group share a group id.
-     | The consumers in a group then divides the topic partitions as fairly amongst themselves as possible by
-     | establishing that each partition is only consumed by a single consumer from the group.
-     | This config defines the consumer group id you want to use for your project.
-     */
-    // 'consumer_group_id' => env('KAFKA_CONSUMER_GROUP_ID', 'group'),
-
-    // 'consumer_timeout_ms' => env('KAFKA_CONSUMER_DEFAULT_TIMEOUT', 2000),
-
-    /*
      | After the consumer receives its assignment from the coordinator,
      | it must determine the initial position for each assigned partition.
      | When the group is first created, before any messages have been consumed, the position is set according to a configurable
@@ -114,40 +95,13 @@ return [
 
     'sleep_on_error' => env('KAFKA_ERROR_SLEEP', 5),
 
-    'partition' => env('KAFKA_PARTITION', 0),
-
-    /*
-     | Kafka supports 4 compression codecs: none , gzip , lz4 and snappy
-     */
-    'compression' => env('KAFKA_COMPRESSION_TYPE', 'snappy'),
-
     /*
      | Choose if debug is enabled or not.
      */
     'debug' => env('KAFKA_DEBUG', false),
 
     /*
-     | The sleep time in milliseconds that will be used when retrying flush
-     */
-    'flush_retry_sleep_in_ms' => 100,
-
-    /*
-     * The number of retries that will be used when flushing the producer
-     */
-    'flush_retries' => 10,
-
-    /**
-     * The flush timeout in milliseconds
-     */
-    'flush_timeout_in_ms' => 1000,
-
-    /*
      | The cache driver that will be used
      */
-    'cache_driver' => env('KAFKA_CACHE_DRIVER', env('CACHE_DRIVER', env('CACHE_STORE', 'database'))),
-
-    /*
-     | Kafka message id key name
-     */
-    'message_id_key' => env('MESSAGE_ID_KEY', 'laravel-kafka::message-id'),
+    'cache_driver' => env('KAFKA_CACHE_DRIVER', 'redis'),
 ];
