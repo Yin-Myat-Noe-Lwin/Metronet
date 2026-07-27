@@ -13,7 +13,7 @@ Artisan::command('inspire', function () {
 
 Schedule::call(function () {
     CreateInvoiceJob::dispatch();
-})->dailyAt('00:00');
+})->everyMinute();
 
 Schedule::job(new SendPaymentReminderJob())
     ->dailyAt('08:00')
