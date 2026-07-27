@@ -20,6 +20,7 @@ use App\Http\Requests\IspPlanRequest;
 use Illuminate\Support\Facades\Log;
 
 use Junges\Kafka\Facades\Kafka;
+use App\Services\KafkaProducerService;
 
 class IspPlanController extends Controller
 {
