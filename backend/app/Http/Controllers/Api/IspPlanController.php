@@ -31,7 +31,7 @@ class IspPlanController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $plans = Cache::remember('active_isp_plans', 60, function() {
+            $plans = Cache::remember('active_isp_plans', now()->addHours(6), function() {
                 return IspPlan::where('status', 1)->get();
             });
 
