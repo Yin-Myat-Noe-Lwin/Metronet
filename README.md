@@ -126,7 +126,7 @@ docker compose -f docker-compose2.yml pull
 docker compose -f docker-compose2.yml up -d
 ```
 
-6. Access the application:
+6. Access the application with nginx:
 
 ```bash
 http://localhost
