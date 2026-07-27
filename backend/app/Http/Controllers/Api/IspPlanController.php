@@ -23,6 +23,10 @@ use Junges\Kafka\Facades\Kafka;
 
 class IspPlanController extends Controller
 {
+    public function __construct(
+        private KafkaProducerService $kafkaProducer
+    ) {}
+
     public function index(): JsonResponse
     {
         try {
@@ -137,20 +141,22 @@ class IspPlanController extends Controller
             // Send notification via Kafka if any changes
             if ($anyChange) {
                 try {
-                    Kafka::publish()
-                        ->onTopic('plan.updated')
-                        ->withBodyKey('plan_id', $plan->id)
-                        ->withBodyKey('plan_name', $plan->name)
-                        ->withBodyKey('old_price', $oldData['price'])
-                        ->withBodyKey('new_price', $plan->price)
-                        ->withBodyKey('old_name', $oldData['name'])
-                        ->withBodyKey('new_name', $plan->name)
-                        ->withBodyKey('old_download_speed', $oldData['download_speed'])
-                        ->withBodyKey('new_download_speed', $plan->download_speed)
-                        ->withBodyKey('old_upload_speed', $oldData['upload_speed'])
-                        ->withBodyKey('new_upload_speed', $plan->upload_speed)
-                        ->withBodyKey('status_changed', $statusChanged)
-                        ->send();
+                    $this->kafkaProducer->publish(
+                        config('kafka.consumers.plan_updated.topic'),
+                        [
+                            'plan_id' => $plan->id,
+                            'plan_name' => $plan->name ?? 'N/A',
+                            'old_price' => $oldData['price'],
+                            'new_price' => $plan->price,
+                            'old_name' => $oldData['name'],
+                            'new_name' => $plan->name,
+                            'old_download_speed' => $oldData['download_speed'],
+                            'new_download_speed' => $plan->download_speed,
+                            'old_upload_speed' => $oldData['upload_speed'],
+                            'new_upload_speed' => $plan->upload_speed,
+                            'status_changed' => $statusChanged
+                        ]
+                    );
 
                     Log::info('Plan update notification published to Kafka', [
                         'plan_id' => $plan->id,
