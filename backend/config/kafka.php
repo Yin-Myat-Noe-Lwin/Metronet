@@ -6,16 +6,6 @@ return [
      */
     'brokers' => env('KAFKA_BROKERS'),
 
-    'securityProtocol' => env(
-        'KAFKA_SECURITY_PROTOCOL',
-        'PLAINTEXT'
-    ),
-
-    'auto_commit' => env(
-        'KAFKA_AUTO_COMMIT',
-        true
-    ),
-
     'consumer_options' => [
         'session.timeout.ms' => env(
             'KAFKA_CONSUMER_SESSION_TIMEOUT_MS',
@@ -25,16 +15,6 @@ return [
         'heartbeat.interval.ms' => env(
             'KAFKA_CONSUMER_HEARTBEAT_INTERVAL_MS',
             10000
-        ),
-
-        'enable.auto.commit' => env(
-            'KAFKA_AUTO_COMMIT',
-            false
-        ),
-
-        'auto.offset.reset' => env(
-            'KAFKA_OFFSET_RESET',
-            'latest'
         ),
     ],
 
