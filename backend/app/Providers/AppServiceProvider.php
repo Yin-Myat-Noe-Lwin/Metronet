@@ -15,6 +15,8 @@ use App\Repositories\PlanRepository;
 use App\Contracts\Repositories\PlanRepositoryInterface;
 use App\Repositories\PaymentRepository;
 use App\Contracts\Repositories\PaymentRepositoryInterface;
+use App\Repositories\SubscriptionRepository;
+use App\Contracts\Repositories\SubscriptionRepositoryInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -51,6 +53,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             PaymentRepositoryInterface::class,
             PaymentRepository::class
+        );
+
+        $this->app->bind(
+            SubscriptionRepositoryInterface::class,
+            SubscriptionRepository::class
         );
     }
 
