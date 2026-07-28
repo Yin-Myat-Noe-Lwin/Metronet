@@ -11,6 +11,10 @@ use App\Repositories\InvoiceRepository;
 use App\Contracts\Repositories\InvoiceRepositoryInterface;
 use App\Repositories\NotificationRepository;
 use App\Contracts\Repositories\NotificationRepositoryInterface;
+use App\Repositories\PlanRepository;
+use App\Contracts\Repositories\PlanRepositoryInterface;
+use App\Repositories\PaymentRepository;
+use App\Contracts\Repositories\PaymentRepositoryInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,6 +41,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             NotificationRepositoryInterface::class,
             NotificationRepository::class
+        );
+
+        $this->app->bind(
+            PlanRepositoryInterface::class,
+            PlanRepository::class
+        );
+
+        $this->app->bind(
+            PaymentRepositoryInterface::class,
+            PaymentRepository::class
         );
     }
 
