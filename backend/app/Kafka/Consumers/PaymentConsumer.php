@@ -33,6 +33,7 @@ class PaymentConsumer
 
             Log::info('PaymentConsumer received', ['data' => $data]);
 
+            // get payment by id
             $payment = $this->paymentService
                                 ->getPayment(
                                     $data['payment_id']
@@ -45,6 +46,7 @@ class PaymentConsumer
                 'customer_id' => $payment->customer_id
             ]);
 
+            // get customer by id
             $customer = $this->customerService
                                 ->getCustomer(
                                     $data['customer_id']
