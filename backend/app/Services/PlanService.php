@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PlanService
 {
+    public function getPlan(int $id): ?IspPlan
+    {
+        return IspPlan::find($id);
+    }
+    
     public function buildUpdateMessage(IspPlan $plan, array $data): string
     {
         $message = "📋 Plan '{$plan->name}' has been updated.";
