@@ -3,7 +3,7 @@
     namespace App\Repositories;
     use App\Contracts\Repositories\PlanRepositoryInterface;
 
-    use App\Models\Plan;
+    use App\Models\IspPlan;
     use App\Models\Subscription;
 
     class PlanRepository implements PlanRepositoryInterface
