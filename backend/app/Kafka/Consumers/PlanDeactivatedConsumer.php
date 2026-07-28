@@ -9,10 +9,17 @@ use App\Models\Subscription;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PlanDeactivatedMail;
+use App\Services\EmailService;
+use App\Services\NotificationService;
 use Throwable;
 
 class PlanDeactivatedConsumer
 {
+    public function __construct(
+        private EmailService $emailService,
+        private NotificationService $notificationService
+    ) {}
+
     public function handle($message)
     {
         try {
@@ -82,20 +89,13 @@ class PlanDeactivatedConsumer
                         ]);
                     }
 
-                    // Create in-app notification
-                    Notification::create([
+                    // Create notification
+                    $this->notificationService->create([
                         'customer_id' => $customer->id,
-                        'event_type' => 7, // plan_deleted
-                        'channel' => 1,
+                        'event_type' => 7, // plan deleted
+                        'channel' => 1, // email channel
                         'title' => $notificationTitle,
                         'message' => $notificationMessage,
-                        'is_read' => 0,
-                        'read_at' => null,
-                        'scheduled_at' => null,
-                        'sent_status' => 1,
-                        'sent_at' => now(),
-                        'created_at' => now(),
-                        'updated_at' => now()
                     ]);
 
                     Log::info('Plan deactivation notification created', [
@@ -108,9 +108,18 @@ class PlanDeactivatedConsumer
 
                     // Send email
                     if ($customer->email) {
-                        Mail::to($customer->email)->send(
-                            new PlanDeactivatedMail($plan, $customer, $subscription, $isPending, $isActive)
+                        // Send email
+                        $this->emailService->send(
+                            $customer,
+                            new PlanDeactivatedMail(
+                                $plan,
+                                $customer,
+                                $subscription,
+                                $isPending,
+                                $isActive
+                            )
                         );
+
                         Log::info('Plan deactivation email sent', [
                             'customer_id' => $customer->id,
                             'email' => $customer->email,
