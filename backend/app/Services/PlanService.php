@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\IspPlan;
+use App\Models\Subscription;
 
 class PlanService
 {
@@ -39,6 +40,56 @@ class PlanService
 
         if (!empty($changes)) {
             $message .= " Changes: " . implode(", ", $changes);
+        }
+    }
+
+    public function processPlanDeactivation(Subscription $subscription, IspPlan $plan): array
+    {
+        $isPending = $subscription && $subscription->status == 0;
+
+        $isActive = $subscription && $subscription->status == 1;
+
+        if ($isPending) {
+            // Cancel pending subscription
+            $subscription->update([
+                'status' => 4 // cancelled
+            ]);
+
+            Log::info('Pending subscription cancelled due to plan deactivation', [
+                'subscription_id' => $subscription->id,
+                'customer_id' => $customer->id,
+                'plan_id' => $plan->id
+            ]);
+
+            return [
+                'title' => 'Subscription Cancelled',
+                'message' => "⚠️ The plan '{$plan->name}' you applied for has been discontinued. Your subscription request has been cancelled. Please choose a new plan.",
+                'subject' => '⚠️ Subscription Cancelled - Plan Discontinued'
+            ];
+
+        } elseif ($isActive) {
+            $notificationTitle = 'Plan Discontinued';
+            $notificationMessage = "⚠️ The plan '{$plan->name}' you are subscribed to has been discontinued. ";
+            $notificationMessage .= "Your service will continue until {$subscription->end_date->format('F d, Y')}. ";
+            $notificationMessage .= "Please choose a new plan before your current subscription ends to avoid service interruption.";
+            $emailSubject = '⚠️ Plan Discontinued - Action Required';
+
+            // For active subscriptions, keep them active until end date
+            // No immediate change, just notify
+            Log::info('Active subscription notified about plan deactivation', [
+                'subscription_id' => $subscription->id,
+                'customer_id' => $customer->id,
+                'plan_id' => $plan->id,
+                'end_date' => $subscription->end_date
+            ]);
+
+            return[
+                'title' => 'Plan Discontinued',
+                'message' => "⚠️ The plan '{$plan->name}' you are subscribed to has been discontinued. ".
+                            "Your service will continue until {$subscription->end_date->format('F d, Y')}. ".
+                            "Please choose a new plan before your current subscription ends to avoid service interruption.",
+                'subject' => '⚠️ Plan Discontinued - Action Required'
+            ];
         }
     }
 }
