@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-class SubscriptionService
+class CustomerService
 {
     public function getCustomer(int $customerId): Customer
     {
