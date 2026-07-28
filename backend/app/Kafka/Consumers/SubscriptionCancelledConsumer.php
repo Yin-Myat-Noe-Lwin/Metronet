@@ -30,7 +30,8 @@ class SubscriptionCancelledConsumer
             Log::info('SubscriptionCancelledConsumer received', ['data' => $data]);
 
             // Find subscription
-            $subscription = $this->subscriptionService->getSubscription($data['subscription_id']);
+            $subscription = $this->subscriptionService
+                                ->getSubscription($data['subscription_id']);
 
             Log::info('Subscription found', [
                 'subscription_id' => $subscription->id,
@@ -38,7 +39,8 @@ class SubscriptionCancelledConsumer
             ]);
 
             // Find customer
-            $customer = $this->subscriptionService->getCustomer($data['customer_id']);
+            $customer = $this->subscriptionService
+                            ->getCustomer($data['customer_id']);
 
             Log::info('Customer found', [
                 'customer id' => $customer->id,
