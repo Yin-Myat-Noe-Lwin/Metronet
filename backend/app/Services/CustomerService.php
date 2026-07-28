@@ -17,6 +17,6 @@ class SubscriptionService
         return Customer::whereHas('subscriptions', function ($q) use ($planId) {
             $q->where('plan_id', $planId)
               ->whereIn('status', [0,1]);
-        })->get();
+        })->with('subscriptions')->get();
     }
 }
