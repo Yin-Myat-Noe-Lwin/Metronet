@@ -5,10 +5,10 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 
 use App\Repositories\CustomerRepository;
-use App\Contracts\CustomerRepositoryInterface;
+use App\Contracts\Repositories\CustomerRepositoryInterface;
 
 use App\Services\AuthService;
-use App\Contracts\AuthServiceInterface;
+use App\Contracts\Services\AuthServiceInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
