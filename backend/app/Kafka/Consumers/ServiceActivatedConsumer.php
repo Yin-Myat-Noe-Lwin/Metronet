@@ -32,9 +32,9 @@ class ServiceActivatedConsumer
 
             // Get data
             $subscription = $this->subscriptionService
-                ->getSubscription(
-                    $data['subscription_id']
-                );
+                                    ->getSubscription(
+                                        $data['subscription_id']
+                                    );
 
             Log::info('Subscription found', [
                 'subscription_id' => $subscription->id,
