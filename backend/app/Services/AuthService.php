@@ -2,8 +2,8 @@
 
     namespace App\Services;
 
-    use App\Contracts\AuthServiceInterface;
-    use App\Contracts\CustomerRepositoryInterface;
+    use App\Contracts\Services\AuthServiceInterface;
+    use App\Contracts\Repositories\CustomerRepositoryInterface;
 
     use Illuminate\Support\Str;
     use Illuminate\Support\Facades\Log;
