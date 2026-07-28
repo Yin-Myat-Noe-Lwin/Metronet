@@ -3,21 +3,26 @@
 namespace App\Services;
 
 use App\Models\Subscription;
+use App\Contracts\Repositories\SubscriptionRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class SubscriptionService
 {
+    public function __construct(
+        SubscriptionRepositoryInterface $subscriptionRepository
+    ) {
+
+    }
     public function getSubscription(int $subscriptionId): Subscription
     {
-        return Subscription::with('plan')
-                            ->findOrFail($subscriptionId);
+        return $this->subscriptionRepository
+                    ->getSubscription($subscriptionId);
+
     }
 
     public function getCustomerSubscription(int $customerId, int $planId): ?Subscription
     {
-        return Subscription::where('customer_id', $customerId)
-                            ->where('plan_id', $planId)
-                            ->whereIn('status', [0, 1])
-                            ->first();
+        return $this->subscriptionRepository
+                    ->getCustomerSubscription($customerId, $planId);
     }
 }
