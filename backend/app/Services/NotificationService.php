@@ -10,7 +10,7 @@ use Throwable;
 class NotificationService
 {
     public function __construct(
-        NotificationepositoryInterface $notificationRepository
+        NotificationRepositoryInterface $notificationRepository
     ) {
 
     }
