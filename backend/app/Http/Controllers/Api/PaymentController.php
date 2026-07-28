@@ -23,8 +23,13 @@ use App\Http\Requests\PayInvoiceRequest;
 
 use Illuminate\Support\Facades\DB;
 
+use App\Services\KafkaProducerService;
+
 class PaymentController extends Controller
 {
+    public function __construct(
+        private KafkaProducerService $kafkaProducer
+    ) {}
 
     public function getPaymentMethods(): JsonResponse
     {
@@ -82,12 +87,14 @@ class PaymentController extends Controller
 
             // Kafka publish
             try {
-                Kafka::publish()
-                    ->onTopic('payment.success')
-                    ->withBodyKey('payment_id', $payment->id)
-                    ->withBodyKey('invoice_id', $invoice->id)
-                    ->withBodyKey('customer_id', $customer->id)
-                    ->send();
+                $this->kafkaProducer->publish(
+                    config('kafka.consumers.payment_completed.topic'),
+                    [
+                        'payment_id' => $payment->id,
+                        'invoice_id' => $invoice->id,
+                        'customer_id' => $customer->id,
+                    ]
+                );
             } catch (\Exception $e) {
                 \Log::error('Kafka error: ' . $e->getMessage());
             }
