@@ -7,6 +7,8 @@ use App\Models\Invoice;
 use App\Mail\InvoiceCreatedMail;
 use App\Services\EmailService;
 use App\Services\NotificationService;
+use App\Services\InvoiceService;
+use App\Services\CustomerService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -15,14 +17,16 @@ class NotificationConsumer
 
     public function __construct(
         private EmailService $emailService,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private InvoiceService $invoiceService,
+        private CustomerService $customerService
     ) {
     }
 
     public function handle($message): void
     {
         try {
-            Log::info('Notification Consumer started');
+            Log::info('Invoice creation notification consumer started');
 
             $data = $message->getBody();
 
@@ -36,7 +40,9 @@ class NotificationConsumer
                 return;
             }
 
-            $invoice = Invoice::find($data['invoice_id']);
+            // get invoice data by id
+            $invoice = $this->invoiceService
+                            ->getInvoiceById($data['invoice_id']);
 
             // if no invoice data in db
             if (!$invoice) {
@@ -46,8 +52,9 @@ class NotificationConsumer
                 return;
             }
 
-            // find customer
-            $customer = Customer::find($data['customer_id']);
+            // find customer by id
+            $customer = $this->customerService
+                            ->getCustomer($data['customer_id']);
 
             // if no customer found
             if (!$customer) {
@@ -81,11 +88,8 @@ class NotificationConsumer
             ]);
         } catch (Throwable $e) {
             Log::error('Notification Consumer failed', [
-
                 'error' => $e->getMessage(),
-
                 'trace' => $e->getTraceAsString()
-
             ]);
 
             throw $e;
