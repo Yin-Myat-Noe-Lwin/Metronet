@@ -11,13 +11,15 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\PlanDeactivatedMail;
 use App\Services\EmailService;
 use App\Services\NotificationService;
+use App\Services\PlanService;
 use Throwable;
 
 class PlanDeactivatedConsumer
 {
     public function __construct(
         private EmailService $emailService,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private planService $planService
     ) {}
 
     public function handle($message)
@@ -27,7 +29,10 @@ class PlanDeactivatedConsumer
 
             Log::info('PlanDeactivatedConsumer received', ['data' => $data]);
 
-            $plan = IspPlan::find($data['plan_id']);
+            // get isp plan by id
+            $plan = $this->planService
+                        ->getPlan($data['plan_id']);
+
             if (!$plan) {
                 Log::error('Plan not found', ['plan_id' => $data['plan_id']]);
                 return;
