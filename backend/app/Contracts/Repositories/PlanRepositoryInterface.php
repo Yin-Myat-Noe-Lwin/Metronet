@@ -2,6 +2,9 @@
 
 namespace App\Contracts\Repositories;
 
+use App\Models\IspPlan;
+use App\Models\Subscription;
+
 interface PlanRepositoryInterface
 {
     public function getPlan(int $id);
