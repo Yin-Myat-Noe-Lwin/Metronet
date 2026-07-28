@@ -12,6 +12,8 @@ use App\Mail\PlanDeactivatedMail;
 use App\Services\EmailService;
 use App\Services\NotificationService;
 use App\Services\PlanService;
+use App\Services\CustomerService;
+use App\Services\SubscriptionService;
 use Throwable;
 
 class PlanDeactivatedConsumer
@@ -19,7 +21,9 @@ class PlanDeactivatedConsumer
     public function __construct(
         private EmailService $emailService,
         private NotificationService $notificationService,
-        private planService $planService
+        private planService $planService,
+        private customerService $customerService,
+        private subscriptionService $subscriptionService
     ) {}
 
     public function handle($message)
@@ -39,13 +43,8 @@ class PlanDeactivatedConsumer
             }
 
             // Get all customers with active OR pending subscription to this plan
-            $customers = Customer::whereHas('subscriptions', function ($q) use ($plan) {
-                $q->where('plan_id', $plan->id)
-                  ->whereIn('status', [0, 1]); // pending (0) or active (1)
-            })->with(['subscriptions' => function ($q) use ($plan) {
-                $q->where('plan_id', $plan->id)
-                  ->whereIn('status', [0, 1]);
-            }])->get();
+            $customer = $this->customerService
+                            ->getCustomersByPlan($plan->id);
 
             if ($customers->isEmpty()) {
                 Log::info('No customers to notify for plan deactivation', ['plan_id' => $plan->id]);
@@ -55,44 +54,15 @@ class PlanDeactivatedConsumer
             foreach ($customers as $customer) {
                 try {
                     // Get the customer's subscription for this plan
-                    $subscription = $customer->subscriptions->first();
-                    $isPending = $subscription && $subscription->status == 0;
-                    $isActive = $subscription && $subscription->status == 1;
+                    $subscription = $this->subscriptionService
+                                        ->getCustomerSubscription($customer->id, $plan->id);
 
                     // Build different messages based on subscription status
-                    if ($isPending) {
-                        $notificationTitle = 'Subscription Cancelled';
-                        $notificationMessage = "⚠️ The plan '{$plan->name}' you applied for has been discontinued. Your subscription request has been cancelled. Please choose a new plan.";
-                        $emailSubject = '⚠️ Subscription Cancelled - Plan Discontinued';
+                    $result = $this->subscriptionService
+                                    ->processPlanDeactivation($subscription, $plan);
 
-                        // Cancel pending subscription
-                        $subscription->update([
-                            'status' => 4 // cancelled
-                        ]);
-
-                        Log::info('Pending subscription cancelled due to plan deactivation', [
-                            'subscription_id' => $subscription->id,
-                            'customer_id' => $customer->id,
-                            'plan_id' => $plan->id
-                        ]);
-
-                    } elseif ($isActive) {
-                        $notificationTitle = 'Plan Discontinued';
-                        $notificationMessage = "⚠️ The plan '{$plan->name}' you are subscribed to has been discontinued. ";
-                        $notificationMessage .= "Your service will continue until {$subscription->end_date->format('F d, Y')}. ";
-                        $notificationMessage .= "Please choose a new plan before your current subscription ends to avoid service interruption.";
-                        $emailSubject = '⚠️ Plan Discontinued - Action Required';
-
-                        // For active subscriptions, keep them active until end date
-                        // No immediate change, just notify
-
-                        Log::info('Active subscription notified about plan deactivation', [
-                            'subscription_id' => $subscription->id,
-                            'customer_id' => $customer->id,
-                            'plan_id' => $plan->id,
-                            'end_date' => $subscription->end_date
-                        ]);
-                    }
+                    $notificationTitle = $result['title'];
+                    $notificationMessage = $result['message'];
 
                     // Create notification
                     $this->notificationService->create([
