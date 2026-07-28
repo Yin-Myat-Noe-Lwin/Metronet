@@ -10,6 +10,9 @@ use App\Contracts\Repositories\CustomerRepositoryInterface;
 use App\Services\AuthService;
 use App\Contracts\Services\AuthServiceInterface;
 
+use App\Repositories\InvoiceRepository;
+use App\Contracts\Repositories\InvoiceRepositoryInterface;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -25,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             AuthServiceInterface::class,
             AuthService::class
+        );
+
+        $this->app->bind(
+            InvoiceRepositoryInterface::class,
+            InvoiceRepository::class
         );
     }
 
