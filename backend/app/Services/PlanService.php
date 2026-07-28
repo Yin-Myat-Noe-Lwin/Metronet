@@ -68,12 +68,6 @@ class PlanService
             ];
 
         } elseif ($isActive) {
-            $notificationTitle = 'Plan Discontinued';
-            $notificationMessage = "⚠️ The plan '{$plan->name}' you are subscribed to has been discontinued. ";
-            $notificationMessage .= "Your service will continue until {$subscription->end_date->format('F d, Y')}. ";
-            $notificationMessage .= "Please choose a new plan before your current subscription ends to avoid service interruption.";
-            $emailSubject = '⚠️ Plan Discontinued - Action Required';
-
             // For active subscriptions, keep them active until end date
             // No immediate change, just notify
             Log::info('Active subscription notified about plan deactivation', [
