@@ -8,6 +8,7 @@ use App\Models\Notification;
 use App\Services\SubscriptionService;
 use App\Services\EmailService;
 use App\Services\NotificationService;
+use App\Services\CustomerService;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SubscriptionCancelledMail;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,8 @@ class SubscriptionCancelledConsumer
     public function __construct(
         private SubscriptionService $subscriptionService,
         private EmailService $emailService,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private CustomerService $customerService
     )
     {}
 
@@ -39,7 +41,7 @@ class SubscriptionCancelledConsumer
             ]);
 
             // Find customer
-            $customer = $this->subscriptionService
+            $customer = $this->customerService
                             ->getCustomer($data['customer_id']);
 
             Log::info('Customer found', [
