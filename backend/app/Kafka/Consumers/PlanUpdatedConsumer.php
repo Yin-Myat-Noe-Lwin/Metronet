@@ -11,13 +11,19 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\PlanUpdatedMail;
 use App\Services\EmailService;
 use App\Services\NotificationService;
+use App\Services\SubscriptionService;
+use App\Services\CustomerService;
+use App\Services\PlanService;
 use Throwable;
 
 class PlanUpdatedConsumer
 {
     public function __construct(
+        private SubscriptionService $subscriptionService,
         private EmailService $emailService,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private CustomerService $customerService,
+        private PlanService $planService
     ) {}
 
     public function handle($message)
@@ -27,60 +33,32 @@ class PlanUpdatedConsumer
 
             Log::info('PlanUpdatedConsumer received', ['data' => $data]);
 
-            $plan = IspPlan::find($data['plan_id']);
+            $plan = $this->planService
+                        ->getPlan($data['plan_id']);
+
             if (!$plan) {
                 Log::error('Plan not found', ['plan_id' => $data['plan_id']]);
                 return;
             }
 
             // Get all customers with active subscription to this plan
-            $customers = Customer::whereHas('subscriptions', function ($q) use ($plan) {
-                $q->where('plan_id', $plan->id)
-                  ->whereIn('status', [0, 1]);
-            })->get();
+            $customers = $this->customerService
+                                ->getCustomersByPlan($plan->id);
 
             if ($customers->isEmpty()) {
                 Log::info('No customers to notify for plan update', ['plan_id' => $plan->id]);
                 return;
             }
 
-            // create notification message in email
-            $message = "📋 Plan '{$plan->name}' has been updated.";
-
-            $changes = [];
-
-            if (isset($data['old_price']) && isset($data['new_price']) && $data['old_price'] != $data['new_price']) {
-                $changes[] = "Price: " . number_format($data['old_price'], 2) . " MMK → " . number_format($data['new_price'], 2) . " MMK";
-            }
-
-            if (isset($data['old_name']) && isset($data['new_name']) && $data['old_name'] != $data['new_name']) {
-                $changes[] = "Name: '{$data['old_name']}' → '{$data['new_name']}'";
-            }
-
-            if (isset($data['old_download_speed']) && isset($data['new_download_speed']) && $data['old_download_speed'] != $data['new_download_speed']) {
-                $changes[] = "Download Speed: {$data['old_download_speed']} Mbps → {$data['new_download_speed']} Mbps";
-            }
-
-            if (isset($data['old_upload_speed']) && isset($data['new_upload_speed']) && $data['old_upload_speed'] != $data['new_upload_speed']) {
-                $changes[] = "Upload Speed: {$data['old_upload_speed']} Mbps → {$data['new_upload_speed']} Mbps";
-            }
-
-            if (isset($data['status_changed']) && $data['status_changed']) {
-                $changes[] = "Status has been updated.";
-            }
-
-            if (!empty($changes)) {
-                $message .= " Changes: " . implode(", ", $changes);
-            }
+            // create plan update message
+            $message = $this->planService
+                            ->buildUpdateMessage($plan, $data);
 
             // Create notification for each customer
             foreach ($customers as $customer) {
                 try {
-                    // Get subscription end date
-                    $subscription = Subscription::where('customer_id', $customer->id)
-                        ->where('plan_id', $plan->id)
-                        ->whereIn('status', [0, 1])
-                        ->first();
+                    $subscription = $this->subscriptionService
+                                        ->getSubscription($customer->id, $plan->id);
 
                     $this->emailService->send(
                         $customer,
