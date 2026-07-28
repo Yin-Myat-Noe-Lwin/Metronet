@@ -11,7 +11,7 @@ use App\Http\Requests\LoginRequest;
 
 use App\Models\Customer;
 
-use App\Contracts\AuthServiceInterface;
+use App\Contracts\Services\AuthServiceInterface;
 
 use App\Http\Controllers\Controller;
 
