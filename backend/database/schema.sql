@@ -133,6 +133,7 @@ CREATE TABLE `subscriptions` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `customer_id` BIGINT UNSIGNED NOT NULL,
     `plan_id` INT UNSIGNED NOT NULL,
+    `installation_address_id` BIGINT UNSIGNED NOT NULL,
     `status` TINYINT NOT NULL COMMENT '0=pending,1=active,2=suspended,3=expired,4=cancelled',
     `start_date` DATE NOT NULL,
     `end_date` DATE NOT NULL,
@@ -147,7 +148,9 @@ CREATE TABLE `subscriptions` (
     CONSTRAINT fk_subscriptions_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id),
     CONSTRAINT fk_subscriptions_plan_id
-    FOREIGN KEY (plan_id) REFERENCES isp_plans(id)
+    FOREIGN KEY (plan_id) REFERENCES isp_plans(id),
+    CONSTRAINT fk_subscriptions_installation_address_id
+    FOREIGN KEY (installation_address_id) REFERENCES customer_addresses(id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `invoices` (
