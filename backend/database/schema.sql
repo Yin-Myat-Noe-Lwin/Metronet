@@ -144,6 +144,7 @@ CREATE TABLE `subscriptions` (
 
     INDEX `idx_customer_id` (`customer_id`),
     INDEX `idx_plan_id` (`plan_id`),
+    INDEX `idx_installation_address_id` (`installation_address_id`),
 
     CONSTRAINT fk_subscriptions_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id),
