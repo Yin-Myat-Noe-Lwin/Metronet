@@ -13,8 +13,7 @@ class CustomerAddress extends Model
         'township',
         'city',
         'region',
-        'address_type',
-        'is_primary'
+        'address_type'
     ];
 
     public function customer(): BelongsTo
