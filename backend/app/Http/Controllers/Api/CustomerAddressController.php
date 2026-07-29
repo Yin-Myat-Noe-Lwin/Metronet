@@ -110,7 +110,7 @@ class CustomerAddressController extends Controller
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong.'
+                'message' => $e->getMessage()
             ]);
         }
     }
@@ -227,7 +227,7 @@ class CustomerAddressController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $addresses = CustomerAddress::where('is_primary', 1)->get();
+            $addresses = CustomerAddress::all();
 
             return response()->json([
                 'data' => $addresses
