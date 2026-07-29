@@ -16,6 +16,7 @@
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // customer able to view all the added addresses
     Route::get('/customer-addresses', [CustomerAddressController::class, 'viewAddresses']);
     Route::post('/address', [CustomerAddressController::class, 'store']);
     Route::patch('/address/{id}', [CustomerAddressController::class, 'update']);
