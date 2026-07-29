@@ -98,6 +98,7 @@ CREATE TABLE `customer_addresses` (
     `updated_at` timestamp NULL DEFAULT NULL,
 
     INDEX `idx_customer_id` (`customer_id`),
+    INDEX `idx_customer_address_type` (`customer_id, address_type`),
 
     CONSTRAINT fk_addresses_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id)
