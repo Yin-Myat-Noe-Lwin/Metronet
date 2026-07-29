@@ -42,6 +42,8 @@
             if (!empty($changes)) {
                 $message .= " Changes: " . implode(", ", $changes);
             }
+
+            return $message;
         }
 
         public function processPlanDeactivation(Subscription $subscription, IspPlan $plan): array
