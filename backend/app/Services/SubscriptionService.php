@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 class SubscriptionService
 {
     public function __construct(
-        SubscriptionRepositoryInterface $subscriptionRepository
+        private SubscriptionRepositoryInterface $subscriptionRepository
     ) {
 
     }
