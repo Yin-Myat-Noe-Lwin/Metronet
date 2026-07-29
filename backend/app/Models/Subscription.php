@@ -11,6 +11,7 @@ class Subscription extends Model
     protected $fillable = [
         'customer_id',
         'plan_id',
+        'installation_address_id',
         'status',
         'start_date',
         'end_date',
