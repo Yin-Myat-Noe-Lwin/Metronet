@@ -20,4 +20,12 @@ class CustomerAddress extends Model
     {
         return $this->belongsTo(Customer::class);
     }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(
+            Subscription::class,
+            'installation_address_id'
+        );
+    }
 }
