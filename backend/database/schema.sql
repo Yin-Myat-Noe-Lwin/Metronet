@@ -27,7 +27,7 @@ CREATE TABLE `jobs` (
     `available_at` INT UNSIGNED NOT NULL,
     `created_at` INT UNSIGNED NOT NULL,
     INDEX `jobs_queue_index` (`queue`)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `job_batches` (
     `id` VARCHAR(255) NOT NULL PRIMARY KEY,
@@ -40,7 +40,7 @@ CREATE TABLE `job_batches` (
     `cancelled_at` INT NULL,
     `created_at` INT NOT NULL,
     `finished_at` INT NULL
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `failed_jobs` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -50,21 +50,21 @@ CREATE TABLE `failed_jobs` (
     `payload` LONGTEXT NOT NULL,
     `exception` LONGTEXT NOT NULL,
     `failed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cache` (
     `key` VARCHAR(255) NOT NULL PRIMARY KEY,
     `value` MEDIUMTEXT NOT NULL,
     `expiration` INT NOT NULL,
     INDEX `cache_expiration_index` (`expiration`)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cache_locks` (
     `key` VARCHAR(255) NOT NULL PRIMARY KEY,
     `owner` VARCHAR(255) NOT NULL,
     `expiration` INT NOT NULL,
     INDEX `cache_locks_expiration_index` (`expiration`)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `customers` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -80,11 +80,10 @@ CREATE TABLE `customers` (
     `email_verified_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
-
     INDEX `idx_customers_status` (`status`),
     INDEX `idx_customers_role` (`role`),
     INDEX `idx_customers_status_role`  (`status`, `role`)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `customer_addresses` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -96,13 +95,11 @@ CREATE TABLE `customer_addresses` (
     `address_type` TINYINT NOT NULL COMMENT '1=Installation, 2=Billing',
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
-
     INDEX `idx_customer_id` (`customer_id`),
-    INDEX `idx_customer_address_type` (`customer_id, address_type`),
-
+    INDEX `idx_customer_address_type` (`customer_id`, `address_type`),
     CONSTRAINT fk_addresses_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `isp_plans` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -115,7 +112,7 @@ CREATE TABLE `isp_plans` (
     `download_speed` INT UNSIGNED NOT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `service_areas` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -125,9 +122,8 @@ CREATE TABLE `service_areas` (
     `status` TINYINT DEFAULT 1 COMMENT '1 = active, 0 = inactive',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
-
     INDEX `idx_service_area` (`region`, `city` ,`township`)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `subscriptions` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -141,18 +137,16 @@ CREATE TABLE `subscriptions` (
     `auto_renew` TINYINT NOT NULL DEFAULT 0,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
-
     INDEX `idx_customer_id` (`customer_id`),
     INDEX `idx_plan_id` (`plan_id`),
     INDEX `idx_installation_address_id` (`installation_address_id`),
-
     CONSTRAINT fk_subscriptions_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id),
     CONSTRAINT fk_subscriptions_plan_id
     FOREIGN KEY (plan_id) REFERENCES isp_plans(id),
     CONSTRAINT fk_subscriptions_installation_address_id
     FOREIGN KEY (installation_address_id) REFERENCES customer_addresses(id)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `invoices` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -163,12 +157,10 @@ CREATE TABLE `invoices` (
     `status` TINYINT NOT NULL COMMENT '0=pending,1=paid,2=overdue,3=cancelled',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
-
     INDEX `idx_subscription_id` (`subscription_id`),
-
     CONSTRAINT fk_invoice_subscription
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payment_methods` (
     `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -181,7 +173,7 @@ CREATE TABLE `payment_methods` (
     `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '0=Inactive, 1=Active',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -195,26 +187,24 @@ CREATE TABLE `payments` (
     `paid_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
-
     INDEX `idx_customer_id` (`customer_id`),
     INDEX `idx_invoice_id` (`invoice_id`),
-
     CONSTRAINT fk_payment_customer
     FOREIGN KEY (customer_id) REFERENCES customers(id),
     CONSTRAINT fk_payment_invoice
     FOREIGN KEY (invoice_id) REFERENCES invoices(id),
     CONSTRAINT `fk_payment_method`
     FOREIGN KEY (`method`) REFERENCES `payment_methods`(`id`) ON DELETE RESTRICT
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cpes` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `serial_number` VARCHAR(100) NOT NULL,
-    `mac_address` VARCHAR(100) NOT NULL,
+    `serial_number` VARCHAR(100) NOT NULL UNIQUE,
+    `mac_address` VARCHAR(100) NOT NULL UNIQUE,
     `status` TINYINT NOT NULL COMMENT '0=Available, 1=Assigned, 2=Faulty, 3=Maintenance, 4=Retired',
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cpe_assignments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -225,15 +215,13 @@ CREATE TABLE `cpe_assignments` (
     `status` TINYINT NOT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
-
     INDEX `idx_cpe_id` (`cpe_id`),
     INDEX `idx_subscription_id` (`subscription_id`),
-
     CONSTRAINT fk_assignments_cpe_id
     FOREIGN KEY (cpe_id) REFERENCES cpes(id),
     CONSTRAINT fk_assignments_subscription_id
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `notifications` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -249,21 +237,19 @@ CREATE TABLE `notifications` (
     `sent_at` TIMESTAMP NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
-
     INDEX `idx_customer_id` (`customer_id`),
     INDEX `idx_customer_read` (`customer_id`, `is_read`),
-
     CONSTRAINT fk_notifications_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO customers
 (name, phone_num, email, status, role, password, created_at, updated_at)
 VALUES
-('Elizabeth', '09123456789', 'elizabeth@gmail.com', 1, 1, '\$2y\$12\$6gJ8bZyujtrGBc536ZQZiulY1JNBppWPjTZ0gaCoUM2kwCW8HIhfq', NOW(), NOW()),
-('Leona Louisa', '0980888088', 'leonalouisa@gmail.com', 1, 0, '\$2y\$12\$XhDgFdTNnU4I2psyI7JTzeWc/tmbykl7eo1Wke/4uU.jmXTfN596K', NOW(), NOW()),
-('Emily', '09676767677', 'emily@gmail.com', 1, 0, '\$2y\$12\$2RCBemfIWVKa9a9NT7ECNOGd7OW9VsZiL2mFK7J5eyXhfbRl8ykXK', NOW(), NOW()),
-('Zoey', '09000000000', 'zoey@gmail.com', 1, 1, '\$2y\$12\$2RCBemfIWVKa9a9NT7ECNOGd7OW9VsZiL2mFK7J5eyXhfbRl8ykXK', NOW(), NOW());
+('Elizabeth', '09123456789', 'elizabeth@gmail.com', 1, 1, '$2y$12$6gJ8bZyujtrGBc536ZQZiulY1JNBppWPjTZ0gaCoUM2kwCW8HIhfq', NOW(), NOW()),
+('Leona Louisa', '0980888088', 'leonalouisa@gmail.com', 1, 0, '$2y$12$XhDgFdTNnU4I2psyI7JTzeWc/tmbykl7eo1Wke/4uU.jmXTfN596K', NOW(), NOW()),
+('Emily', '09676767677', 'emily@gmail.com', 1, 0, '$2y$12$2RCBemfIWVKa9a9NT7ECNOGd7OW9VsZiL2mFK7J5eyXhfbRl8ykXK', NOW(), NOW()),
+('Zoey', '09000000000', 'zoey@gmail.com', 1, 1, '$2y$12$2RCBemfIWVKa9a9NT7ECNOGd7OW9VsZiL2mFK7J5eyXhfbRl8ykXK', NOW(), NOW());
 
 INSERT INTO isp_plans
 (name, description, price, status, upload_speed, download_speed, created_at, updated_at)
