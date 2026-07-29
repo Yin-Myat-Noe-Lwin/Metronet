@@ -27,23 +27,22 @@
               <p class="profile-phone" v-if="userData.phone_num">
                 {{ userData.phone_num }}
               </p>
-              <span class="profile-status" :class="userData.status === 1 ? 'status-active' : 'status-inactive'">
-                {{ userData.status === 1 ? 'Active' : 'Inactive' }}
-              </span>
             </div>
           </div>
 
           <!-- Profile Tabs -->
-          <div class="profile-tabs">
-            <button
-              v-for="tab in tabs"
-              :key="tab.key"
-              class="tab-btn"
-              :class="{ 'tab-btn--active': activeTab === tab.key }"
-              @click="activeTab = tab.key"
-            >
-              {{ tab.label }}
-            </button>
+          <div class="profile-tabs-wrapper">
+            <div class="profile-tabs">
+              <button
+                v-for="tab in tabs"
+                :key="tab.key"
+                class="tab-btn"
+                :class="{ 'tab-btn--active': activeTab === tab.key }"
+                @click="activeTab = tab.key"
+              >
+                {{ tab.label }}
+              </button>
+            </div>
           </div>
 
           <!-- Tab Content -->
@@ -55,126 +54,158 @@
                 <button class="message-close" @click="updateMessage = ''">×</button>
               </div>
 
-              <!-- Profile Info Display -->
-              <div class="profile-display">
-                <div class="info-row">
-                  <div class="info-label">Full Name</div>
-                  <div class="info-value">
-                    <span v-if="editingField !== 'name'">{{ userData.name || 'Not set' }}</span>
-                    <input
-                      v-else
-                      v-model="editData.name"
-                      class="edit-input"
-                      placeholder="Enter your full name"
-                      autofocus
-                    >
-                  </div>
-                  <button
-                    @click="toggleEdit('name')"
-                    class="edit-field-btn"
-                    v-if="editingField !== 'name'"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8892a8" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                  </button>
-                  <div v-else class="edit-actions">
-                    <button @click="saveField('name')" class="save-field-btn" :disabled="isSaving">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2">
-                        <path d="M20 6L9 17l-5-5"/>
-                      </svg>
-                    </button>
-                    <button @click="cancelEdit" class="cancel-field-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                  </div>
+              <div class="profile-card">
+                <div class="profile-card-header">
+                  <h3>Personal Information</h3>
+                  <p class="card-subtitle">Manage your personal details</p>
                 </div>
 
-                <div class="info-row">
-                  <div class="info-label">Email Address</div>
-                  <div class="info-value">
-                    <span v-if="editingField !== 'email'">{{ userData.email || 'Not set' }}</span>
-                    <input
-                      v-else
-                      v-model="editData.email"
-                      class="edit-input"
-                      placeholder="Enter your email address"
-                      type="email"
-                      autofocus
+                <div class="profile-display">
+                  <!-- Name -->
+                  <div class="info-row">
+                    <div class="info-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </svg>
+                    </div>
+                    <div class="info-content">
+                      <div class="info-label">Full Name</div>
+                      <div class="info-value">
+                        <span v-if="editingField !== 'name'">{{ userData.name || 'Not set' }}</span>
+                        <input
+                          v-else
+                          v-model="editData.name"
+                          class="edit-input"
+                          placeholder="Enter your full name"
+                          autofocus
+                          :disabled="isSaving"
+                        >
+                      </div>
+                    </div>
+                    <button
+                      @click="toggleEdit('name')"
+                      class="edit-field-btn"
+                      v-if="editingField !== 'name'"
+                      :disabled="isSaving"
                     >
-                  </div>
-                  <button
-                    @click="toggleEdit('email')"
-                    class="edit-field-btn"
-                    v-if="editingField !== 'email'"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8892a8" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                  </button>
-                  <div v-else class="edit-actions">
-                    <button @click="saveField('email')" class="save-field-btn" :disabled="isSaving">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2">
-                        <path d="M20 6L9 17l-5-5"/>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8892a8" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
                     </button>
-                    <button @click="cancelEdit" class="cancel-field-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
+                    <div v-else class="edit-actions">
+                      <button @click="saveField('name')" class="save-field-btn" :disabled="isSaving">
+                        <span v-if="isSaving" class="btn-spinner"></span>
+                        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2">
+                          <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                      </button>
+                      <button @click="cancelEdit" class="cancel-field-btn" :disabled="isSaving">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div class="info-row">
-                  <div class="info-label">Phone Number</div>
-                  <div class="info-value">
-                    <span v-if="editingField !== 'phone'">{{ userData.phone_num || 'Not set' }}</span>
-                    <input
-                      v-else
-                      v-model="editData.phone_num"
-                      class="edit-input"
-                      placeholder="Enter your phone number"
-                      autofocus
+                  <!-- Email -->
+                  <div class="info-row">
+                    <div class="info-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                      </svg>
+                    </div>
+                    <div class="info-content">
+                      <div class="info-label">Email Address</div>
+                      <div class="info-value">
+                        <span v-if="editingField !== 'email'">{{ userData.email || 'Not set' }}</span>
+                        <input
+                          v-else
+                          v-model="editData.email"
+                          class="edit-input"
+                          placeholder="Enter your email address"
+                          type="email"
+                          autofocus
+                          :disabled="isSaving"
+                        >
+                      </div>
+                    </div>
+                    <button
+                      @click="toggleEdit('email')"
+                      class="edit-field-btn"
+                      v-if="editingField !== 'email'"
+                      :disabled="isSaving"
                     >
-                  </div>
-                  <button
-                    @click="toggleEdit('phone')"
-                    class="edit-field-btn"
-                    v-if="editingField !== 'phone'"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8892a8" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                  </button>
-                  <div v-else class="edit-actions">
-                    <button @click="saveField('phone')" class="save-field-btn" :disabled="isSaving">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2">
-                        <path d="M20 6L9 17l-5-5"/>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8892a8" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
                     </button>
-                    <button @click="cancelEdit" class="cancel-field-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
+                    <div v-else class="edit-actions">
+                      <button @click="saveField('email')" class="save-field-btn" :disabled="isSaving">
+                        <span v-if="isSaving" class="btn-spinner"></span>
+                        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2">
+                          <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                      </button>
+                      <button @click="cancelEdit" class="cancel-field-btn" :disabled="isSaving">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div class="info-row">
-                  <div class="info-label">Status</div>
-                  <div class="info-value">
-                    <span class="status-badge" :class="userData.status === 1 ? 'status-active' : 'status-inactive'">
-                      {{ userData.status === 1 ? 'Active' : 'Inactive' }}
-                    </span>
+                  <!-- Phone -->
+                  <div class="info-row">
+                    <div class="info-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                      </svg>
+                    </div>
+                    <div class="info-content">
+                      <div class="info-label">Phone Number</div>
+                      <div class="info-value">
+                        <span v-if="editingField !== 'phone'">{{ userData.phone_num || 'Not set' }}</span>
+                        <input
+                          v-else
+                          v-model="editData.phone_num"
+                          class="edit-input"
+                          placeholder="Enter your phone number"
+                          autofocus
+                          :disabled="isSaving"
+                        >
+                      </div>
+                    </div>
+                    <button
+                      @click="toggleEdit('phone')"
+                      class="edit-field-btn"
+                      v-if="editingField !== 'phone'"
+                      :disabled="isSaving"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8892a8" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                    <div v-else class="edit-actions">
+                      <button @click="saveField('phone')" class="save-field-btn" :disabled="isSaving">
+                        <span v-if="isSaving" class="btn-spinner"></span>
+                        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2">
+                          <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                      </button>
+                      <button @click="cancelEdit" class="cancel-field-btn" :disabled="isSaving">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -183,137 +214,22 @@
             <!-- Addresses Tab -->
             <div v-if="activeTab === 'addresses'" class="tab-panel">
               <div class="addresses-header">
-                <h3>My Addresses</h3>
-                <button @click="toggleAddressForm" class="add-btn">
-                  {{ showAddressForm ? 'Cancel' : '+ Add Address' }}
-                </button>
-              </div>
-
-              <!-- Address Form -->
-              <div v-if="showAddressForm" class="address-form-wrapper">
-                <div v-if="loadingServiceAreas" class="loading-service-areas">
-                  <div class="small-spinner"></div>
-                  <span>Loading service areas...</span>
+                <div>
+                  <h3>My Addresses</h3>
+                  <p class="card-subtitle">Manage your saved addresses</p>
                 </div>
-                <form @submit.prevent="submitAddress" class="address-form" v-else>
-                  <div class="form-group" :class="{ 'has-error': addressErrors.address }">
-                    <label>Address <span class="required">*</span></label>
-                    <input
-                      v-model="addressForm.address"
-                      class="form-input"
-                      placeholder="Street address"
-                      required
-                      :class="{ 'input-error': addressErrors.address }"
-                    >
-                    <span v-if="addressErrors.address" class="field-error">{{ addressErrors.address }}</span>
-                  </div>
-
-                  <div class="form-group" :class="{ 'has-error': addressErrors.region }">
-                    <label>Region <span class="required">*</span></label>
-                    <select
-                      v-model="addressForm.region"
-                      class="form-input"
-                      required
-                      @change="onRegionChange"
-                      :class="{ 'input-error': addressErrors.region }"
-                    >
-                      <option value="">Select Region</option>
-                      <option
-                        v-for="region in regions"
-                        :key="region"
-                        :value="region"
-                      >
-                        {{ region }}
-                      </option>
-                    </select>
-                    <span v-if="addressErrors.region" class="field-error">{{ addressErrors.region }}</span>
-                  </div>
-
-                  <div class="form-group" :class="{ 'has-error': addressErrors.city }">
-                    <label>City <span class="required">*</span></label>
-                    <select
-                      v-model="addressForm.city"
-                      class="form-input"
-                      required
-                      :disabled="!addressForm.region"
-                      @change="onCityChange"
-                      :class="{ 'input-error': addressErrors.city }"
-                    >
-                      <option value="">Select City</option>
-                      <option
-                        v-for="city in filteredCities"
-                        :key="city"
-                        :value="city"
-                      >
-                        {{ city }}
-                      </option>
-                    </select>
-                    <span v-if="addressErrors.city" class="field-error">{{ addressErrors.city }}</span>
-                  </div>
-
-                  <div class="form-group" :class="{ 'has-error': addressErrors.township }">
-                    <label>Township <span class="required">*</span></label>
-                    <select
-                      v-model="addressForm.township"
-                      class="form-input"
-                      required
-                      :disabled="!addressForm.city"
-                      :class="{ 'input-error': addressErrors.township }"
-                    >
-                      <option value="">Select Township</option>
-                      <option
-                        v-for="township in filteredTownships"
-                        :key="township"
-                        :value="township"
-                      >
-                        {{ township }}
-                      </option>
-                    </select>
-                    <span v-if="addressErrors.township" class="field-error">{{ addressErrors.township }}</span>
-                  </div>
-
-                  <div class="form-group" :class="{ 'has-error': addressErrors.address_type }">
-                    <label>Address Type <span class="required">*</span></label>
-                    <select
-                      v-model="addressForm.address_type"
-                      class="form-input"
-                      required
-                      :class="{ 'input-error': addressErrors.address_type }"
-                    >
-                      <option value="">Select type</option>
-                      <option value="1">Home</option>
-                      <option value="2">Office</option>
-                      <option value="3">Business</option>
-                    </select>
-                    <span v-if="addressErrors.address_type" class="field-error">{{ addressErrors.address_type }}</span>
-                  </div>
-
-                  <!-- Primary Address Checkbox - Only show when creating new address -->
-                  <div v-if="!editingAddress" class="form-group checkbox-group">
-                    <label class="checkbox-label">
-                      <input type="checkbox" v-model="addressForm.is_primary">
-                      Set as primary address
-                    </label>
-                  </div>
-
-                  <div class="address-form-actions">
-                    <button type="submit" class="save-btn" :disabled="isSubmittingAddress">
-                      {{ isSubmittingAddress ? 'Saving...' : (editingAddress ? 'Update Address' : 'Save Address') }}
-                    </button>
-                    <button type="button" @click="cancelAddressForm" class="cancel-btn">Cancel</button>
-                  </div>
-                </form>
+                <span class="address-count">{{ addresses.length }} address{{ addresses.length !== 1 ? 'es' : '' }}</span>
               </div>
 
               <!-- Address List -->
               <div class="address-list">
-                <div v-if="addresses.length === 0" class="empty-state">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8892a8" stroke-width="1.5">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
+                <div v-if="addressesLoading" class="loading-state-small">
+                  <div class="small-spinner"></div>
+                  <p>Loading addresses...</p>
+                </div>
+                <div v-else-if="addresses.length === 0" class="empty-state">
                   <p>No addresses added yet.</p>
-                  <small>Click "Add Address" to add your first address</small>
+                  <small>You haven't saved any addresses</small>
                 </div>
                 <div
                   v-for="address in addresses"
@@ -322,31 +238,14 @@
                   :class="{ 'address-card--primary': address.is_primary }"
                 >
                   <div class="address-card-header">
-                    <div>
+                    <div class="address-badges">
                       <span v-if="address.is_primary" class="primary-badge">Primary</span>
                       <span class="address-type">{{ getAddressTypeLabel(address.address_type) }}</span>
                     </div>
-                    <div class="address-actions">
-                      <button @click="editAddress(address)" class="edit-btn">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                        Edit
-                      </button>
-                      <button @click="deleteAddress(address.id)" class="delete-btn">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M3 6h18"/>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
                   </div>
                   <div class="address-content">
-                    <p>{{ address.address }}</p>
-                    <p>{{ address.township }}</p>
-                    <p>{{ address.city }}, {{ address.region }}</p>
+                    <p class="address-street">{{ address.address }}</p>
+                    <p class="address-location">{{ address.township }}, {{ address.city }}, {{ address.region }}</p>
                   </div>
                 </div>
               </div>
@@ -377,10 +276,11 @@
             You will need to verify it to complete the change.
           </p>
           <div class="modal-actions">
-            <button @click="closeEmailModal" class="modal-btn modal-btn-secondary">
+            <button @click="closeEmailModal" class="modal-btn modal-btn-secondary" :disabled="isSaving">
               Cancel
             </button>
             <button @click="confirmEmailChange" class="modal-btn modal-btn-primary" :disabled="isSaving">
+              <span v-if="isSaving" class="btn-spinner"></span>
               {{ isSaving ? 'Sending...' : 'Send Verification' }}
             </button>
           </div>
@@ -388,63 +288,28 @@
       </div>
     </div>
 
-    <!-- Address Error Modal -->
-    <div v-if="showAddressErrorModal" class="modal-overlay" @click.self="closeAddressErrorModal">
-      <div class="modal-container modal-error">
-        <div class="modal-content">
-          <div class="modal-icon error-modal-icon">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-          </div>
-          <h3 style="color: #c62828;">{{ addressModalTitle || 'Error' }}</h3>
-          <p>{{ addressModalMessage }}</p>
-          <div class="modal-actions">
-            <button @click="closeAddressErrorModal" class="modal-btn modal-btn-primary" style="background: #ff4757;">
-              Got it
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Address Success Modal -->
-    <div v-if="showAddressSuccessModal" class="modal-overlay" @click.self="closeAddressSuccessModal">
-      <div class="modal-container modal-success">
-        <div class="modal-content">
-          <div class="modal-icon success-modal-icon">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-          </div>
-          <h3 style="color: #2e7d32;">Success!</h3>
-          <p>{{ addressModalMessage }}</p>
-          <div class="modal-actions">
-            <button @click="closeAddressSuccessModal" class="modal-btn modal-btn-primary" style="background: #2ed573;">
-              Done
-            </button>
-          </div>
-        </div>
+    <!-- Loading Overlay for Profile Update -->
+    <div v-if="isSaving" class="loading-overlay">
+      <div class="loading-overlay-content">
+        <div class="loading-overlay-spinner"></div>
+        <p>Updating your profile...</p>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { authService, addressService, serviceAreasService } from '../services/api'
+import { authService, addressService } from '../services/api'
 
 export default {
   name: 'ProfilePage',
   data() {
     return {
-      loading: false,
+      loading: true,
       error: null,
+      addressesLoading: false,
       editingField: null,
       isSaving: false,
-      isSubmittingAddress: false,
       showEmailModal: false,
       activeTab: 'profile',
       tabs: [
@@ -464,238 +329,196 @@ export default {
       },
       updateMessage: '',
       updateType: 'success',
-      addresses: [],
-      showAddressForm: false,
-      editingAddress: null,
-      addressForm: {
-        address: '',
-        region: '',
-        city: '',
-        township: '',
-        address_type: '',
-        is_primary: false
-      },
-      // Address Modal
-      showAddressErrorModal: false,
-      showAddressSuccessModal: false,
-      addressModalTitle: '',
-      addressModalMessage: '',
-      // Address Errors
-      addressFormError: '',
-      addressErrors: {
-        address: '',
-        region: '',
-        city: '',
-        township: '',
-        address_type: ''
-      },
-      // Service Areas
-      regions: [],
-      allCities: [],
-      allTownships: [],
-      filteredCities: [],
-      filteredTownships: [],
-      loadingServiceAreas: false,
-      serviceAreasError: null
+      addresses: []
     }
   },
   computed: {
     userInitials() {
-      if (!this.userData.name) return 'U'
-      return this.userData.name
-        .split(' ')
-        .map(word => word.charAt(0))
-        .join('')
-        .toUpperCase()
-        .substring(0, 2)
+      let name = this.userData.name || localStorage.getItem('userName') || ''
+
+      if (!name) {
+        try {
+          const userDataStr = localStorage.getItem('userData')
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr)
+            name = userData.name || ''
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+
+      if (!name || name.trim() === '') {
+        return 'U'
+      }
+
+      const nameParts = name.trim().split(' ')
+      if (nameParts.length === 1) {
+        return nameParts[0].substring(0, 2).toUpperCase()
+      }
+      return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
     }
   },
   mounted() {
+    this.loadFromLocalStorage()
     this.loadUserData()
     this.loadAddresses()
-    this.loadServiceAreas()
   },
   methods: {
+    loadFromLocalStorage() {
+      const storedUserData = localStorage.getItem('userData')
+      if (storedUserData) {
+        try {
+          const userData = JSON.parse(storedUserData)
+          this.userData = {
+            name: userData.name || '',
+            email: userData.email || '',
+            phone_num: userData.phone_num || '',
+            status: userData.status || 1
+          }
+          this.editData = {
+            name: this.userData.name,
+            email: this.userData.email,
+            phone_num: this.userData.phone_num
+          }
+          if (this.userData.name) {
+            localStorage.setItem('userName', this.userData.name)
+          }
+          if (this.userData.email) {
+            localStorage.setItem('userEmail', this.userData.email)
+          }
+        } catch (e) {
+          console.error('Error parsing userData:', e)
+        }
+      }
+
+      if (!this.userData.name) {
+        const name = localStorage.getItem('userName')
+        if (name) {
+          this.userData.name = name
+          this.editData.name = name
+        }
+      }
+      if (!this.userData.email) {
+        const email = localStorage.getItem('userEmail')
+        if (email) {
+          this.userData.email = email
+          this.editData.email = email
+        }
+      }
+
+      if (this.userData.name || this.userData.email) {
+        this.loading = false
+      }
+    },
+
     async loadUserData() {
-      this.loading = true
+      if (!this.userData.name && !this.userData.email) {
+        this.loading = true
+      }
       this.error = null
 
       try {
         const response = await authService.getUser()
-        const user = response.user || response.customer || response
+        let user = null
 
-        this.userData = {
-          name: user.name || '',
-          email: user.email || '',
-          phone_num: user.phone_number || user.phone || '',
-          status: user.status || 1
+        if (response?.data) {
+          user = response.data
+        } else if (response?.user) {
+          user = response.user
+        } else if (response?.customer) {
+          user = response.customer
+        } else if (response?.id || response?.name || response?.email) {
+          user = response
         }
 
-        this.editData = {
-          name: this.userData.name,
-          email: this.userData.email,
-          phone_num: this.userData.phone_num
+        if (user && user.name) {
+          this.userData = {
+            name: user.name || this.userData.name || '',
+            email: user.email || this.userData.email || '',
+            phone_num: user.phone_number || user.phone_num || user.phone || this.userData.phone_num || '',
+            status: user.status !== undefined ? user.status : (this.userData.status || 1)
+          }
+
+          this.editData = {
+            name: this.userData.name,
+            email: this.userData.email,
+            phone_num: this.userData.phone_num
+          }
+
+          const userDataToStore = {
+            name: this.userData.name,
+            email: this.userData.email,
+            phone_num: this.userData.phone_num,
+            status: this.userData.status,
+            role: user.role !== undefined ? user.role : 1,
+            id: user.id || null
+          }
+
+          localStorage.setItem('userData', JSON.stringify(userDataToStore))
+          localStorage.setItem('userName', this.userData.name)
+          localStorage.setItem('userEmail', this.userData.email)
+          window.dispatchEvent(new CustomEvent('userDataUpdated'))
         }
-
-        localStorage.setItem('userName', this.userData.name)
-        localStorage.setItem('userEmail', this.userData.email)
-        localStorage.setItem('userData', JSON.stringify(this.userData))
-        window.dispatchEvent(new CustomEvent('userDataUpdated'))
-
       } catch (error) {
         console.error('Error loading user data:', error)
-        this.error = error.response?.data?.message || 'Failed to load profile data.'
+        const storedData = localStorage.getItem('userData')
+        if (storedData) {
+          try {
+            const userData = JSON.parse(storedData)
+            if (userData.name || userData.email) {
+              if (!this.userData.name) {
+                this.userData = {
+                  name: userData.name || '',
+                  email: userData.email || '',
+                  phone_num: userData.phone_num || '',
+                  status: userData.status || 1
+                }
+                this.editData = {
+                  name: this.userData.name,
+                  email: this.userData.email,
+                  phone_num: this.userData.phone_num
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing stored data:', e)
+          }
+        }
+        if (!this.userData.name && !this.userData.email) {
+          this.error = error.response?.data?.message || error.message || 'Failed to load profile data.'
+        }
       } finally {
         this.loading = false
       }
     },
 
-    async loadServiceAreas() {
-      this.loadingServiceAreas = true
-      this.serviceAreasError = null
-
+    async loadAddresses() {
+      this.addressesLoading = true
       try {
-        const response = await serviceAreasService.getServiceAreas()
-        console.log('Service areas response:', response)
-
-        const data = response.data || response
-
-        this.regions = data.region || []
-        this.allCities = data.city || []
-        this.allTownships = data.township || []
-
-        this.filteredCities = [...this.allCities]
-        this.filteredTownships = [...this.allTownships]
-
-        console.log('Regions loaded:', this.regions.length)
-        console.log('Cities loaded:', this.allCities.length)
-        console.log('Townships loaded:', this.allTownships.length)
-
-        if (this.regions.length === 0) {
-          console.warn('No service areas found in the database.')
-          this.serviceAreasError = 'No service areas available. Please contact support.'
+        const response = await addressService.viewAddresses()
+        let addresses = response
+        if (response?.data) {
+          addresses = response.data
+        } else if (response?.addresses) {
+          addresses = response.addresses
         }
-
+        this.addresses = Array.isArray(addresses) ? addresses : []
       } catch (error) {
-        console.error('Error loading service areas:', error)
-        this.serviceAreasError = error.response?.data?.message || 'Failed to load service areas.'
-        this.regions = []
-        this.allCities = []
-        this.allTownships = []
-        this.filteredCities = []
-        this.filteredTownships = []
+        console.error('Error loading addresses:', error)
+        this.addresses = []
       } finally {
-        this.loadingServiceAreas = false
+        this.addressesLoading = false
       }
     },
 
-    onRegionChange() {
-      this.filteredCities = [...this.allCities]
-      this.addressForm.city = ''
-      this.addressForm.township = ''
-      this.filteredTownships = []
-      this.clearFieldError('region')
-    },
-
-    onCityChange() {
-      this.filteredTownships = [...this.allTownships]
-      this.addressForm.township = ''
-      this.clearFieldError('city')
-    },
-
-    validateAddressForm() {
-      let isValid = true
-      this.addressErrors = {
-        address: '',
-        region: '',
-        city: '',
-        township: '',
-        address_type: ''
+    getAddressTypeLabel(type) {
+      const types = {
+        1: 'Home',
+        2: 'Office',
+        3: 'Business'
       }
-      this.addressFormError = ''
-
-      if (!this.addressForm.address) {
-        this.addressErrors.address = 'Address is required'
-        isValid = false
-      }
-
-      if (!this.addressForm.region) {
-        this.addressErrors.region = 'Please select a region'
-        isValid = false
-      }
-
-      if (!this.addressForm.city) {
-        this.addressErrors.city = 'Please select a city'
-        isValid = false
-      }
-
-      if (!this.addressForm.township) {
-        this.addressErrors.township = 'Please select a township'
-        isValid = false
-      }
-
-      if (!this.addressForm.address_type) {
-        this.addressErrors.address_type = 'Please select an address type'
-        isValid = false
-      }
-
-      return isValid
-    },
-
-    clearFieldError(field) {
-      if (this.addressErrors[field]) {
-        this.addressErrors[field] = ''
-      }
-    },
-
-    // Address Modal Methods
-    showAddressError(message, title = 'Error') {
-      this.addressModalTitle = title
-      this.addressModalMessage = message
-      this.showAddressErrorModal = true
-    },
-
-    closeAddressErrorModal() {
-      this.showAddressErrorModal = false
-    },
-
-    showAddressSuccess(message) {
-      this.addressModalMessage = message
-      this.showAddressSuccessModal = true
-    },
-
-    closeAddressSuccessModal() {
-      this.showAddressSuccessModal = false
-      this.loadAddresses()
-      this.cancelAddressForm()
-    },
-
-    toggleAddressForm() {
-      if (this.showAddressForm) {
-        this.cancelAddressForm()
-      } else {
-        this.showAddressForm = true
-        // Reset form to empty when adding new
-        this.editingAddress = null
-        this.addressForm = {
-          address: '',
-          region: '',
-          city: '',
-          township: '',
-          address_type: '',
-          is_primary: false
-        }
-        this.filteredCities = [...this.allCities]
-        this.filteredTownships = [...this.allTownships]
-        this.addressFormError = ''
-        this.addressErrors = {
-          address: '',
-          region: '',
-          city: '',
-          township: '',
-          address_type: ''
-        }
-      }
+      return types[type] || 'Other'
     },
 
     toggleEdit(field) {
@@ -729,7 +552,6 @@ export default {
         this.showEmailModal = true
         return
       }
-
       await this.performUpdate(field)
     },
 
@@ -813,184 +635,12 @@ export default {
         this.isSaving = false
         setTimeout(() => this.updateMessage = '', 5000)
       }
-    },
-
-    async loadAddresses() {
-      try {
-        const response = await addressService.viewAddresses()
-        console.log('Addresses response:', response)
-
-        const data = response.data || response
-        this.addresses = data || []
-
-        console.log('Addresses loaded:', this.addresses.length)
-      } catch (error) {
-        console.error('Error loading addresses:', error)
-        this.addresses = []
-      }
-    },
-
-    getAddressTypeLabel(type) {
-      const types = {
-        1: 'Home',
-        2: 'Office',
-        3: 'Business'
-      }
-      return types[type] || 'Other'
-    },
-
-    async submitAddress() {
-      this.addressFormError = ''
-      this.addressErrors = {
-        address: '',
-        region: '',
-        city: '',
-        township: '',
-        address_type: ''
-      }
-
-      if (!this.validateAddressForm()) {
-        const firstError = document.querySelector('.has-error')
-        if (firstError) {
-          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }
-        return
-      }
-
-      this.isSubmittingAddress = true
-
-      try {
-        const data = {
-          address: this.addressForm.address,
-          region: this.addressForm.region,
-          city: this.addressForm.city,
-          township: this.addressForm.township,
-          address_type: parseInt(this.addressForm.address_type),
-          is_primary: this.addressForm.is_primary ? 1 : 0
-        }
-
-        console.log('Submitting address data:', data)
-
-        let response
-        if (this.editingAddress) {
-          response = await addressService.updateAddress(this.editingAddress.id, data)
-        } else {
-          response = await addressService.addAddress(data)
-        }
-
-        console.log('Address response:', response)
-
-        const action = this.editingAddress ? 'updated' : 'added'
-        this.showAddressSuccess(`Address ${action} successfully!`)
-
-      } catch (error) {
-        console.error('Error saving address:', error)
-
-        const errorMessage = error.response?.data?.message || 'Failed to save address.'
-
-        if (errorMessage.toLowerCase().includes('invalid') ||
-            errorMessage.toLowerCase().includes('combination') ||
-            errorMessage.toLowerCase().includes('service area')) {
-          this.showAddressError(
-            'Invalid service area combination. Please select a valid region, city, and township combination.',
-            'Invalid Service Area'
-          )
-        } else if (error.response?.data?.errors) {
-          const errors = error.response.data.errors
-          let errorList = ''
-          Object.keys(errors).forEach(key => {
-            const label = {
-              address: 'Address',
-              region: 'Region',
-              city: 'City',
-              township: 'Township',
-              address_type: 'Address Type'
-            }[key] || key
-            errorList += `• ${label}: ${errors[key][0]}\n`
-          })
-          this.showAddressError(errorList, 'Validation Error')
-        } else {
-          this.showAddressError(errorMessage, 'Error')
-        }
-      } finally {
-        this.isSubmittingAddress = false
-      }
-    },
-
-    editAddress(address) {
-      console.log('Editing address:', address)
-
-      this.editingAddress = address
-      this.showAddressForm = true
-
-      this.addressForm = {
-        address: address.address || '',
-        region: address.region || '',
-        city: address.city || '',
-        township: address.township || '',
-        address_type: String(address.address_type || ''),
-        is_primary: false // Always false when editing
-      }
-
-      console.log('Address form set:', this.addressForm)
-
-      this.addressFormError = ''
-      this.addressErrors = {
-        address: '',
-        region: '',
-        city: '',
-        township: '',
-        address_type: ''
-      }
-
-      this.filteredCities = [...this.allCities]
-      this.filteredTownships = [...this.allTownships]
-
-      console.log('Filtered cities:', this.filteredCities)
-      console.log('Filtered townships:', this.filteredTownships)
-    },
-
-    async deleteAddress(id) {
-      if (!confirm('Are you sure you want to delete this address?')) return
-
-      try {
-        await addressService.deleteAddress(id)
-        await this.loadAddresses()
-        this.showAddressSuccess('Address deleted successfully!')
-      } catch (error) {
-        console.error('Error deleting address:', error)
-        this.showAddressError(error.response?.data?.message || 'Failed to delete address.', 'Error')
-      }
-    },
-
-    cancelAddressForm() {
-      this.showAddressForm = false
-      this.editingAddress = null
-      this.addressForm = {
-        address: '',
-        region: '',
-        city: '',
-        township: '',
-        address_type: '',
-        is_primary: false
-      }
-      this.filteredCities = []
-      this.filteredTownships = []
-      this.addressFormError = ''
-      this.addressErrors = {
-        address: '',
-        region: '',
-        city: '',
-        township: '',
-        address_type: ''
-      }
     }
   }
 }
 </script>
 
 <style scoped>
-/* All styles remain the same as previous version */
 .profile-page {
   min-height: 100vh;
   background: #f0f2f6;
@@ -1005,34 +655,9 @@ export default {
 
 .profile-container {
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-}
-
-.loading-service-areas {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 20px;
-  color: #8892a8;
-  font-size: 14px;
-}
-
-.small-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e8ecf1;
-  border-top-color: #ff6b35;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.form-input:disabled {
-  background: #f5f5f5;
-  cursor: not-allowed;
-  opacity: 0.7;
 }
 
 .loading-state, .error-state {
@@ -1069,6 +694,7 @@ export default {
   background: #e85a2a;
 }
 
+/* Profile Header */
 .profile-header {
   display: flex;
   align-items: center;
@@ -1078,8 +704,8 @@ export default {
 }
 
 .profile-avatar {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   background: #ff6b35;
   border-radius: 50%;
   display: flex;
@@ -1089,9 +715,10 @@ export default {
 }
 
 .avatar-text {
-  font-size: 32px;
+  font-size: 40px;
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: 1px;
 }
 
 .profile-info {
@@ -1099,7 +726,7 @@ export default {
 }
 
 .profile-name {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 4px;
@@ -1114,33 +741,18 @@ export default {
 .profile-phone {
   color: rgba(255, 255, 255, 0.7);
   font-size: 15px;
-  margin-bottom: 8px;
 }
 
-.profile-status {
-  display: inline-block;
-  padding: 4px 16px;
-  border-radius: 50px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.profile-status.status-active {
-  background: #4caf50;
-  color: #ffffff;
-}
-
-.profile-status.status-inactive {
-  background: #e74c3c;
-  color: #ffffff;
+/* Tabs */
+.profile-tabs-wrapper {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e8ecf1;
+  padding: 0 40px;
 }
 
 .profile-tabs {
   display: flex;
-  background: #f8f9fa;
-  border-bottom: 2px solid #e8ecf1;
-  padding: 0 20px;
+  gap: 8px;
 }
 
 .tab-btn {
@@ -1164,10 +776,12 @@ export default {
   border-bottom-color: #ff6b35;
 }
 
+/* Tab Content */
 .tab-content {
   padding: 32px 40px;
 }
 
+/* Messages */
 .message {
   padding: 12px 16px;
   border-radius: 8px;
@@ -1176,6 +790,18 @@ export default {
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message.success {
@@ -1209,57 +835,153 @@ export default {
   opacity: 1;
 }
 
+/* Profile Card */
+.profile-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e8ecf1;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.profile-card-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #f0f2f6;
+}
+
+.profile-card-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 2px;
+}
+
+.card-subtitle {
+  font-size: 14px;
+  color: #8892a8;
+}
+
 .profile-display {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  padding: 0;
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  padding: 14px 0;
+  padding: 18px 28px;
   border-bottom: 1px solid #f0f2f6;
-  gap: 16px;
+  gap: 18px;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
-.info-row:last-of-type {
+.info-row:hover {
+  background: #f8f9fc;
+}
+
+.info-row:last-child {
   border-bottom: none;
 }
 
+.info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 107, 53, 0.08);
+  border-radius: 12px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.info-row:hover .info-icon {
+  background: rgba(255, 107, 53, 0.15);
+  transform: scale(1.05);
+}
+
+.info-content {
+  flex: 1;
+  min-width: 0;
+}
+
 .info-label {
+  font-size: 12px;
   font-weight: 600;
   color: #8892a8;
-  width: 140px;
-  flex-shrink: 0;
-  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 .info-value {
-  flex: 1;
-  color: #1a1a2e;
+  font-size: 16px;
   font-weight: 500;
-  font-size: 15px;
+  color: #1a1a2e;
   display: flex;
   align-items: center;
+}
+
+.info-value span {
+  display: inline-block;
+  padding: 4px 0;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.info-value span::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff6b35, #f7931e);
+  transition: width 0.4s ease;
+}
+
+.info-value span:hover::after {
+  width: 100%;
+}
+
+.info-value span:hover {
+  color: #ff6b35;
+}
+
+.info-row:hover .info-value span {
+  border-bottom-color: rgba(255, 107, 53, 0.2);
+}
+
+.info-value .not-set {
+  color: #b0b8c8;
+  font-style: italic;
 }
 
 .edit-input {
   width: 100%;
   max-width: 400px;
-  padding: 6px 12px;
-  border: 2px solid #ff6b35;
-  border-radius: 6px;
+  padding: 8px 14px;
+  border: 2px solid #e8ecf1;
+  border-radius: 8px;
   font-size: 15px;
   font-weight: 500;
   color: #1a1a2e;
   background: #fff;
   outline: none;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+}
+
+.edit-input:disabled {
+  opacity: 0.6;
+  background: #f5f5f5;
+  cursor: not-allowed;
 }
 
 .edit-input:focus {
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.08);
 }
 
 .edit-field-btn {
@@ -1267,65 +989,119 @@ export default {
   border: none;
   color: #8892a8;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.3s;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
 }
 
-.edit-field-btn:hover {
+.edit-field-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.edit-field-btn:hover:not(:disabled) {
   background: #f0f2f6;
-  color: #1a1a2e;
+  color: #ff6b35;
 }
 
 .edit-actions {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .save-field-btn, .cancel-field-btn {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  transition: all 0.3s;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
-.save-field-btn:hover:not(:disabled) {
-  background: #e8f5e9;
-}
-
-.save-field-btn:disabled {
+.save-field-btn:disabled, .cancel-field-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.cancel-field-btn:hover {
-  background: #fdf2f2;
+.save-field-btn {
+  color: #2ed573;
 }
 
-.status-badge {
-  display: inline-block;
-  padding: 3px 14px;
-  border-radius: 50px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.status-badge.status-active {
+.save-field-btn:hover:not(:disabled) {
   background: #e8f5e9;
-  color: #2e7d32;
+  transform: scale(1.05);
 }
 
-.status-badge.status-inactive {
+.cancel-field-btn {
+  color: #ff4757;
+}
+
+.cancel-field-btn:hover:not(:disabled) {
   background: #fdf2f2;
-  color: #c62828;
+  transform: scale(1.05);
 }
 
+/* Small button spinner */
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(46, 213, 115, 0.3);
+  border-top-color: #2ed573;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.loading-overlay-content {
+  background: #ffffff;
+  padding: 40px 48px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loading-overlay-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e8ecf1;
+  border-top-color: #ff6b35;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.loading-overlay-content p {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+/* Addresses */
 .addresses-header {
   display: flex;
   justify-content: space-between;
@@ -1334,158 +1110,56 @@ export default {
 }
 
 .addresses-header h3 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #1a1a2e;
 }
 
-.add-btn {
-  padding: 10px 24px;
-  background: #ff6b35;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.add-btn:hover {
-  background: #e85a2a;
-}
-
-.address-form-wrapper {
+.address-count {
+  font-size: 14px;
+  color: #8892a8;
+  font-weight: 500;
+  padding: 6px 16px;
   background: #f8f9fa;
-  padding: 24px;
-  border-radius: 12px;
-  margin-bottom: 24px;
+  border-radius: 50px;
   border: 1px solid #e8ecf1;
 }
 
-.address-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+/* Loading small */
+.loading-state-small {
+  text-align: center;
+  padding: 60px 20px;
+  color: #8892a8;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.small-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #e8ecf1;
+  border-top-color: #ff6b35;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 12px;
 }
 
-.form-group label {
-  font-weight: 600;
-  color: #1a1a2e;
-  font-size: 14px;
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #8892a8;
 }
 
-.required {
-  color: #e74c3c;
-}
-
-.form-input {
-  padding: 12px 16px;
-  border: 2px solid #e8ecf1;
-  border-radius: 8px;
-  font-size: 15px;
-  transition: border-color 0.3s;
-  font-family: inherit;
-  background: #ffffff;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.08);
-}
-
-.form-input.input-error {
-  border-color: #e74c3c;
-}
-
-.has-error .form-input,
-.has-error select.form-input {
-  border-color: #e74c3c !important;
-}
-
-.has-error .form-input:focus,
-.has-error select.form-input:focus {
-  border-color: #e74c3c !important;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.08) !important;
-}
-
-.field-error {
-  color: #e74c3c;
-  font-size: 12px;
-  font-weight: 500;
-  margin-top: 4px;
-  display: block;
-}
-
-.checkbox-group {
-  flex-direction: row;
-  align-items: center;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-weight: 400;
-  color: #1a1a2e;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #ff6b35;
-}
-
-.address-form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.save-btn {
-  padding: 12px 32px;
-  background: #ff6b35;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
+.empty-state p {
   font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
+  margin-bottom: 4px;
 }
 
-.save-btn:hover:not(:disabled) {
-  background: #e85a2a;
+.empty-state small {
+  font-size: 13px;
+  color: #a0a8b8;
 }
 
-.save-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.cancel-btn {
-  padding: 12px 32px;
-  background: #e8ecf1;
-  color: #666;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.cancel-btn:hover {
-  background: #d0d0d0;
-}
-
+/* Address card */
 .address-list {
   display: flex;
   flex-direction: column;
@@ -1493,15 +1167,17 @@ export default {
 }
 
 .address-card {
-  padding: 16px 20px;
+  padding: 18px 24px;
   border: 2px solid #e8ecf1;
   border-radius: 12px;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   background: #ffffff;
 }
 
 .address-card:hover {
   border-color: #d0d4dc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 .address-card--primary {
@@ -1513,18 +1189,23 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.address-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .primary-badge {
   display: inline-block;
-  padding: 2px 14px;
+  padding: 2px 12px;
   background: #ff6b35;
   color: #fff;
   border-radius: 50px;
   font-size: 11px;
   font-weight: 600;
-  margin-right: 8px;
 }
 
 .address-type {
@@ -1537,68 +1218,19 @@ export default {
   font-weight: 500;
 }
 
-.address-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.edit-btn, .delete-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.edit-btn {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.edit-btn:hover {
-  background: #bbdefb;
-}
-
-.delete-btn {
-  background: #fdf2f2;
-  color: #e74c3c;
-}
-
-.delete-btn:hover {
-  background: #fce4e4;
-}
-
-.address-content {
-  color: #444;
-  font-size: 14px;
-}
-
 .address-content p {
   margin-bottom: 2px;
 }
 
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
+.address-street {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.address-location {
+  font-size: 14px;
   color: #8892a8;
-}
-
-.empty-state svg {
-  margin-bottom: 12px;
-}
-
-.empty-state p {
-  font-size: 16px;
-  margin-bottom: 4px;
-}
-
-.empty-state small {
-  font-size: 13px;
-  color: #a0a8b8;
 }
 
 /* Modal */
@@ -1699,6 +1331,15 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .modal-btn-secondary {
@@ -1706,7 +1347,7 @@ export default {
   color: #1a1a2e;
 }
 
-.modal-btn-secondary:hover {
+.modal-btn-secondary:hover:not(:disabled) {
   background: #e8ecf1;
 }
 
@@ -1719,43 +1360,6 @@ export default {
   background: #e85a2a;
 }
 
-.modal-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.modal-error .modal-icon svg {
-  background: rgba(255, 71, 87, 0.1);
-}
-
-.modal-success .modal-icon svg {
-  background: rgba(46, 213, 115, 0.1);
-}
-
-.modal-error .modal-btn-primary {
-  background: #ff4757;
-}
-
-.modal-error .modal-btn-primary:hover {
-  background: #e74c3c;
-}
-
-.modal-success .modal-btn-primary {
-  background: #2ed573;
-}
-
-.modal-success .modal-btn-primary:hover {
-  background: #26a65b;
-}
-
-.error-modal-icon {
-  background: rgba(255, 71, 87, 0.1);
-}
-
-.success-modal-icon {
-  background: rgba(46, 213, 115, 0.1);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .profile-header {
@@ -1764,79 +1368,69 @@ export default {
     padding: 24px 20px;
   }
 
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .avatar-text {
+    font-size: 32px;
+  }
+
+  .profile-name {
+    font-size: 22px;
+  }
+
+  .profile-tabs-wrapper {
+    padding: 0 16px;
+    overflow-x: auto;
+  }
+
   .profile-tabs {
-    flex-wrap: wrap;
-    padding: 0 12px;
+    gap: 4px;
   }
 
   .tab-btn {
     padding: 12px 16px;
     font-size: 14px;
+    white-space: nowrap;
   }
 
   .tab-content {
     padding: 20px 16px;
   }
 
-  .profile-avatar {
-    width: 64px;
-    height: 64px;
-  }
-
-  .avatar-text {
-    font-size: 24px;
-  }
-
-  .profile-name {
-    font-size: 20px;
-  }
-
   .info-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 14px 0;
+    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
-  .info-label {
-    width: auto;
+  .info-icon {
+    width: 38px;
+    height: 38px;
   }
 
   .info-value {
-    width: 100%;
+    font-size: 15px;
   }
 
   .edit-input {
     max-width: 100%;
   }
 
-  .edit-field-btn {
-    align-self: flex-start;
-  }
-
   .addresses-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-
-  .address-card-header {
     flex-direction: column;
     gap: 8px;
     align-items: flex-start;
   }
 
-  .address-actions {
-    width: 100%;
+  .address-card {
+    padding: 14px 16px;
   }
 
-  .edit-btn, .delete-btn {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .address-form-actions {
-    flex-direction: column;
+  .loading-overlay-content {
+    padding: 32px 24px;
   }
 
   .modal-container {
@@ -1850,16 +1444,56 @@ export default {
 
 @media (max-width: 480px) {
   .profile-avatar {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
   }
 
   .avatar-text {
-    font-size: 20px;
+    font-size: 24px;
   }
 
   .profile-name {
-    font-size: 18px;
+    font-size: 20px;
+  }
+
+  .container {
+    padding: 0 12px;
+  }
+
+  .tab-content {
+    padding: 16px 12px;
+  }
+
+  .profile-card-header {
+    padding: 16px;
+  }
+
+  .info-row {
+    padding: 12px 12px;
+    gap: 10px;
+  }
+
+  .info-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .info-value {
+    font-size: 14px;
+  }
+
+  .address-count {
+    font-size: 13px;
+    padding: 4px 12px;
+  }
+
+  .loading-overlay-content {
+    padding: 24px 16px;
+  }
+
+  .loading-overlay-spinner {
+    width: 36px;
+    height: 36px;
   }
 
   .modal-container {
