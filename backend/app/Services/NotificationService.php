@@ -10,7 +10,7 @@ use Throwable;
 class NotificationService
 {
     public function __construct(
-        NotificationRepositoryInterface $notificationRepository
+        private NotificationRepositoryInterface $notificationRepository
     ) {
 
     }
@@ -18,7 +18,7 @@ class NotificationService
     public function create(array $data): void
     {
         try {
-            $this->notificationepository
+            $this->notificationRepository
                 ->create($data);
 
             Log::info('Notification created', [
