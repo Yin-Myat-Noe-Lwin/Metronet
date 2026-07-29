@@ -172,29 +172,112 @@ export default {
           this.form.password
         )
 
-        console.log('✅ Login response:', response)
+        console.log('Full Login Response:', JSON.stringify(response, null, 2))
 
-        // Store user data
-        const userRole = response.role !== undefined ? response.role : 1
+        // Extract user data from response
+        let userData = null
 
+        // Try different response structures
+        if (response.user) {
+          userData = response.user
+          console.log('user in response.user')
+        } else if (response.customer) {
+          userData = response.customer
+          console.log('user in response.customer')
+        } else if (response.data && response.data.user) {
+          userData = response.data.user
+          console.log('user in response.data.user')
+        } else if (response.data && response.data.customer) {
+          userData = response.data.customer
+          console.log('user in response.data.customer')
+        } else if (response.data) {
+          userData = response.data
+          console.log('user in response.data')
+        } else if (response.id || response.name) {
+          // If response itself has user properties
+          userData = response
+          console.log('Response itself is user data')
+        }
+
+        // If still no userData, create from email
+        if (!userData) {
+          console.warn('No user data found, creating from email')
+          userData = {
+            email: this.form.email,
+            name: this.form.email.split('@')[0]
+          }
+        }
+
+        console.log('Final userData:', userData)
+        // Extract user details
+        const userId = userData.id || userData.user_id || null
+        const userName = userData.name || userData.full_name || userData.username || userData.email?.split('@')[0] || ''
+        const userEmail = userData.email || this.form.email
+        const userPhone = userData.phone_num || userData.phone || userData.phone_number || ''
+        const userRole = userData.role !== undefined ? userData.role : (response.role !== undefined ? response.role : 1)
+        const userStatus = userData.status !== undefined ? userData.status : 1
+        const token = response.token || response.access_token || response.accessToken || ''
+
+        console.log('Extracted user details:', {
+          userId,
+          userName,
+          userEmail,
+          userPhone,
+          userRole,
+          userStatus,
+          hasToken: !!token
+        })
+        // Save to localStorage
+        const userDataToStore = {
+          id: userId,
+          name: userName,
+          email: userEmail,
+          phone_num: userPhone,
+          role: userRole,
+          status: userStatus
+        }
+
+        // Save token
+        if (token) {
+          localStorage.setItem('authToken', token)
+        }
+
+        // Save user data
         localStorage.setItem('isLoggedIn', 'true')
-        localStorage.setItem('authToken', response.token)
-        localStorage.setItem('userEmail', this.form.email)
+        localStorage.setItem('userEmail', userEmail)
+        localStorage.setItem('userName', userName)
         localStorage.setItem('userRole', String(userRole))
         localStorage.setItem('isAdmin', String(userRole === 0))
+        localStorage.setItem('userId', String(userId || ''))
+        localStorage.setItem('userData', JSON.stringify(userDataToStore))
 
-        // Check for plan query
-        const planId = this.$route.query.plan
+        // Verify saved data
+        console.log('💾 Verified localStorage:')
+        console.log('  - userData:', localStorage.getItem('userData'))
+        console.log('  - userName:', localStorage.getItem('userName'))
+        console.log('  - userEmail:', localStorage.getItem('userEmail'))
+        console.log('  - userRole:', localStorage.getItem('userRole'))
+        console.log('  - userId:', localStorage.getItem('userId'))
+        // Dispatch event and redirect
+        window.dispatchEvent(new CustomEvent('userDataUpdated'))
+
         const returnPath = this.$route.query.return || '/'
 
-        // Redirect based on role
-        if (userRole === 0) {
-          this.$router.push('/admin/customers')
-        } else {
-          this.$router.push(returnPath)
-        }
+        // Show success message
+        this.successMessage = `Welcome back, ${userName || 'User'}!`
+
+        // Redirect after delay
+        setTimeout(() => {
+          if (userRole === 0) {
+            this.$router.push('/admin/customers')
+          } else {
+            this.$router.push(returnPath)
+          }
+        }, 800)
+
       } catch (error) {
-        console.error('❌ Login error:', error)
+        console.error('Login error:', error)
+        console.error('Error details:', error.response?.data || error.message)
 
         if (error.response) {
           this.errorMessage = error.response.data?.message ||
@@ -250,7 +333,6 @@ export default {
   }
 }
 
-/* Back Link */
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -267,7 +349,6 @@ export default {
   color: #ff6b35;
 }
 
-/* Header */
 .login-header {
   text-align: center;
   margin-bottom: 28px;
@@ -298,7 +379,6 @@ export default {
   font-size: 15px;
 }
 
-/* Messages */
 .success-message {
   display: flex;
   align-items: center;
@@ -338,7 +418,6 @@ export default {
   }
 }
 
-/* Form */
 form {
   display: flex;
   flex-direction: column;
@@ -385,7 +464,6 @@ form {
   background: #fff;
 }
 
-/* Chrome, Safari, Edge */
 .form-input::-webkit-credentials-auto-fill-button,
 .form-input::-webkit-caps-lock-indicator,
 .form-input::-webkit-contacts-auto-fill-button,
@@ -395,12 +473,10 @@ form {
   pointer-events: none;
 }
 
-/* Firefox */
 .form-input::-moz-reveal {
   display: none !important;
 }
 
-/* Edge/IE */
 .form-input::-ms-reveal,
 .form-input::-ms-clear {
   display: none !important;
@@ -422,7 +498,6 @@ form {
   margin-top: 2px;
 }
 
-/* Password */
 .password-wrapper {
   position: relative;
 }
@@ -449,45 +524,6 @@ form {
   color: #ff6b35;
 }
 
-/* Options */
-.form-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-  margin: 2px 0;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #666;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: #ff6b35;
-}
-
-.forgot-link {
-  color: #ff6b35;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 14px;
-  transition: color 0.3s;
-}
-
-.forgot-link:hover {
-  color: #e85a2a;
-  text-decoration: underline;
-}
-
-/* Button */
 .login-btn {
   position: relative;
   width: 100%;
@@ -535,7 +571,6 @@ form {
   to { transform: rotate(360deg); }
 }
 
-/* Register Link */
 .register-link {
   text-align: center;
   font-size: 14px;
@@ -553,7 +588,15 @@ form {
   text-decoration: underline;
 }
 
-/* Responsive */
+.form-input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #fafbfc inset !important;
+  -webkit-text-fill-color: #1a1a2e !important;
+}
+
+.form-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+}
+
 @media (max-width: 480px) {
   .login-container {
     padding: 28px 20px;
@@ -562,12 +605,6 @@ form {
 
   .login-header h1 {
     font-size: 24px;
-  }
-
-  .form-options {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
   }
 
   .form-input {
@@ -579,15 +616,5 @@ form {
     font-size: 12px;
     padding: 4px 8px;
   }
-}
-
-/* Remove autofill styles */
-.form-input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 1000px #fafbfc inset !important;
-  -webkit-text-fill-color: #1a1a2e !important;
-}
-
-.form-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
 }
 </style>
