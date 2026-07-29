@@ -43,7 +43,7 @@ class PlanDeactivatedConsumer
             }
 
             // Get all customers with active OR pending subscription to this plan
-            $customer = $this->customerService
+            $customers = $this->customerService
                             ->getCustomersByPlan($plan->id);
 
             if ($customers->isEmpty()) {
