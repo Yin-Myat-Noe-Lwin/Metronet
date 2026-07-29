@@ -17,7 +17,6 @@
       <nav class="nav">
         <!-- Admin Navigation -->
         <template v-if="isAdmin">
-
           <div class="admin-user">
             <span class="avatar-initials">{{ userInitials }}</span>
             <span class="user-name">{{ displayName }}</span>
@@ -214,7 +213,7 @@
       </div>
     </div>
 
-    <!-- ✅ Toast Notification -->
+    <!-- Toast Notification -->
     <div v-if="toastMessage" class="toast" :class="toastType">
       <span class="toast-icon">
         <svg v-if="toastType === 'toast-success'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -239,6 +238,33 @@ import { notificationService } from '../services/api'
 export default {
   name: 'NavBar',
   data() {
+    // Initialize from localStorage
+    const storedUserData = localStorage.getItem('userData')
+    let userName = ''
+    let userEmail = ''
+    let userRole = 1
+    let isLoggedIn = false
+
+    if (storedUserData) {
+      try {
+        const userData = JSON.parse(storedUserData)
+        userName = userData.name || localStorage.getItem('userName') || ''
+        userEmail = userData.email || localStorage.getItem('userEmail') || ''
+        userRole = userData.role !== undefined ? userData.role : parseInt(localStorage.getItem('userRole') || '1')
+        isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+      } catch (e) {
+        userName = localStorage.getItem('userName') || ''
+        userEmail = localStorage.getItem('userEmail') || ''
+        userRole = parseInt(localStorage.getItem('userRole') || '1')
+        isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+      }
+    } else {
+      userName = localStorage.getItem('userName') || ''
+      userEmail = localStorage.getItem('userEmail') || ''
+      userRole = parseInt(localStorage.getItem('userRole') || '1')
+      isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+    }
+
     return {
       // UI State
       isDropdownOpen: false,
@@ -249,16 +275,16 @@ export default {
       notificationCount: 0,
       previousNotificationCount: 0,
 
-      // ✅ Toast
+      // Toast
       toastMessage: null,
       toastType: 'toast-success',
       toastTimeout: null,
 
       // User State
-      isLoggedIn: localStorage.getItem('isLoggedIn') === 'true',
-      userName: localStorage.getItem('userName') || '',
-      userEmail: localStorage.getItem('userEmail') || '',
-      userRole: parseInt(localStorage.getItem('userRole') || '1'),
+      isLoggedIn: isLoggedIn,
+      userName: userName,
+      userEmail: userEmail,
+      userRole: userRole,
 
       // Polling
       pollInterval: null
@@ -266,16 +292,48 @@ export default {
   },
   computed: {
     userInitials() {
-      if (!this.userName) return 'U'
-      const nameParts = this.userName.trim().split(' ')
+      // Get name from multiple sources
+      let name = this.userName || localStorage.getItem('userName') || ''
+
+      if (!name) {
+        try {
+          const userDataStr = localStorage.getItem('userData')
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr)
+            name = userData.name || ''
+          }
+        } catch (e) {
+          // Ignore parse error
+        }
+      }
+
+      if (!name || name.trim() === '') {
+        return 'U'
+      }
+
+      const nameParts = name.trim().split(' ')
       if (nameParts.length === 1) {
         return nameParts[0].substring(0, 2).toUpperCase()
       }
       return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
     },
     displayName() {
-      if (this.userName) {
-        return this.userName.length > 20 ? this.userName.substring(0, 18) + '...' : this.userName
+      let name = this.userName || localStorage.getItem('userName') || ''
+
+      if (!name) {
+        try {
+          const userDataStr = localStorage.getItem('userData')
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr)
+            name = userData.name || ''
+          }
+        } catch (e) {
+          // Ignore parse error
+        }
+      }
+
+      if (name && name.trim() !== '') {
+        return name.length > 20 ? name.substring(0, 18) + '...' : name
       } else if (this.userEmail) {
         return this.userEmail.split('@')[0]
       }
@@ -286,6 +344,7 @@ export default {
     }
   },
   mounted() {
+    this.refreshUserData()
     this.fetchNotificationCount()
     this.startPolling()
     this.setupEventListeners()
@@ -296,14 +355,14 @@ export default {
   methods: {
     // ==================== SETUP ====================
     setupEventListeners() {
-      window.addEventListener('userDataUpdated', this.updateUserData)
+      window.addEventListener('userDataUpdated', this.handleUserDataUpdated)
       window.addEventListener('notification-updated', this.handleNotificationUpdate)
       window.addEventListener('show-toast', this.handleShowToast)
       document.addEventListener('click', this.handleClickOutside)
     },
 
     cleanup() {
-      window.removeEventListener('userDataUpdated', this.updateUserData)
+      window.removeEventListener('userDataUpdated', this.handleUserDataUpdated)
       window.removeEventListener('notification-updated', this.handleNotificationUpdate)
       window.removeEventListener('show-toast', this.handleShowToast)
       document.removeEventListener('click', this.handleClickOutside)
@@ -314,11 +373,35 @@ export default {
     },
 
     // ==================== USER DATA ====================
-    updateUserData() {
-      this.userName = localStorage.getItem('userName') || ''
-      this.userEmail = localStorage.getItem('userEmail') || ''
-      this.userRole = parseInt(localStorage.getItem('userRole') || '1')
-      this.isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+    refreshUserData() {
+      const storedUserData = localStorage.getItem('userData')
+      const userName = localStorage.getItem('userName')
+      const userEmail = localStorage.getItem('userEmail')
+      const userRole = localStorage.getItem('userRole')
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+
+      if (storedUserData) {
+        try {
+          const userData = JSON.parse(storedUserData)
+          this.userName = userData.name || userName || ''
+          this.userEmail = userData.email || userEmail || ''
+          this.userRole = userData.role !== undefined ? userData.role : parseInt(userRole || '1')
+        } catch (e) {
+          this.userName = userName || ''
+          this.userEmail = userEmail || ''
+          this.userRole = parseInt(userRole || '1')
+        }
+      } else {
+        this.userName = userName || ''
+        this.userEmail = userEmail || ''
+        this.userRole = parseInt(userRole || '1')
+      }
+
+      this.isLoggedIn = isLoggedIn
+    },
+
+    handleUserDataUpdated() {
+      this.refreshUserData()
 
       if (this.isLoggedIn && !this.isAdmin) {
         this.fetchNotificationCount()
@@ -338,7 +421,6 @@ export default {
       }
     },
 
-    // ✅ Handle show-toast event from notifications page
     handleShowToast(event) {
       if (event && event.detail) {
         this.showToast(event.detail.message, event.detail.type || 'toast-success')
@@ -360,21 +442,18 @@ export default {
       }
     },
 
-    // ✅ Update notification count with toast if new notifications arrive
     updateNotificationCount(newCount) {
       const oldCount = this.notificationCount
       this.notificationCount = newCount
 
-      // ✅ Show toast if new notifications arrived
       if (newCount > oldCount && oldCount > 0) {
         const diff = newCount - oldCount
         const message = diff === 1
-          ? '🔔 You have 1 new notification!'
-          : `🔔 You have ${diff} new notifications!`
+          ? 'You have 1 new notification!'
+          : `You have ${diff} new notifications!`
         this.showToast(message, 'toast-success')
       }
 
-      // ✅ Store previous count
       this.previousNotificationCount = oldCount
     },
 
@@ -396,7 +475,6 @@ export default {
 
     // ==================== TOAST ====================
     showToast(message, type = 'toast-success') {
-      // ✅ Clear existing timeout
       if (this.toastTimeout) {
         clearTimeout(this.toastTimeout)
       }
@@ -404,7 +482,6 @@ export default {
       this.toastMessage = message
       this.toastType = type
 
-      // ✅ Auto-hide after 4 seconds
       this.toastTimeout = setTimeout(() => {
         this.toastMessage = null
       }, 4000)
@@ -448,6 +525,8 @@ export default {
       localStorage.removeItem('authToken')
       localStorage.removeItem('userRole')
       localStorage.removeItem('isAdmin')
+      localStorage.removeItem('userId')
+      localStorage.removeItem('userPhone')
 
       this.isLoggedIn = false
       this.userName = ''
@@ -465,7 +544,7 @@ export default {
   },
   watch: {
     '$route'() {
-      this.updateUserData()
+      this.refreshUserData()
       this.closeDropdown()
     },
     isLoggedIn(val) {
