@@ -146,6 +146,14 @@ class AuthController extends Controller
                 'message' => 'Login successful',
                 'token' => $token,
                 'role' => $customer->role,
+                'user' => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'email' => $customer->email,
+                    'phone_num' => $customer->phone_num,
+                    'role' => $customer->role,
+                    'status' => $customer->status,
+                ]
             ]);
 
         } catch (PDOException $e) {
