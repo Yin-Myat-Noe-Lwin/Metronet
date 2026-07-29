@@ -31,6 +31,11 @@ class Subscription extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function installationAddress(): BelongsTo
+    {
+        return $this->belongsTo(CustomerAddress::class, 'installation_address_id');
+    }
+
     public function plan() :BelongsTo
     {
         return $this->belongsTo(IspPlan::class);
