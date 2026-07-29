@@ -79,7 +79,11 @@ CREATE TABLE `customers` (
     `verification_token_expires_at` timestamp NULL DEFAULT NULL,
     `email_verified_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL
+    `updated_at` timestamp NULL DEFAULT NULL,
+
+    INDEX `idx_customers_status` (`status`),
+    INDEX `idx_customers_role` (`role`),
+    INDEX `idx_customers_status_role`  (`status`, `role`)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `customer_addresses` (
