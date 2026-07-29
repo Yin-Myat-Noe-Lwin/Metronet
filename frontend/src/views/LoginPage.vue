@@ -115,8 +115,7 @@ export default {
       },
       form: {
         email: '',
-        password: '',
-        remember: false
+        password: ''
       }
     }
   },
@@ -176,28 +175,35 @@ export default {
 
         // Extract user data from response
         let userData = null
+        let token = null
+        let role = 1
 
         // Try different response structures
         if (response.user) {
           userData = response.user
-          console.log('user in response.user')
+          console.log('Found user in response.user')
         } else if (response.customer) {
           userData = response.customer
-          console.log('user in response.customer')
+          console.log('Found user in response.customer')
         } else if (response.data && response.data.user) {
           userData = response.data.user
-          console.log('user in response.data.user')
+          console.log('Found user in response.data.user')
         } else if (response.data && response.data.customer) {
           userData = response.data.customer
-          console.log('user in response.data.customer')
+          console.log('Found user in response.data.customer')
         } else if (response.data) {
           userData = response.data
-          console.log('user in response.data')
-        } else if (response.id || response.name) {
-          // If response itself has user properties
+          console.log('Found user in response.data')
+        } else if (response.id || response.name || response.email) {
           userData = response
           console.log('Response itself is user data')
         }
+
+        // Get token
+        token = response.token || response.access_token || response.accessToken || ''
+
+        // Get role
+        role = response.role !== undefined ? response.role : 1
 
         // If still no userData, create from email
         if (!userData) {
@@ -209,14 +215,36 @@ export default {
         }
 
         console.log('Final userData:', userData)
-        // Extract user details
-        const userId = userData.id || userData.user_id || null
-        const userName = userData.name || userData.full_name || userData.username || userData.email?.split('@')[0] || ''
+        // Extract ALL user details
+        const userId = userData.id ||
+                       userData.user_id ||
+                       userData.customer_id ||
+                       userData.customerId ||
+                       null
+
+        const userName = userData.name ||
+                         userData.full_name ||
+                         userData.username ||
+                         userData.display_name ||
+                         userData.email?.split('@')[0] ||
+                         ''
+
         const userEmail = userData.email || this.form.email
-        const userPhone = userData.phone_num || userData.phone || userData.phone_number || ''
-        const userRole = userData.role !== undefined ? userData.role : (response.role !== undefined ? response.role : 1)
-        const userStatus = userData.status !== undefined ? userData.status : 1
-        const token = response.token || response.access_token || response.accessToken || ''
+
+        const userPhone = userData.phone_num ||
+                          userData.phone ||
+                          userData.phone_number ||
+                          userData.mobile ||
+                          userData.contact_number ||
+                          ''
+
+        const userRole = userData.role !== undefined ?
+                          userData.role :
+                          role
+
+        const userStatus = userData.status !== undefined ?
+                            userData.status :
+                            (userData.is_active !== undefined ? userData.is_active : 1)
 
         console.log('Extracted user details:', {
           userId,
@@ -227,7 +255,8 @@ export default {
           userStatus,
           hasToken: !!token
         })
-        // Save to localStorage
+
+        // Create user data object
         const userDataToStore = {
           id: userId,
           name: userName,
@@ -237,6 +266,7 @@ export default {
           status: userStatus
         }
 
+        // Save ALL data to localStorage
         // Save token
         if (token) {
           localStorage.setItem('authToken', token)
@@ -251,13 +281,19 @@ export default {
         localStorage.setItem('userId', String(userId || ''))
         localStorage.setItem('userData', JSON.stringify(userDataToStore))
 
+        // Save phone
+        if (userPhone) {
+          localStorage.setItem('userPhone', userPhone)
+        }
         // Verify saved data
-        console.log('💾 Verified localStorage:')
+        console.log('Verified localStorage:')
         console.log('  - userData:', localStorage.getItem('userData'))
         console.log('  - userName:', localStorage.getItem('userName'))
         console.log('  - userEmail:', localStorage.getItem('userEmail'))
         console.log('  - userRole:', localStorage.getItem('userRole'))
         console.log('  - userId:', localStorage.getItem('userId'))
+        console.log('  - userPhone:', localStorage.getItem('userPhone'))
+
         // Dispatch event and redirect
         window.dispatchEvent(new CustomEvent('userDataUpdated'))
 
