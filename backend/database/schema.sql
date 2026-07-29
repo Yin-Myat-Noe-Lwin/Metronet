@@ -73,7 +73,7 @@ CREATE TABLE `customers` (
     `email` VARCHAR(100) NOT NULL UNIQUE,
     `pending_email` VARCHAR(255) NULL,
     `status` TINYINT NOT NULL COMMENT '0=Inactive,1=Active',
-    `role` TINYINT NOT NULL DEFAULT 1 COMMENT '1=customer, 2=admin',
+    `role` TINYINT NOT NULL DEFAULT 1 COMMENT '0=admin, 1=customer',
     `password` VARCHAR(255) NOT NULL,
     `verification_token` VARCHAR(64) NULL,
     `verification_token_expires_at` timestamp NULL DEFAULT NULL,
@@ -97,6 +97,9 @@ CREATE TABLE `customer_addresses` (
     `is_primary` TINYINT NOT NULL DEFAULT 0 COMMENT '0=Secondary, 1=Primary',
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
+
+    INDEX `idx_customer_id` (`customer_id`),
+
     CONSTRAINT fk_addresses_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -121,7 +124,9 @@ CREATE TABLE `service_areas` (
     `township` VARCHAR(30) NOT NULL,
     `status` TINYINT DEFAULT 1 COMMENT '1 = active, 0 = inactive',
     `created_at` TIMESTAMP NULL,
-    `updated_at` TIMESTAMP NULL
+    `updated_at` TIMESTAMP NULL,
+
+    INDEX `idx_service_area` (`region`, `city` ,`township`)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `subscriptions` (
@@ -135,6 +140,10 @@ CREATE TABLE `subscriptions` (
     `auto_renew` TINYINT NOT NULL DEFAULT 0,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
+
+    INDEX `idx_customer_id` (`customer_id`),
+    INDEX `idx_plan_id` (`plan_id`),
+
     CONSTRAINT fk_subscriptions_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id),
     CONSTRAINT fk_subscriptions_plan_id
@@ -150,6 +159,9 @@ CREATE TABLE `invoices` (
     `status` TINYINT NOT NULL COMMENT '0=pending,1=paid,2=overdue,3=cancelled',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
+
+    INDEX `idx_subscription_id` (`subscription_id`),
+
     CONSTRAINT fk_invoice_subscription
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -179,6 +191,10 @@ CREATE TABLE `payments` (
     `paid_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
+
+    INDEX `idx_customer_id` (`customer_id`),
+    INDEX `idx_invoice_id` (`invoice_id`),
+
     CONSTRAINT fk_payment_customer
     FOREIGN KEY (customer_id) REFERENCES customers(id),
     CONSTRAINT fk_payment_invoice
@@ -205,6 +221,10 @@ CREATE TABLE `cpe_assignments` (
     `status` TINYINT NOT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
+
+    INDEX `idx_cpe_id` (`cpe_id`),
+    INDEX `idx_subscription_id` (`subscription_id`),
+
     CONSTRAINT fk_assignments_cpe_id
     FOREIGN KEY (cpe_id) REFERENCES cpes(id),
     CONSTRAINT fk_assignments_subscription_id
@@ -225,6 +245,10 @@ CREATE TABLE `notifications` (
     `sent_at` TIMESTAMP NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
+
+    INDEX `idx_customer_id` (`customer_id`),
+    INDEX `idx_customer_read` (`customer_id`, `is_read`),
+
     CONSTRAINT fk_notifications_customer_id
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
