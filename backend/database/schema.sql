@@ -280,6 +280,32 @@ VALUES
 ('Premium Ultra', 'Ultra-fast internet for 4K streaming, gaming and smart home use.', 95000.00, 1, 50, 100, NOW(), NOW()),
 ('Business Pro', 'Enterprise-grade stable connection for offices and heavy usage.', 120000.00, 1, 75, 150, NOW(), NOW());
 
+INSERT INTO `plan_discounts` (`plan_id`, `duration_months`, `discount_percentage`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 1, 0.00, 1, NOW(), NOW()),
+(1, 3, 5.00, 1, NOW(), NOW()),
+(1, 6, 10.00, 1, NOW(), NOW()),
+(1, 12, 15.00, 1, NOW(), NOW()),
+(2, 1, 0.00, 1, NOW(), NOW()),
+(2, 3, 5.00, 1, NOW(), NOW()),
+(2, 6, 10.00, 1, NOW(), NOW()),
+(2, 12, 15.00, 1, NOW(), NOW()),
+(3, 1, 0.00, 1, NOW(), NOW()),
+(3, 3, 7.00, 1, NOW(), NOW()),
+(3, 6, 12.00, 1, NOW(), NOW()),
+(3, 12, 18.00, 1, NOW(), NOW()),
+(4, 1, 0.00, 1, NOW(), NOW()),
+(4, 3, 7.00, 1, NOW(), NOW()),
+(4, 6, 12.00, 1, NOW(), NOW()),
+(4, 12, 18.00, 1, NOW(), NOW()),
+(5, 1, 0.00, 1, NOW(), NOW()),
+(5, 3, 10.00, 1, NOW(), NOW()),
+(5, 6, 15.00, 1, NOW(), NOW()),
+(5, 12, 20.00, 1, NOW(), NOW()),
+(6, 1, 0.00, 1, NOW(), NOW()),
+(6, 3, 12.00, 1, NOW(), NOW()),
+(6, 6, 18.00, 1, NOW(), NOW()),
+(6, 12, 25.00, 1, NOW(), NOW());
+
 INSERT INTO service_areas
 (region, city, township, status, created_at, updated_at)
 VALUES
