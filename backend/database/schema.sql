@@ -149,7 +149,7 @@ CREATE TABLE `subscriptions` (
     `customer_id` BIGINT UNSIGNED NOT NULL,
     `plan_id` INT UNSIGNED NOT NULL,
     `installation_address_id` BIGINT UNSIGNED NOT NULL,
-    `status` TINYINT NOT NULL COMMENT '0=pending,1=active,2=suspended,3=expired,4=cancelled',
+    `status` TINYINT NOT NULL COMMENT '0=pending,1=active,2=suspended,3=expired,4=cancelled, 5=rejected',
     `start_date` DATE NULL,
     `end_date` DATE NULL,
     `duration_months` INT NOT NULL DEFAULT 1,
