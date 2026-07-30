@@ -15,6 +15,7 @@ import UpdateEmailPage from '../views/UpdateEmail.vue'
 import AdminLayout from '../layout/AdminLayout.vue'
 import AdminCustomers from '../views/admin/Customers.vue'
 import AdminPlans from '../views/admin/Plans.vue'
+import AdminPlanDiscounts from '../views/admin/PlanDiscounts.vue'
 import AdminSubscriptions from '../views/admin/Subscriptions.vue'
 import AdminInvoices from '../views/admin/Invoices.vue'
 import AdminPayments from '../views/admin/Payments.vue'
@@ -129,6 +130,7 @@ const routes = [
     }
   },
 
+
   // Admin Routes (role 0 = admin)
   {
     path: '/admin',
@@ -171,6 +173,12 @@ const routes = [
           requiresAuth: true,
           requiresAdmin: true
         }
+      },
+      {
+        path: '/admin/discounts',
+        name: 'AdminPlanDiscounts',
+        component: AdminPlanDiscounts,
+        meta: { requiresAuth: true, isAdmin: true }
       },
       {
         path: 'subscriptions',
