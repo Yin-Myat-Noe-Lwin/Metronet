@@ -75,8 +75,6 @@ class SubscriptionController extends Controller
                     'plan_id' => $planId,
                     'installation_address_id' => $address->id,
                     'status' => 0, // pending
-                    'start_date' => now(),
-                    'end_date' => now()->addMonths((int)$request->duration_months),
                     'duration_months' => (int)$request->duration_months,
                     'auto_renew' => 0
                 ]);
@@ -319,6 +317,122 @@ class SubscriptionController extends Controller
             return response()->json([
                 'message' => 'Something went wrong.'
             ]);
+        }
+    }
+
+    // to accept customer subscription
+    public function accept($id): JsonResponse
+    {
+        try {
+            $subscription = Subscription::with(['customer', 'plan', 'installationAddress'])
+                                        ->findOrFail($id);
+
+            // Check if subscription is pending
+            if ($subscription->status !== 0) {
+                return response()->json([
+                    'error' => 'Only pending subscriptions can be accepted.'
+                ], 400);
+            }
+
+            // Validate address exists
+            if (!$subscription->installationAddress) {
+                return response()->json([
+                    'error' => 'No installation address found for this subscription.'
+                ], 400);
+            }
+
+            DB::transaction(function () use ($subscription) {
+                // Update subscription status to active
+                $subscription->update([
+                    'status' => 1,
+                    'start_date' => now(),
+                    'end_date' => now()->addMonths($subscription->duration_months)
+                ]);
+
+                // Dispatch the job to assign CPE and activate service
+                ProcessSubscriptionJob::dispatch($subscription->id);
+
+                Log::info('Subscription accepted and job dispatched', [
+                    'subscription_id' => $subscription->id,
+                    'customer_id' => $subscription->customer_id,
+                    'job_dispatched' => true
+                ]);
+            });
+
+            return response()->json([
+                'message' => 'Subscription accepted successfully.',
+                'data' => $subscription
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error accepting subscription: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to accept subscription: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // reject customer subscription
+    public function reject(Request $request, $id): JsonResponse
+    {
+        try {
+            $subscription = Subscription::with(['customer', 'plan'])
+                                        ->findOrFail($id);
+
+            // Check if subscription is pending
+            if ($subscription->status !== 0) {
+                return response()->json([
+                    'error' => 'Only pending subscriptions can be rejected.'
+                ], 400);
+            }
+
+            $reason = $request->reason ?? 'No reason provided';
+            $sendEmail = $request->send_email ?? true;
+
+            DB::transaction(function () use ($subscription, $reason, $sendEmail) {
+                $subscription->update([
+                    'status' => 5, // Rejected
+                    'rejection_reason' => $reason
+                ]);
+
+                Log::info('Subscription rejected', [
+                    'subscription_id' => $subscription->id,
+                    'customer_id' => $subscription->customer_id,
+                    'reason' => $reason
+                ]);
+            });
+
+            return response()->json([
+                'message' => 'Subscription rejected successfully.',
+                'data' => $subscription
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error rejecting subscription: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to reject subscription: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function show($id): JsonResponse
+    {
+        try {
+            $subscription = Subscription::with([
+                'customer',
+                'plan',
+                'installationAddress',
+                'cpeAssignments.cpe'
+            ])->findOrFail($id);
+
+            return response()->json([
+                'data' => $subscription
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Subscription not found'
+            ], 404);
         }
     }
 
