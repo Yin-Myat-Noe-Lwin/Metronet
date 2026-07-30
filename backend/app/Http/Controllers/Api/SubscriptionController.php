@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Junges\Kafka\Facades\Kafka;
 use App\Services\KafkaProducerService;
+use Illuminate\Support\Facades\DB;
 
 class SubscriptionController extends Controller
 {
@@ -39,8 +40,8 @@ class SubscriptionController extends Controller
             Log::info('Plan ID: ' . $planId);
 
             $plan = IspPlan::where('id', $planId)
-                ->where('status', 1)
-                ->first();
+                            ->where('status', 1)
+                            ->first();
 
             if (!$plan) {
                 return response()->json([
@@ -69,9 +70,9 @@ class SubscriptionController extends Controller
 
             // Check if there is a cancelled subscription
             $cancelled = Subscription::where('customer_id', $customer->id)
-                                        ->where('plan_id', $planId)
-                                        ->where('status', 4)
-                                        ->first();
+                ->where('plan_id', $planId)
+                ->where('status', 4)
+                ->first();
 
             if ($cancelled) {
                 Log::info('Previous cancelled subscription found, allowing new subscription', [
@@ -80,60 +81,62 @@ class SubscriptionController extends Controller
                 ]);
             }
 
-            // get the most recent address for customer
-            $address = CustomerAddress::where('customer_id', $customer->id)
-                                        ->orderBy('created_at', 'desc')
-                                        ->first();
+            // Save address and subscription together
+            $result = DB::transaction(function () use ($customer, $planId, $request) {
 
-            // If address_id is passed in request
-            if (!$address && $request->has('address_id')) {
-                $address = CustomerAddress::where('customer_id', $customer->id)
-                                            ->where('id', $request->address_id)
-                                            ->first();
-            }
+                // CREATE ADDRESS from request data
+                $address = CustomerAddress::create([
+                    'customer_id' => $customer->id,
+                    'address' => $request->address,
+                    'region' => $request->region,
+                    'city' => $request->city,
+                    'township' => $request->township,
+                    'address_type' => $request->address_type ?? 1, // 1 = Installation
+                ]);
 
-            if (!$address) {
-                return response()->json([
-                    'error' => 'Please add an installation address before subscribing.'
-                ], 400);
-            }
+                Log::info('Address created:', [
+                    'address_id' => $address->id,
+                    'customer_id' => $customer->id
+                ]);
 
-            Log::info('Address found for customer:', [
-                'customer_id' => $customer->id,
-                'address_id' => $address->id,
-                'address' => $address->address,
-                'is_primary' => $address->is_primary
-            ]);
+                // CREATE SUBSCRIPTION with the new address
+                $subscription = Subscription::create([
+                    'customer_id' => $customer->id,
+                    'plan_id' => $planId,
+                    'installation_address_id' => $address->id,
+                    'status' => 0, // pending
+                    'start_date' => now(),
+                    'end_date' => now()->addMonths((int)$request->duration_months),
+                    'duration_months' => (int)$request->duration_months,
+                    'auto_renew' => 0
+                ]);
 
-            // Create subscription with installation_address_id
-            $subscription = Subscription::create([
-                'customer_id' => $customer->id,
-                'plan_id' => $planId,
-                'installation_address_id' => $address->id,
-                'status' => 0, // pending
-                'start_date' => now(),
-                'end_date' => now()->addMonths((int)$request->duration_months),
-                'duration_months' => (int)$request->duration_months,
-                'auto_renew' => 0
-            ]);
+                Log::info('New subscription created', [
+                    'subscription_id' => $subscription->id,
+                    'customer_id' => $customer->id,
+                    'plan_id' => $planId,
+                    'installation_address_id' => $address->id,
+                    'status' => $subscription->status,
+                    'duration_months' => $subscription->duration_months
+                ]);
 
-            Log::info('New subscription created', [
-                'subscription_id' => $subscription->id,
-                'customer_id' => $customer->id,
-                'plan_id' => $planId,
-                'installation_address_id' => $address->id,
-                'status' => $subscription->status,
-                'duration_months' => $subscription->duration_months
-            ]);
+                return [
+                    'subscription' => $subscription,
+                    'address' => $address
+                ];
+            });
 
             // Dispatch job
             Log::info('Dispatching ProcessSubscriptionJob');
-            ProcessSubscriptionJob::dispatch($subscription->id);
+            ProcessSubscriptionJob::dispatch($result['subscription']->id);
             Log::info('ProcessSubscriptionJob dispatched successfully');
 
             return response()->json([
                 'message' => 'Subscription Successful. Please wait approval from ISP.',
-                'data' => $subscription
+                'data' => [
+                    'subscription' => $result['subscription'],
+                    'address' => $result['address']
+                ]
             ], 201);
 
         } catch (PDOException $e) {
