@@ -55,6 +55,10 @@ return [
             'group_id' => env('KAFKA_PAYMENT_GROUP', 'payment-group'),
             'topic' => env('KAFKA_PAYMENT_TOPIC', 'payment.completed'),
         ],
+        'cpe_updated' => [
+            'group_id' => env('KAFKA_CPE_GROUP', 'cpe-group'),
+            'topic' => env('KAFKA_CPE_TOPIC', 'cpe.updated'),
+        ],
     ],
 
     /*
