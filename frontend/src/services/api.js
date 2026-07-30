@@ -349,13 +349,31 @@ export const subscriptionsService = {
     return response.data
   },
 
+  async cancelSubscription(id) {
+    const response = await apiClient.delete(`/api/subscriptions/${id}`)
+    return response.data
+  },
+
   async getSubscriptions() {
     const response = await apiClient.get('/api/admin/subscriptions')
     return response.data
   },
 
-  async cancelSubscription(id) {
-    const response = await apiClient.delete(`/api/subscriptions/${id}`)
+  async getSubscription(id) {
+    const response = await apiClient.get(`/api/admin/subscriptions/${id}`)
+    return response.data
+  },
+
+  async acceptSubscription(id) {
+    const response = await apiClient.post(`/api/admin/subscriptions/${id}/accept`)
+    return response.data
+  },
+
+  async rejectSubscription(id, reason, sendEmail = true) {
+    const response = await apiClient.post(`/api/admin/subscriptions/${id}/reject`, {
+      reason,
+      send_email: sendEmail
+    })
     return response.data
   }
 }
