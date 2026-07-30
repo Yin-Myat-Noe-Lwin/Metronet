@@ -30,7 +30,14 @@
     Route::get('/profile', [CustomerController::class, 'profile']);
     Route::patch('/profile', [CustomerController::class, 'updateProfile']);
 
+    // get data for dropdown
     Route::get('/service-areas', [ServiceAreaController::class, 'viewAreas']);
+    // filter city based on selected region
+    Route::get('/cities', [ServiceAreaController::class, 'getCitiesByRegion']);
+    // filter township based on selected city
+    Route::get('/townships', [ServiceAreaController::class, 'getTownshipsByCity']);
+    // get filtered areas
+    Route::get('/filtered', [ServiceAreaController::class, 'getFilteredAreas']);
 
     Route::get('/invoices', [InvoiceController::class, 'index']);
     Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
