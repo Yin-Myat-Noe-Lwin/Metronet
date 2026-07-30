@@ -293,7 +293,7 @@ class SubscriptionController extends Controller
             $customer = Auth::user();
 
             $subscriptions = $customer->subscriptions()
-                                        ->with('plan')
+                                        ->with(['plan', 'address'])
                                         ->orderBy('created_at', 'desc')
                                         ->get();
 
