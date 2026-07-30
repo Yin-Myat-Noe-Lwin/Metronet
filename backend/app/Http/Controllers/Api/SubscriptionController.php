@@ -76,6 +76,7 @@ class SubscriptionController extends Controller
                     'installation_address_id' => $address->id,
                     'status' => 0, // pending
                     'duration_months' => (int)$request->duration_months,
+                    'billing_cycle' => $request->billing_cycle ?? 1,
                     'auto_renew' => 0
                 ]);
 
