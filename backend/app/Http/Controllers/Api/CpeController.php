@@ -15,9 +15,14 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
+use App\Services\KafkaProducerService;
 
 class CpeController extends Controller
 {
+    public function __construct(
+        private KafkaProducerService $kafkaProducer
+    ) {}
+
     public function index(): JsonResponse
     {
         try{
@@ -99,7 +104,7 @@ class CpeController extends Controller
 
     public function update(CpeUpdateRequest $request, $id): JsonResponse
     {
-        try{
+        try {
             $cpe = Cpe::find($id);
 
             if (!$cpe) {
@@ -108,37 +113,83 @@ class CpeController extends Controller
                 ]);
             }
 
+            // Get old data before update
+            $oldData = [
+                'serial_number' => $cpe->serial_number,
+                'mac_address' => $cpe->mac_address,
+                'status' => $cpe->status
+            ];
+
             $cpe->update($request->validated());
+
+            // Check what changed
+            $serialChanged = $oldData['serial_number'] != $cpe->serial_number;
+            $macChanged = $oldData['mac_address'] != $cpe->mac_address;
+            $statusChanged = $oldData['status'] != $cpe->status;
+
+            $anyChange = $serialChanged || $macChanged || $statusChanged;
+
+            // Send notification via Kafka if any changes
+            if ($anyChange) {
+                try {
+                    $this->kafkaProducer->publish(
+                        config('kafka.consumers.cpe_updated.topic'),
+                        [
+                            'cpe_id' => $cpe->id,
+                            'serial_number' => $cpe->serial_number ?? 'N/A',
+                            'mac_address' => $cpe->mac_address ?? 'N/A',
+                            'old_serial_number' => $oldData['serial_number'],
+                            'new_serial_number' => $cpe->serial_number,
+                            'old_mac_address' => $oldData['mac_address'],
+                            'new_mac_address' => $cpe->mac_address,
+                            'old_status' => $oldData['status'],
+                            'new_status' => $cpe->status,
+                            'old_status_label' => $this->getStatusLabel($oldData['status']),
+                            'new_status_label' => $this->getStatusLabel($cpe->status),
+                            'serial_changed' => $serialChanged,
+                            'mac_changed' => $macChanged,
+                            'status_changed' => $statusChanged,
+                            'timestamp' => now()->toIso8601String()
+                        ]
+                    );
+
+                    Log::info('CPE update notification published to Kafka', [
+                        'cpe_id' => $cpe->id,
+                        'changes' => [
+                            'serial_number' => $serialChanged,
+                            'mac_address' => $macChanged,
+                            'status' => $statusChanged
+                        ]
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to publish CPE update: ' . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'message' => 'CPE updated successfully',
                 'data' => $cpe
             ]);
+
         } catch (PDOException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (QueryException $e) {
-            return response()->json([
                 'message' => $e->getMessage()
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (AuthenticationException $e) {
-            return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (AuthorizationException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Something went wrong.'
             ]);
         }
+    }
+
+    // Helper method for status labels
+    private function getStatusLabel($status): string
+    {
+        $labels = [
+            0 => 'Available',
+            1 => 'Assigned',
+            2 => 'Faulty',
+            3 => 'Maintenance',
+            4 => 'Retired'
+        ];
+
+        return $labels[$status] ?? 'Unknown';
     }
 
     public function destroy($id): JsonResponse
