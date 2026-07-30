@@ -96,11 +96,6 @@ class SubscriptionController extends Controller
                 ];
             });
 
-            // Dispatch job
-            Log::info('Dispatching ProcessSubscriptionJob');
-            ProcessSubscriptionJob::dispatch($result['subscription']->id);
-            Log::info('ProcessSubscriptionJob dispatched successfully');
-
             return response()->json([
                 'message' => 'Subscription Successful. Please wait approval from ISP.',
                 'data' => [
@@ -293,7 +288,7 @@ class SubscriptionController extends Controller
             $customer = Auth::user();
 
             $subscriptions = $customer->subscriptions()
-                                        ->with(['plan', 'address'])
+                                        ->with(['plan', 'installationAddress'])
                                         ->orderBy('created_at', 'desc')
                                         ->get();
 
