@@ -24,6 +24,9 @@
     Route::delete('/admin/plans/{id}', [IspPlanController::class, 'destroy']);
 
     Route::get('/admin/subscriptions', [SubscriptionController::class, 'index']);
+    Route::get('/admin/subscriptions/{id}', [AdminSubscriptionController::class, 'show']);
+    Route::post('/admin/subscriptions/{id}/accept', [AdminSubscriptionController::class, 'accept']);
+    Route::post('/admin/subscriptions/{id}/reject', [AdminSubscriptionController::class, 'reject']);
 
     Route::get('/admin/invoices', [InvoiceController::class, 'viewInvoices']);
     Route::get('/admin/invoices/{id}', [InvoiceController::class, 'show']);
