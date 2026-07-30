@@ -45,7 +45,7 @@ class IspPlanController extends Controller
 
             Log::info('Discounts fetched', ['discounts' => $discounts->toArray()]);
 
-            // Group discounts by plan_id
+            // Group discounts by plan_id with duration
             $discountsByPlan = [];
             foreach ($discounts as $discount) {
                 $planId = $discount->plan_id;
@@ -62,13 +62,22 @@ class IspPlanController extends Controller
             foreach ($plans as $plan) {
                 $planDiscounts = $discountsByPlan[$plan->id] ?? [];
 
-                // Get best discount (highest percentage)
+                // gt the discount for the default validity_months (usually 1 month)
+                // If the plan has a discount for 1 month, use it, otherwise 0
+                $defaultDiscount = $planDiscounts[$plan->validity_months] ?? 0;
+
+                // Get best discount (for display purposes, but don't apply to price)
                 $bestDiscount = !empty($planDiscounts) ? max($planDiscounts) : 0;
 
-                // Calculate discounted price
-                $discountedPrice = $bestDiscount > 0
-                    ? $plan->price * (1 - $bestDiscount / 100)
-                    : $plan->price;
+                // Calculate discounted price ONLY if there's a discount for the default duration
+                $discountedPrice = $defaultDiscount > 0
+                                            ? $plan->price * (1 - $defaultDiscount / 100)
+                                            : $plan->price;
+
+                // Get discount label for the default duration
+                $discountLabel = $defaultDiscount > 0
+                                    ? "Save {$defaultDiscount}% on {$plan->validity_months} month plan"
+                                    : null;
 
                 $result[] = [
                     'id' => $plan->id,
@@ -79,10 +88,12 @@ class IspPlanController extends Controller
                     'download_speed' => $plan->download_speed,
                     'validity_months' => $plan->validity_months,
                     'status' => $plan->status,
-                    'discounts' => $planDiscounts,
-                    'has_discount' => $bestDiscount > 0,
-                    'best_discount' => (float) $bestDiscount,
-                    'discounted_price' => (float) $discountedPrice
+                    'discounts' => $planDiscounts, // All discounts for this plan
+                    'has_discount' => $defaultDiscount > 0, // Only if default duration has discount
+                    'best_discount' => (float) $bestDiscount, // Best discount available (for display)
+                    'default_discount' => (float) $defaultDiscount, // Discount for default duration
+                    'discounted_price' => (float) $discountedPrice, // Price with default discount
+                    'discount_label' => $discountLabel // readable discount label
                 ];
             }
 
