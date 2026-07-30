@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\IspPlan;
+use App\Models\PlanDiscount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Cache;
-
 use PDOException;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -18,7 +17,6 @@ use Illuminate\Database\QueryException;
 use App\Http\Requests\IspPlanUpdateRequest;
 use App\Http\Requests\IspPlanRequest;
 use Illuminate\Support\Facades\Log;
-
 use Junges\Kafka\Facades\Kafka;
 use App\Services\KafkaProducerService;
 
@@ -31,12 +29,68 @@ class IspPlanController extends Controller
     public function index(): JsonResponse
     {
         try {
+            // get active plans
             $plans = Cache::remember('active_isp_plans', now()->addHours(6), function() {
+                Log::info('Cache miss - fetching plans from database');
                 return IspPlan::where('status', 1)->get();
             });
 
+            Log::info('Plans fetched', ['plan' => $plans->toArray()]);
+
+            // Get all active discounts
+            $discounts = Cache::remember('active_plan_discounts', now()->addHours(6), function() {
+                Log::info('Cache miss - fetching discounts from database');
+                return PlanDiscount::where('is_active', 1)->get();
+            });
+
+            Log::info('Discounts fetched', ['discounts' => $discounts->toArray()]);
+
+            // Group discounts by plan_id
+            $discountsByPlan = [];
+            foreach ($discounts as $discount) {
+                $planId = $discount->plan_id;
+                if (!isset($discountsByPlan[$planId])) {
+                    $discountsByPlan[$planId] = [];
+                }
+                $discountsByPlan[$planId][$discount->duration_months] = $discount->discount_percentage;
+            }
+
+            Log::info('Discounts grouped by plan', ['plans_with_discounts' => $discountsByPlan]);
+
+            $result = [];
+
+            foreach ($plans as $plan) {
+                $planDiscounts = $discountsByPlan[$plan->id] ?? [];
+
+                // Get best discount (highest percentage)
+                $bestDiscount = !empty($planDiscounts) ? max($planDiscounts) : 0;
+
+                // Calculate discounted price
+                $discountedPrice = $bestDiscount > 0
+                    ? $plan->price * (1 - $bestDiscount / 100)
+                    : $plan->price;
+
+                $result[] = [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'description' => $plan->description,
+                    'price' => (float) $plan->price,
+                    'upload_speed' => $plan->upload_speed,
+                    'download_speed' => $plan->download_speed,
+                    'validity_months' => $plan->validity_months,
+                    'status' => $plan->status,
+                    'discounts' => $planDiscounts,
+                    'has_discount' => $bestDiscount > 0,
+                    'best_discount' => (float) $bestDiscount,
+                    'discounted_price' => (float) $discountedPrice
+                ];
+            }
+
+            Log::info('Final data', ['plans_with_discounts' => $result]);
+
             return response()->json([
-                'data' => $plans
+                'success' => true,
+                'data' => $result
             ]);
         } catch (PDOException $e) {
             return response()->json([
