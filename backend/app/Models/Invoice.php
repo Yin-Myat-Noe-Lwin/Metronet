@@ -14,6 +14,8 @@ class Invoice extends Model
         'subscription_id',
         'amount',
         'due_date',
+        'billing_period_start',
+        'billing_period_end',
         'status'
     ];
 
