@@ -100,7 +100,7 @@
       </div>
     </section>
 
-    <!-- Installation Address Modal (Step 1) -->
+    <!-- Installation Address Modal -->
     <div v-if="showAddressModal" class="modal-overlay" @click.self="closeAllModals">
       <div class="modal-container address-modal">
         <div class="modal-header">
@@ -116,7 +116,13 @@
         <div class="modal-body">
           <p class="address-modal-subtitle">Please provide your installation address for this subscription.</p>
 
-          <div class="address-form">
+          <!-- Loading Service Areas -->
+          <div v-if="loadingServiceAreas" class="loading-service-areas">
+            <div class="small-spinner"></div>
+            <span>Loading service areas...</span>
+          </div>
+
+          <div v-else class="address-form">
             <div class="form-group" :class="{ 'has-error': addressErrors.address }">
               <label class="form-label">Street Address <span class="required">*</span></label>
               <input
@@ -151,7 +157,7 @@
                 <select
                   v-model="addressForm.city"
                   class="form-input"
-                  :disabled="!addressForm.region"
+                  :disabled="!addressForm.region || loadingCities"
                   @change="onCityChange"
                   :class="{ 'input-error': addressErrors.city }"
                 >
@@ -160,6 +166,7 @@
                     {{ city }}
                   </option>
                 </select>
+                <div v-if="loadingCities" class="loading-indicator">Loading cities...</div>
                 <span v-if="addressErrors.city" class="field-error">{{ addressErrors.city }}</span>
               </div>
 
@@ -168,7 +175,7 @@
                 <select
                   v-model="addressForm.township"
                   class="form-input"
-                  :disabled="!addressForm.city"
+                  :disabled="!addressForm.city || loadingTownships"
                   :class="{ 'input-error': addressErrors.township }"
                 >
                   <option value="">Select Township</option>
@@ -176,14 +183,26 @@
                     {{ township }}
                   </option>
                 </select>
+                <div v-if="loadingTownships" class="loading-indicator">Loading townships...</div>
                 <span v-if="addressErrors.township" class="field-error">{{ addressErrors.township }}</span>
+              </div>
+            </div>
+
+            <!-- Service Area Availability Indicator -->
+            <div v-if="addressForm.region && addressForm.city && addressForm.township" class="service-available">
+              <div class="service-available-content">
+                <div class="service-available-text">
+                  <strong>Service Available!</strong>
+                  <span>This location is within our coverage area</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="address-actions">
             <button class="modal-btn btn-cancel" @click="closeAllModals">Cancel</button>
-            <button class="modal-btn btn-subscribe" @click="saveAddressAndProceed" :disabled="savingAddress">
+            <!-- enable subscribe button only when add the valid address -->
+            <button class="modal-btn btn-subscribe" @click="saveAddressAndProceed" :disabled="savingAddress || !isAddressValid">
               <span v-if="savingAddress" class="btn-spinner"></span>
               {{ savingAddress ? 'Saving...' : 'Continue to Subscription' }}
             </button>
@@ -192,7 +211,7 @@
       </div>
     </div>
 
-    <!-- Subscribe Modal (Step 2) -->
+    <!-- Subscribe Modal  -->
     <div v-if="showSubscribeModal && selectedPlan" class="modal-overlay" @click.self="closeSubscribeModal">
       <div class="modal-container subscribe-modal">
         <div class="modal-header">
@@ -212,7 +231,6 @@
           <!-- Installation Address Summary -->
           <div class="address-summary" v-if="savedAddress">
             <div class="address-summary-header">
-              <span class="address-summary-icon">📍</span>
               <span class="address-summary-label">Installation Address</span>
             </div>
             <p class="address-summary-text">{{ savedAddress.address }}</p>
@@ -304,7 +322,6 @@
     <div v-if="showSuccessModal" class="modal-overlay" @click.self="closeSuccessModal">
       <div class="modal-container alert-modal success-modal">
         <div class="modal-header">
-          <div class="success-icon">✅</div>
           <h3 class="modal-title">Subscription Successful!</h3>
           <button class="modal-close" @click="closeSuccessModal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -357,6 +374,12 @@ export default {
       selectedPlanId: null,
       sortBy: 'price-low',
       plans: [],
+      loadingServiceAreas: false,
+      loadingCities: false,
+      loadingTownships: false,
+      citiesByRegion: {},
+      townshipsByCity: {},
+      hierarchy: {},
 
       // Address Modal
       showAddressModal: false,
@@ -375,8 +398,6 @@ export default {
         township: ''
       },
       serviceRegions: [],
-      allCities: [],
-      allTownships: [],
       filteredCities: [],
       filteredTownships: [],
       savedAddress: null,
@@ -423,6 +444,12 @@ export default {
         default:
           return filtered
       }
+    },
+    isAddressValid() {
+      return this.addressForm.address &&
+              this.addressForm.region &&
+              this.addressForm.city &&
+              this.addressForm.township
     }
   },
   mounted() {
@@ -457,33 +484,83 @@ export default {
     },
 
     async fetchServiceAreas() {
+      this.loadingServiceAreas = true
       try {
+        // get service areas data
         const response = await serviceAreasService.getServiceAreas()
         const data = response.data || response
 
-        this.serviceRegions = data.region || []
-        this.allCities = data.city || []
-        this.allTownships = data.township || []
-        this.filteredCities = [...this.allCities]
-        this.filteredTownships = [...this.allTownships]
+        console.log('Service areas response:', data)
+
+        // if data has hierarchy
+        if (data.hierarchy) {
+          this.serviceRegions = data.regions || []
+          this.hierarchy = data.hierarchy || {}
+
+          // Build citiesByRegion
+          this.citiesByRegion = {}
+          Object.keys(this.hierarchy).forEach(region => {
+            this.citiesByRegion[region] = Object.keys(this.hierarchy[region]) || []
+          })
+
+          // get townships By City
+          this.townshipsByCity = {}
+          Object.keys(this.hierarchy).forEach(region => {
+            const cities = this.hierarchy[region]
+            Object.keys(cities).forEach(city => {
+              const key = `${region}_${city}`
+              this.townshipsByCity[key] = cities[city] || []
+            })
+          })
+
+          this.filteredCities = data.cities || []
+          this.filteredTownships = data.townships || []
+        } else {
+          // if data is an array of service areas
+          // this.buildMappings(data)
+        }
+
       } catch (error) {
         console.error('Error fetching service areas:', error)
+        this.showToast('Failed to load service areas', 'error')
+      } finally {
+        this.loadingServiceAreas = false
       }
     },
 
-    onRegionChange() {
-      this.filteredCities = [...this.allCities]
-      this.addressForm.city = ''
-      this.addressForm.township = ''
-      this.filteredTownships = []
-      this.clearFieldError('region')
-    },
+  onRegionChange() {
+    // Get cities only for the selected region
+    this.filteredCities = this.citiesByRegion[this.addressForm.region] || []
 
-    onCityChange() {
-      this.filteredTownships = [...this.allTownships]
-      this.addressForm.township = ''
-      this.clearFieldError('city')
-    },
+    // Reset city and township
+    this.addressForm.city = ''
+    this.addressForm.township = ''
+    this.filteredTownships = []
+
+    console.log('Region changed:', {
+      region: this.addressForm.region,
+      cities: this.filteredCities
+    })
+
+    this.clearFieldError('region')
+  },
+
+  onCityChange() {
+    // Get townships only for the selected region + city
+    const key = `${this.addressForm.region}_${this.addressForm.city}`
+    this.filteredTownships = this.townshipsByCity[key] || []
+
+    // Reset township
+    this.addressForm.township = ''
+
+    console.log('City changed:', {
+      region: this.addressForm.region,
+      city: this.addressForm.city,
+      townships: this.filteredTownships
+    })
+
+    this.clearFieldError('city')
+  },
 
     clearFieldError(field) {
       if (this.addressErrors[field]) {
@@ -1218,6 +1295,83 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* Service Available - Badge Style */
+.service-available {
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 2px dashed #4caf50;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.service-available::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(76, 175, 80, 0.02));
+  pointer-events: none;
+}
+
+.service-available::after {
+  content: '✓ AVAILABLE';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  padding: 2px 12px;
+  background: #4caf50;
+  color: #fff;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.service-available-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.service-available-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.service-available-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+  display: block;
+}
+
+.service-available-text span {
+  font-size: 13px;
+  color: #666;
+}
+
+.service-available:hover {
+  border-color: #66bb6a;
+  box-shadow: 0 0 25px rgba(76, 175, 80, 0.12);
 }
 
 .form-row {
