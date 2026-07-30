@@ -8,6 +8,7 @@ use App\Http\Requests\ServiceAreaRequest;
 use App\Http\Requests\ServiceAreaUpdateRequest;
 use App\Models\ServiceArea;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class ServiceAreaController extends Controller
 {
@@ -85,60 +86,199 @@ class ServiceAreaController extends Controller
         }
     }
 
+    // available service areas for customers to choose when subscribe a plan
     public function viewAreas(): JsonResponse
     {
         try {
-            $regions = ServiceArea::where('status', 1)
-                ->select('region')
-                ->distinct()
-                ->pluck('region')
-                ->values()
-                ->toArray();
+            // Get all active service areas
+            $areas = ServiceArea::where('status', 1)
+                                    ->select('region', 'city', 'township')
+                                    ->get();
 
-            $cities = ServiceArea::where('status', 1)
-                ->select('city')
-                ->distinct()
-                ->pluck('city')
-                ->values()
-                ->toArray();
+            // region -> cities -> townships
+            $hierarchy = [];
 
-            $townships = ServiceArea::where('status', 1)
-                ->select('township')
-                ->distinct()
-                ->pluck('township')
-                ->values()
-                ->toArray();
+            foreach ($areas as $area) {
+                // Initialize region if not exists
+                if (!isset($hierarchy[$area->region])) {
+                    $hierarchy[$area->region] = [];
+                }
 
-           return response()->json([
-                'region' => $regions,
-                'city' => $cities,
-                'township' => $townships
+                // Initialize city if not exists under this region
+                if (!isset($hierarchy[$area->region][$area->city])) {
+                    $hierarchy[$area->region][$area->city] = [];
+                }
+
+                // Add township to city if not already added
+                if (!in_array($area->township, $hierarchy[$area->region][$area->city])) {
+                    $hierarchy[$area->region][$area->city][] = $area->township;
+                }
+            }
+
+            Log::info('Area Relationship', $hierarchy);
+
+            // extract all array keys (for regions)
+            $regions = array_keys($hierarchy);
+
+            $cities = [];
+            $townships = [];
+
+            foreach ($hierarchy as $region => $citiesData) {
+                foreach ($citiesData as $city => $townshipsData) {
+                    $cities[] = $city;
+                    foreach ($townshipsData as $township) {
+                        $townships[] = $township;
+                    }
+                }
+            }
+
+            return response()->json([
+                'regions' => $regions,
+                'cities' => array_unique($cities),
+                'townships' => array_unique($townships),
+                'hierarchy' => $hierarchy
             ]);
 
-        } catch (PDOException $e) {
+        } catch (\Exception $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (QueryException $e) {
+                'message' => 'Failed to fetch service areas'
+            ], 500);
+        }
+    }
+
+    // get cities by region in dropdown
+    public function getCitiesByRegion(Request $request): JsonResponse
+    {
+        try {
+            $region = $request->query('region');
+
+            if (!$region) {
+                return response()->json([
+                    'error' => 'Region parameter is required'
+                ], 400);
+            }
+
+            $cities = ServiceArea::where('region', $region)
+                                    ->where('status', 1)
+                                    ->select('city')
+                                    ->distinct()
+                                    ->pluck('city')
+                                    ->values()
+                                    ->toArray();
+
             return response()->json([
-                'message' => $e->getMessage()
+                'data' => $cities
             ]);
-        } catch (ModelNotFoundException $e) {
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching cities by region: ' . $e->getMessage());
             return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (AuthenticationException $e) {
+                'message' => 'Failed to fetch cities'
+            ], 500);
+        }
+    }
+
+    // get townships by cities in dropdown bar
+    public function getTownshipsByCity(Request $request): JsonResponse
+    {
+        try {
+            $region = $request->query('region');
+            $city = $request->query('city');
+
+            if (!$region || !$city) {
+                return response()->json([
+                    'error' => 'Region and city parameters are required'
+                ], 400);
+            }
+
+            $townships = ServiceArea::where('region', $region)
+                                        ->where('city', $city)
+                                        ->where('status', 1)
+                                        ->select('township')
+                                        ->distinct()
+                                        ->pluck('township')
+                                        ->values()
+                                        ->toArray();
+
             return response()->json([
-                'message' =>  $e->getMessage()
+                'data' => $townships
             ]);
-        } catch (AuthorizationException $e) {
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching townships by city: ' . $e->getMessage());
             return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (Exception $e) {
+                'message' => 'Failed to fetch townships'
+            ], 500);
+        }
+    }
+
+    // filter township, city based on region
+    public function getFilteredAreas(Request $request): JsonResponse
+    {
+        try {
+            // get selected region
+            $region = $request->query('region');
+            // get selected city
+            $city = $request->query('city');
+
+            $query = ServiceArea::where('status', 1);
+
+            if ($region) {
+                $query->where('region', $region);
+            }
+
+            if ($city) {
+                $query->where('city', $city);
+            }
+
+            $areas = $query->get();
+
+            $response = [];
+
+            if (!$region && !$city) {
+                // Return all regions with their cities and townships
+                $regions = ServiceArea::where('status', 1)
+                                        ->select('region')
+                                        ->distinct()
+                                        ->pluck('region')
+                                        ->toArray();
+
+                foreach ($regions as $reg) {
+                    $cities = ServiceArea::where('region', $reg)
+                                            ->where('status', 1)
+                                            ->select('city')
+                                            ->distinct()
+                                            ->pluck('city')
+                                            ->toArray();
+
+                    $response[$reg] = [];
+                    foreach ($cities as $cit) {
+                        $townships = ServiceArea::where('region', $reg)
+                            ->where('city', $cit)
+                            ->where('status', 1)
+                            ->select('township')
+                            ->distinct()
+                            ->pluck('township')
+                            ->toArray();
+
+                        $response[$reg][$cit] = $townships;
+                    }
+                }
+
+                return response()->json([
+                    'data' => $response
+                ]);
+            }
+
             return response()->json([
-                'message' => 'Something went wrong.'
+                'data' => $areas
             ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching filtered areas: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch service areas'
+            ], 500);
         }
     }
 
