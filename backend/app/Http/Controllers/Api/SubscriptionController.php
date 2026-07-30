@@ -81,9 +81,10 @@ class SubscriptionController extends Controller
                 ]);
             }
 
+            // find if customer has address
             $address = CustomerAddress::where('customer_id', $customer->id)
-                ->where('is_primary', 1)
-                ->first();
+                                        ->orderBy('created_at', 'desc')
+                                        ->first();
 
             if (!$address) {
                 return response()->json([
