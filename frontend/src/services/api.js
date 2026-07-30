@@ -162,13 +162,35 @@ export const serviceAreasService = {
   async getServiceAreas() {
     try {
       const response = await apiClient.get('/api/service-areas')
+      console.log("response for service areas", response)
       return response.data
     } catch (error) {
       console.error('Error fetching service areas:', error)
       throw error
     }
   },
-
+  // Get cities by region
+  async getCitiesByRegion(region) {
+    const response = await apiClient.get('/api/service-areas/cities', {
+      params: { region }
+    })
+    return response.data
+  },
+  // Get townships by city and region
+  async getTownshipsByCity(region, city) {
+    const response = await apiClient.get('/api/service-areas/townships', {
+      params: { region, city }
+    })
+    return response.data
+  },
+  // Get filtered areas
+  async getFilteredAreas(region = null, city = null) {
+    const response = await apiClient.get('/api/service-areas/filtered', {
+      params: { region, city }
+    })
+    return response.data
+  },
+  // get all service areas for admins
   async getAdminServiceAreas() {
     try {
       const response = await apiClient.get('/api/admin/service-areas')
