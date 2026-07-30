@@ -392,10 +392,24 @@ class SubscriptionController extends Controller
             DB::transaction(function () use ($subscription, $reason, $sendEmail) {
                 $subscription->update([
                     'status' => 5, // Rejected
-                    'rejection_reason' => $reason
                 ]);
 
-                Log::info('Subscription rejected', [
+                $this->kafkaProducer->publish(
+                    $topic,
+                    [
+                        'subscription_id' => $subscription->id,
+                        'customer_id' => $subscription->customer_id,
+                        'customer_name' => $subscription->customer->name ?? 'N/A',
+                        'customer_email' => $subscription->customer->email ?? 'N/A',
+                        'plan_id' => $subscription->plan_id,
+                        'plan_name' => $subscription->plan->name ?? 'N/A',
+                        'reason' => $reason,
+                        'send_email' => $sendEmail,
+                        'rejected_at' => now()->toISOString(),
+                    ]
+                );
+
+                Log::info('Subscription rejected and event published to Kafka', [
                     'subscription_id' => $subscription->id,
                     'customer_id' => $subscription->customer_id,
                     'reason' => $reason
