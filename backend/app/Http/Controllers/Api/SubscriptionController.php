@@ -51,36 +51,6 @@ class SubscriptionController extends Controller
 
             Log::info('Plan found: ' . $plan->name);
 
-            // Check if customer has ACTIVE or PENDING subscription
-            $existing = Subscription::where('customer_id', $customer->id)
-                                    ->where('plan_id', $planId)
-                                    ->whereIn('status', [0, 1])
-                                    ->first();
-
-            if ($existing) {
-                Log::info('Existing active/pending subscription found', [
-                    'subscription_id' => $existing->id,
-                    'status' => $existing->status
-                ]);
-                return response()->json([
-                    'error' => 'You already have an active or pending subscription to this plan.',
-                    'data' => $existing
-                ], 409);
-            }
-
-            // Check if there is a cancelled subscription
-            $cancelled = Subscription::where('customer_id', $customer->id)
-                ->where('plan_id', $planId)
-                ->where('status', 4)
-                ->first();
-
-            if ($cancelled) {
-                Log::info('Previous cancelled subscription found, allowing new subscription', [
-                    'cancelled_subscription_id' => $cancelled->id,
-                    'plan_id' => $planId
-                ]);
-            }
-
             // Save address and subscription together
             $result = DB::transaction(function () use ($customer, $planId, $request) {
 
