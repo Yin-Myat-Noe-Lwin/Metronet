@@ -76,6 +76,7 @@
             <th>ID</th>
             <th>Customer</th>
             <th>Plan</th>
+            <th>Address</th>
             <th>Price</th>
             <th>Status</th>
             <th>Started</th>
@@ -101,6 +102,13 @@
               </div>
             </td>
             <td>
+              <div class="address-info" v-if="sub.installation_address">
+                <span class="address-short">{{ sub.installation_address.address }}</span>
+                <span class="address-location">{{ sub.installation_address.township }}, {{ sub.installation_address.city }}</span>
+              </div>
+              <span v-else class="no-address">No address</span>
+            </td>
+            <td>
               <span class="plan-price">{{ formatPrice(sub.plan?.price) }}</span>
             </td>
             <td>
@@ -113,10 +121,49 @@
             <td>{{ sub.end_date ? formatDate(sub.end_date) : 'N/A' }}</td>
             <td>
               <div class="action-buttons">
+                <!-- View Details -->
                 <button class="action-btn view" @click="viewSubscription(sub.id)" title="View Details">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                     <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+
+                <!-- Accept button for pending subscriptions -->
+                <button
+                  v-if="sub.status === 0"
+                  class="action-btn accept"
+                  @click="acceptSubscription(sub)"
+                  title="Accept Subscription"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </button>
+
+                <!-- Reject button for pending subscriptions -->
+                <button
+                  v-if="sub.status === 0"
+                  class="action-btn reject"
+                  @click="openRejectModal(sub)"
+                  title="Reject Subscription"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+
+                <!-- Cancel button for active subscriptions -->
+                <button
+                  v-if="sub.status === 1"
+                  class="action-btn cancel"
+                  @click="confirmCancel(sub)"
+                  title="Cancel Subscription"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
                 </button>
               </div>
@@ -125,24 +172,14 @@
         </tbody>
       </table>
 
-      <!-- Summary -->
+      <!-- Summary Stats -->
       <div class="table-footer">
         <div class="summary-stats">
-          <span class="stat-item">
-            <strong>Total:</strong> {{ subscriptions.length }}
-          </span>
-          <span class="stat-item active">
-            <span class="dot green"></span>
-            <strong>Active:</strong> {{ activeCount }}
-          </span>
-          <span class="stat-item pending">
-            <span class="dot orange"></span>
-            <strong>Pending:</strong> {{ pendingCount }}
-          </span>
-          <span class="stat-item cancelled">
-            <span class="dot red"></span>
-            <strong>Cancelled:</strong> {{ cancelledCount }}
-          </span>
+          <span class="stat-item"><strong>Total:</strong> {{ subscriptions.length }}</span>
+          <span class="stat-item active"><span class="dot green"></span><strong>Active:</strong> {{ activeCount }}</span>
+          <span class="stat-item pending"><span class="dot orange"></span><strong>Pending:</strong> {{ pendingCount }}</span>
+          <span class="stat-item cancelled"><span class="dot red"></span><strong>Cancelled:</strong> {{ cancelledCount }}</span>
+          <span class="stat-item rejected"><span class="dot gray"></span><strong>Rejected:</strong> {{ rejectedCount }}</span>
         </div>
       </div>
     </div>
@@ -155,7 +192,6 @@
           <button class="modal-close" @click="closeViewModal">×</button>
         </div>
         <div v-if="viewingSubscription" class="subscription-detail">
-          <!-- Status Bar -->
           <div class="detail-status-bar">
             <span class="status-badge large" :class="getStatusClass(viewingSubscription.status)">
               <span class="status-dot"></span>
@@ -165,7 +201,7 @@
           </div>
 
           <div class="detail-grid">
-            <!-- Subscription Info -->
+            <!-- Subscription Information -->
             <div class="detail-section">
               <h4>Subscription Information</h4>
               <div class="detail-item">
@@ -184,9 +220,21 @@
                 <span class="detail-label">Auto Renew</span>
                 <span class="detail-value">{{ viewingSubscription.auto_renew ? 'Yes' : 'No' }}</span>
               </div>
+              <div class="detail-item" v-if="viewingSubscription.installation_address">
+                <span class="detail-label">Address</span>
+                <span class="detail-value">{{ viewingSubscription.installation_address.address }}</span>
+              </div>
+              <div class="detail-item" v-if="viewingSubscription.installation_address">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">{{ viewingSubscription.installation_address.township }}, {{ viewingSubscription.installation_address.city }}, {{ viewingSubscription.installation_address.region }}</span>
+              </div>
+              <div class="detail-item" v-if="viewingSubscription.rejection_reason">
+                <span class="detail-label">Rejection Reason</span>
+                <span class="detail-value" style="color: #dc2626;">{{ viewingSubscription.rejection_reason }}</span>
+              </div>
             </div>
 
-            <!-- Customer Info -->
+            <!-- Customer Information -->
             <div class="detail-section">
               <h4>Customer Information</h4>
               <div class="detail-item">
@@ -203,7 +251,7 @@
               </div>
             </div>
 
-            <!-- Plan Info -->
+            <!-- Plan Information -->
             <div class="detail-section">
               <h4>Plan Information</h4>
               <div class="detail-item">
@@ -225,22 +273,37 @@
             </div>
 
             <!-- CPE Devices -->
-          <div class="detail-section">
-            <h4>CPE Devices</h4>
-            <div v-if="viewingSubscription.cpe_assignments && viewingSubscription.cpe_assignments.length > 0" class="cpe-list">
-              <div v-for="assignment in viewingSubscription.cpe_assignments" :key="assignment.id" class="cpe-item">
-                <span class="cpe-icon">📡</span>
-                <span class="cpe-model">{{ assignment.cpe?.serial_number || 'N/A' }}</span>
-                <span class="cpe-mac">{{ assignment.cpe?.mac_address || 'N/A' }}</span>
-                <span class="cpe-status" :class="assignment.status === 1 ? 'active' : 'inactive'">
-                  {{ assignment.status === 1 ? 'Active' : 'Inactive' }}
-                </span>
+            <div class="detail-section">
+              <h4>CPE Devices</h4>
+              <div v-if="viewingSubscription.cpe_assignments && viewingSubscription.cpe_assignments.length > 0" class="cpe-list">
+                <div v-for="assignment in viewingSubscription.cpe_assignments" :key="assignment.id" class="cpe-item">
+                  <span class="cpe-icon">📡</span>
+                  <span class="cpe-model">{{ assignment.cpe?.serial_number || 'N/A' }}</span>
+                  <span class="cpe-mac">{{ assignment.cpe?.mac_address || 'N/A' }}</span>
+                  <span class="cpe-status" :class="assignment.status === 1 ? 'active' : 'inactive'">
+                    {{ assignment.status === 1 ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div v-else class="cpe-empty">
-              <span>No CPE devices assigned</span>
+              <div v-else class="cpe-empty">No CPE devices assigned</div>
             </div>
           </div>
+
+          <!-- Accept/Reject actions for pending subscriptions -->
+          <div v-if="viewingSubscription.status === 0" class="detail-actions">
+            <button class="btn-accept" @click="acceptSubscription(viewingSubscription)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Accept Subscription
+            </button>
+            <button class="btn-reject" @click="openRejectModal(viewingSubscription)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Reject Subscription
+            </button>
           </div>
         </div>
         <div class="modal-footer">
@@ -249,7 +312,50 @@
       </div>
     </div>
 
-    <!-- Cancel Confirmation Modal -->
+    <!-- Reject Modal -->
+    <div v-if="showRejectModal" class="modal-overlay" @click.self="closeRejectModal">
+      <div class="modal modal-reject">
+        <div class="modal-header">
+          <h2>Reject Subscription</h2>
+          <button class="modal-close" @click="closeRejectModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="reject-info" v-if="rejectingSubscription">
+            <p><strong>Customer:</strong> {{ rejectingSubscription.customer?.name }}</p>
+            <p><strong>Plan:</strong> {{ rejectingSubscription.plan?.name }}</p>
+            <p><strong>Address:</strong> {{ rejectingSubscription.installation_address?.address || 'N/A' }}</p>
+            <p><strong>Location:</strong> {{ rejectingSubscription.installation_address?.township }}, {{ rejectingSubscription.installation_address?.city }}, {{ rejectingSubscription.installation_address?.region }}</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Rejection Reason <span class="required">*</span></label>
+            <textarea
+              v-model="rejectReason"
+              class="form-textarea"
+              placeholder="Please provide a reason for rejecting this subscription..."
+              rows="4"
+              maxlength="500"
+            ></textarea>
+            <span class="char-count">{{ rejectReason.length }}/500</span>
+          </div>
+
+          <div class="reject-options">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="sendEmailNotification">
+              Send email notification to customer
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeRejectModal">Cancel</button>
+          <button class="btn-danger" @click="confirmReject" :disabled="isRejecting || !rejectReason.trim()">
+            {{ isRejecting ? 'Rejecting...' : 'Reject Subscription' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cancel Modal -->
     <div v-if="showCancelModal" class="modal-overlay" @click.self="closeCancelModal">
       <div class="modal modal-cancel">
         <div class="cancel-icon-wrapper">
@@ -273,7 +379,7 @@
       </div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Toast -->
     <div v-if="toast.show" class="toast" :class="toast.type">
       <span class="toast-icon">{{ toast.type === 'success' ? '✓' : '✕' }}</span>
       <span class="toast-message">{{ toast.message }}</span>
@@ -289,24 +395,41 @@ export default {
   name: 'AdminSubscriptions',
   data() {
     return {
+      // Loading states
       loading: false,
       isCancelling: false,
+      isRejecting: false,
       error: null,
+
+      // Search and filter
       searchQuery: '',
-      activeFilter: 'all',
+      activeFilter: 'pending',
       filters: [
         { key: 'all', label: 'All' },
-        { key: 'active', label: 'Active' },
         { key: 'pending', label: 'Pending' },
-        { key: 'cancelled', label: 'Cancelled' }
+        { key: 'active', label: 'Active' },
+        { key: 'cancelled', label: 'Cancelled' },
+        { key: 'rejected', label: 'Rejected' }
       ],
+
+      // Data
       subscriptions: [],
+
+      // Modals
       showViewModal: false,
       showCancelModal: false,
+      showRejectModal: false,
       viewingSubscription: null,
+      rejectingSubscription: null,
+      rejectReason: '',
+      sendEmailNotification: true,
+
+      // Cancel data
       cancelId: null,
       cancelPlanName: '',
       cancelCustomerName: '',
+
+      // Toast
       toast: {
         show: false,
         message: '',
@@ -314,7 +437,9 @@ export default {
       }
     }
   },
+
   computed: {
+    // Filter subscriptions based on active filter and search query
     filteredSubscriptions() {
       let filtered = [...this.subscriptions]
 
@@ -324,6 +449,8 @@ export default {
         filtered = filtered.filter(s => s.status === 0)
       } else if (this.activeFilter === 'cancelled') {
         filtered = filtered.filter(s => s.status === 4)
+      } else if (this.activeFilter === 'rejected') {
+        filtered = filtered.filter(s => s.status === 5)
       }
 
       if (this.searchQuery) {
@@ -338,6 +465,8 @@ export default {
 
       return filtered
     },
+
+    // Count statistics
     activeCount() {
       return this.subscriptions.filter(s => s.status === 1).length
     },
@@ -346,12 +475,22 @@ export default {
     },
     cancelledCount() {
       return this.subscriptions.filter(s => s.status === 4).length
+    },
+    rejectedCount() {
+      return this.subscriptions.filter(s => s.status === 5).length
     }
   },
+
   mounted() {
     this.fetchSubscriptions()
   },
+
   methods: {
+    // ===================== DATA FETCHING =====================
+
+    /**
+     * Fetch all subscriptions from the API
+     */
     async fetchSubscriptions() {
       this.loading = true
       this.error = null
@@ -367,6 +506,7 @@ export default {
         }
 
         this.subscriptions = subsData
+        console.log('Subscriptions loaded:', this.subscriptions.length)
       } catch (error) {
         console.error('Error fetching subscriptions:', error)
         if (error.response?.status === 401) {
@@ -385,24 +525,57 @@ export default {
       }
     },
 
+    // ===================== FILTER HELPERS =====================
+
+    /**
+     * Get count of subscriptions by status
+     */
     getFilterCount(key) {
       if (key === 'all') return this.subscriptions.length
-      if (key === 'active') return this.subscriptions.filter(s => s.status === 1).length
       if (key === 'pending') return this.subscriptions.filter(s => s.status === 0).length
+      if (key === 'active') return this.subscriptions.filter(s => s.status === 1).length
       if (key === 'cancelled') return this.subscriptions.filter(s => s.status === 4).length
+      if (key === 'rejected') return this.subscriptions.filter(s => s.status === 5).length
       return 0
     },
 
+    // ===================== STATUS HELPERS =====================
+
+    /**
+     * Get human-readable status text
+     */
     getStatusText(status) {
-      const map = { 0: 'Pending', 1: 'Active', 2: 'Suspended', 3: 'Expired', 4: 'Cancelled' }
+      const map = {
+        0: 'Pending',
+        1: 'Active',
+        2: 'Suspended',
+        3: 'Expired',
+        4: 'Cancelled',
+        5: 'Rejected'
+      }
       return map[status] || 'Unknown'
     },
 
+    /**
+     * Get CSS class for status badge
+     */
     getStatusClass(status) {
-      const map = { 0: 'pending', 1: 'active', 2: 'suspended', 3: 'expired', 4: 'cancelled' }
+      const map = {
+        0: 'pending',
+        1: 'active',
+        2: 'suspended',
+        3: 'expired',
+        4: 'cancelled',
+        5: 'rejected'
+      }
       return map[status] || ''
     },
 
+    // ===================== VIEW MODAL =====================
+
+    /**
+     * Open view modal for a subscription
+     */
     viewSubscription(id) {
       const sub = this.subscriptions.find(s => s.id === id)
       if (sub) {
@@ -411,11 +584,85 @@ export default {
       }
     },
 
+    /**
+     * Close view modal
+     */
     closeViewModal() {
       this.showViewModal = false
       this.viewingSubscription = null
     },
 
+    // ===================== ACCEPT SUBSCRIPTION =====================
+
+    /**
+     * Accept a pending subscription
+     */
+    async acceptSubscription(sub) {
+      if (!confirm(`Accept subscription for ${sub.customer?.name} (${sub.plan?.name})?`)) return
+
+      try {
+        await subscriptionsService.acceptSubscription(sub.id)
+        this.showToast('Subscription accepted successfully', 'success')
+        this.fetchSubscriptions()
+        this.closeViewModal()
+      } catch (error) {
+        console.error('Error accepting subscription:', error)
+        this.showToast(error.response?.data?.error || 'Failed to accept subscription', 'error')
+      }
+    },
+
+    // ===================== REJECT SUBSCRIPTION =====================
+
+    /**
+     * Open reject modal for a subscription
+     */
+    openRejectModal(sub) {
+      this.rejectingSubscription = sub
+      this.rejectReason = ''
+      this.sendEmailNotification = true
+      this.showRejectModal = true
+      this.closeViewModal()
+    },
+
+    /**
+     * Close reject modal
+     */
+    closeRejectModal() {
+      this.showRejectModal = false
+      this.rejectingSubscription = null
+      this.rejectReason = ''
+      this.isRejecting = false
+    },
+
+    /**
+     * Confirm and process rejection
+     */
+    async confirmReject() {
+      if (!this.rejectingSubscription || !this.rejectReason.trim()) return
+
+      this.isRejecting = true
+      try {
+        await subscriptionsService.rejectSubscription(
+          this.rejectingSubscription.id,
+          this.rejectReason,
+          this.sendEmailNotification
+        )
+        this.showToast('Subscription rejected successfully', 'success')
+        this.closeRejectModal()
+        this.fetchSubscriptions()
+      } catch (error) {
+        console.error('Error rejecting subscription:', error)
+        this.showToast(error.response?.data?.error || 'Failed to reject subscription', 'error')
+      } finally {
+        this.isRejecting = false
+      }
+    },
+
+    // ===================== CANCEL SUBSCRIPTION =====================
+
+    /**
+     * Open cancel confirmation modal
+     */
     confirmCancel(sub) {
       this.cancelId = sub.id
       this.cancelPlanName = sub.plan?.name || 'this plan'
@@ -423,6 +670,9 @@ export default {
       this.showCancelModal = true
     },
 
+    /**
+     * Close cancel modal
+     */
     closeCancelModal() {
       this.showCancelModal = false
       this.cancelId = null
@@ -431,31 +681,31 @@ export default {
       this.isCancelling = false
     },
 
+    /**
+     * Confirm and process cancellation
+     */
     async confirmCancel() {
       if (!this.cancelId) return
 
       this.isCancelling = true
       try {
         await subscriptionsService.cancelSubscription(this.cancelId)
-
-        // Update local state
-        const index = this.subscriptions.findIndex(s => s.id === this.cancelId)
-        if (index !== -1) {
-          this.subscriptions[index].status = 4
-        }
-
         this.closeCancelModal()
-        this.showToast('Subscription cancelled successfully!', 'success')
-        await this.fetchSubscriptions()
+        this.showToast('Subscription cancelled successfully', 'success')
+        this.fetchSubscriptions()
       } catch (error) {
         console.error('Error cancelling subscription:', error)
         this.showToast(error.response?.data?.message || 'Failed to cancel subscription.', 'error')
-        this.closeCancelModal()
       } finally {
         this.isCancelling = false
       }
     },
 
+    // ===================== UTILITY METHODS =====================
+
+    /**
+     * Format price with currency
+     */
     formatPrice(price) {
       if (!price) return 'N/A'
       return new Intl.NumberFormat('my-MM', {
@@ -466,6 +716,9 @@ export default {
       }).format(price)
     },
 
+    /**
+     * Format date to readable string
+     */
     formatDate(date) {
       if (!date) return 'N/A'
       try {
@@ -479,11 +732,13 @@ export default {
       }
     },
 
+    /**
+     * Show toast notification
+     */
     showToast(message, type = 'success') {
       this.toast.message = message
       this.toast.type = type
       this.toast.show = true
-
       setTimeout(() => {
         this.toast.show = false
       }, 4000)
@@ -493,12 +748,12 @@ export default {
 </script>
 
 <style scoped>
+/* ===== PAGE HEADER ===== */
 .admin-subscriptions {
   padding: 20px 0;
   max-width: 1200px;
 }
 
-/* ===== PAGE HEADER ===== */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -622,7 +877,7 @@ export default {
 
 .filter-btn .count {
   display: inline-block;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 50px;
   padding: 0 8px;
   font-size: 11px;
@@ -674,7 +929,7 @@ export default {
 }
 
 .actions-col {
-  width: 80px;
+  width: 120px;
   text-align: center;
 }
 
@@ -722,6 +977,31 @@ export default {
   color: #0f172a;
 }
 
+/* ===== ADDRESS INFO ===== */
+.address-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.address-short {
+  font-size: 13px;
+  color: #0f172a;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.address-location {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.no-address {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
 /* ===== STATUS BADGE ===== */
 .status-badge {
   display: inline-flex;
@@ -740,20 +1020,53 @@ export default {
   border-radius: 50%;
 }
 
-.status-badge.active { background: #dcfce7; color: #16a34a; }
-.status-badge.active .status-dot { background: #16a34a; }
+.status-badge.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.status-badge.active .status-dot {
+  background: #16a34a;
+}
 
-.status-badge.pending { background: #fef3c7; color: #d97706; }
-.status-badge.pending .status-dot { background: #d97706; }
+.status-badge.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+.status-badge.pending .status-dot {
+  background: #d97706;
+}
 
-.status-badge.cancelled { background: #fee2e2; color: #dc2626; }
-.status-badge.cancelled .status-dot { background: #dc2626; }
+.status-badge.cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.status-badge.cancelled .status-dot {
+  background: #dc2626;
+}
 
-.status-badge.suspended { background: #fef3c7; color: #d97706; }
-.status-badge.suspended .status-dot { background: #d97706; }
+.status-badge.rejected {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.status-badge.rejected .status-dot {
+  background: #dc2626;
+}
 
-.status-badge.expired { background: #f1f5f9; color: #94a3b8; }
-.status-badge.expired .status-dot { background: #94a3b8; }
+.status-badge.suspended {
+  background: #fef3c7;
+  color: #d97706;
+}
+.status-badge.suspended .status-dot {
+  background: #d97706;
+}
+
+.status-badge.expired {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+.status-badge.expired .status-dot {
+  background: #94a3b8;
+}
 
 .status-badge.large {
   padding: 6px 16px;
@@ -783,16 +1096,30 @@ export default {
   background: #eef2ff;
   color: #4f46e5;
 }
-
 .action-btn.view:hover {
   background: #c7d2fe;
+}
+
+.action-btn.accept {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.action-btn.accept:hover {
+  background: #bbf7d0;
+}
+
+.action-btn.reject {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.action-btn.reject:hover {
+  background: #fecaca;
 }
 
 .action-btn.cancel {
   background: #fef2f2;
   color: #dc2626;
 }
-
 .action-btn.cancel:hover {
   background: #fecaca;
 }
@@ -828,9 +1155,18 @@ export default {
   border-radius: 50%;
 }
 
-.stat-item .dot.green { background: #16a34a; }
-.stat-item .dot.orange { background: #d97706; }
-.stat-item .dot.red { background: #dc2626; }
+.stat-item .dot.green {
+  background: #16a34a;
+}
+.stat-item .dot.orange {
+  background: #d97706;
+}
+.stat-item .dot.red {
+  background: #dc2626;
+}
+.stat-item .dot.gray {
+  background: #94a3b8;
+}
 
 .stat-item strong {
   color: #0f172a;
@@ -874,8 +1210,12 @@ export default {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
@@ -887,8 +1227,14 @@ export default {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-view {
@@ -902,6 +1248,12 @@ export default {
   width: 90%;
   padding: 40px 32px;
   text-align: center;
+}
+
+.modal-reject {
+  max-width: 500px;
+  width: 90%;
+  padding: 32px;
 }
 
 .modal-header {
@@ -1055,6 +1407,131 @@ export default {
   padding: 4px 0;
 }
 
+/* ===== DETAIL ACTIONS ===== */
+.detail-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-accept {
+  flex: 1;
+  padding: 10px 20px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-accept:hover {
+  background: #15803d;
+}
+
+.btn-reject {
+  flex: 1;
+  padding: 10px 20px;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-reject:hover {
+  background: #b91c1c;
+}
+
+/* ===== REJECT MODAL ===== */
+.reject-info {
+  background: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.reject-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.3s;
+  font-family: inherit;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.char-count {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.reject-options {
+  margin: 12px 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ff6b35;
+}
+
 /* ===== CANCEL MODAL ===== */
 .cancel-icon-wrapper {
   display: flex;
@@ -1149,7 +1626,9 @@ export default {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-state p {
@@ -1225,7 +1704,7 @@ export default {
 .toast-close {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 20px;
   cursor: pointer;
   margin-left: auto;
@@ -1272,7 +1751,8 @@ export default {
   }
 
   .modal-view,
-  .modal-cancel {
+  .modal-cancel,
+  .modal-reject {
     padding: 24px;
   }
 
@@ -1299,6 +1779,10 @@ export default {
     left: 16px;
     min-width: auto;
   }
+
+  .detail-actions {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1316,8 +1800,13 @@ export default {
   }
 
   .modal-view,
-  .modal-cancel {
+  .modal-cancel,
+  .modal-reject {
     padding: 16px;
+  }
+
+  .actions-col {
+    width: 100px;
   }
 }
 </style>
