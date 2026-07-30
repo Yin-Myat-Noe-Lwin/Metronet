@@ -153,6 +153,7 @@ CREATE TABLE `subscriptions` (
     `start_date` DATE NULL,
     `end_date` DATE NULL,
     `duration_months` INT NOT NULL DEFAULT 1,
+    `billing_cycle` TINYINT NOT NULL DEFAULT 1 COMMENT '1=Monthly, 3=Quarterly, 6=Semi-annual, 12=Annual',
     `auto_renew` TINYINT NOT NULL DEFAULT 0,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
@@ -173,12 +174,18 @@ CREATE TABLE `invoices` (
     `subscription_id` BIGINT UNSIGNED NOT NULL,
     `amount` DECIMAL(10,2) NOT NULL,
     `due_date` DATE NOT NULL,
+    `billing_period_start` DATE NULL COMMENT 'Start of billing period',
+    `billing_period_end` DATE NULL COMMENT 'End of billing period',
     `status` TINYINT NOT NULL COMMENT '0=pending,1=paid,2=overdue,3=cancelled',
+    `paid_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
+
     INDEX `idx_subscription_id` (`subscription_id`),
-    CONSTRAINT fk_invoice_subscription
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+    INDEX `idx_status` (`status`),
+    INDEX `idx_due_date` (`due_date`),
+
+    CONSTRAINT fk_invoice_subscription FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payment_methods` (
