@@ -50,12 +50,11 @@ class SubscriptionController extends Controller
 
             Log::info('Plan found: ' . $plan->name);
 
-            // Check if customer has ACTIVE (1) or PENDING (0) subscription
-            // This allows resubscription if previous was cancelled (4) or expired (3)
+            // Check if customer has ACTIVE or PENDING subscription
             $existing = Subscription::where('customer_id', $customer->id)
-                ->where('plan_id', $planId)
-                ->whereIn('status', [0, 1])
-                ->first();
+                                    ->where('plan_id', $planId)
+                                    ->whereIn('status', [0, 1])
+                                    ->first();
 
             if ($existing) {
                 Log::info('Existing active/pending subscription found', [
@@ -68,11 +67,11 @@ class SubscriptionController extends Controller
                 ], 409);
             }
 
-            // Check if there's a cancelled subscription (for logging only)
+            // Check if there is a cancelled subscription
             $cancelled = Subscription::where('customer_id', $customer->id)
-                ->where('plan_id', $planId)
-                ->where('status', 4)
-                ->first();
+                                        ->where('plan_id', $planId)
+                                        ->where('status', 4)
+                                        ->first();
 
             if ($cancelled) {
                 Log::info('Previous cancelled subscription found, allowing new subscription', [
@@ -81,40 +80,56 @@ class SubscriptionController extends Controller
                 ]);
             }
 
-            // find if customer has address
+            // get the most recent address for customer
             $address = CustomerAddress::where('customer_id', $customer->id)
                                         ->orderBy('created_at', 'desc')
                                         ->first();
 
+            // If address_id is passed in request
+            if (!$address && $request->has('address_id')) {
+                $address = CustomerAddress::where('customer_id', $customer->id)
+                                            ->where('id', $request->address_id)
+                                            ->first();
+            }
+
             if (!$address) {
                 return response()->json([
-                    'error' => 'Please set a primary installation address before subscribing.'
+                    'error' => 'Please add an installation address before subscribing.'
                 ], 400);
             }
 
-            // Create NEW subscription
+            Log::info('Address found for customer:', [
+                'customer_id' => $customer->id,
+                'address_id' => $address->id,
+                'address' => $address->address,
+                'is_primary' => $address->is_primary
+            ]);
+
+            // Create subscription with installation_address_id
             $subscription = Subscription::create([
                 'customer_id' => $customer->id,
                 'plan_id' => $planId,
-                'status' => 0,
+                'installation_address_id' => $address->id,
+                'status' => 0, // pending
                 'start_date' => now(),
-                'end_date' => now()->addMonths((int)$request->duration_months)
+                'end_date' => now()->addMonths((int)$request->duration_months),
+                'duration_months' => (int)$request->duration_months,
+                'auto_renew' => 0
             ]);
 
             Log::info('New subscription created', [
                 'subscription_id' => $subscription->id,
                 'customer_id' => $customer->id,
                 'plan_id' => $planId,
-                'status' => $subscription->status
+                'installation_address_id' => $address->id,
+                'status' => $subscription->status,
+                'duration_months' => $subscription->duration_months
             ]);
 
-            Log::info('before job started');
-
+            // Dispatch job
+            Log::info('Dispatching ProcessSubscriptionJob');
             ProcessSubscriptionJob::dispatch($subscription->id);
-
-            Log::info('after job started');
-
-            Log::info('New subscription created');
+            Log::info('ProcessSubscriptionJob dispatched successfully');
 
             return response()->json([
                 'message' => 'Subscription Successful. Please wait approval from ISP.',
