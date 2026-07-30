@@ -16,6 +16,7 @@ class Subscription extends Model
         'start_date',
         'end_date',
         'duration_months',
+        'billing_cycle',
         'auto_renew'
     ];
 
