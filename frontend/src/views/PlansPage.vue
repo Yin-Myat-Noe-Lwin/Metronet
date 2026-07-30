@@ -43,6 +43,7 @@
               v-for="plan in filteredAndSortedPlans"
               :key="plan.id"
               class="plan-card"
+              :class="{ 'plan-card--loading': subscribing && selectedPlanId === plan.id }"
             >
               <div class="plan-header">
                 <h3 class="plan-name">{{ plan.name }}</h3>
@@ -83,8 +84,14 @@
               </div>
 
               <div class="plan-footer">
-                <button @click="openSubscribeModal(plan)" class="plan-btn" :disabled="subscribing && selectedPlanId === plan.id">
-                  {{ subscribing && selectedPlanId === plan.id ? 'Subscribing...' : 'Subscribe Now' }}
+                <button
+                  @click="openSubscribeModal(plan)"
+                  class="plan-btn"
+                  :disabled="subscribing && selectedPlanId === plan.id"
+                  :class="{ 'plan-btn--loading': subscribing && selectedPlanId === plan.id }"
+                >
+                  <span v-if="subscribing && selectedPlanId === plan.id" class="btn-spinner"></span>
+                  {{ subscribing && selectedPlanId === plan.id ? 'Processing...' : 'Subscribe Now' }}
                 </button>
               </div>
             </div>
@@ -93,11 +100,106 @@
       </div>
     </section>
 
-    <!-- Subscribe Modal -->
-    <div v-if="showSubscribeModal && selectedPlan" class="modal-overlay" @click.self="closeSubscribeModal">
-      <div class="modal-container">
+    <!-- Installation Address Modal (Step 1) -->
+    <div v-if="showAddressModal" class="modal-overlay" @click.self="closeAllModals">
+      <div class="modal-container address-modal">
         <div class="modal-header">
-          <h3 class="modal-title">Subscribe to {{ selectedPlan?.name }}</h3>
+          <h3 class="modal-title">Installation Address</h3>
+          <button class="modal-close" @click="closeAllModals">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="address-modal-subtitle">Please provide your installation address for this subscription.</p>
+
+          <div class="address-form">
+            <div class="form-group" :class="{ 'has-error': addressErrors.address }">
+              <label class="form-label">Street Address <span class="required">*</span></label>
+              <input
+                v-model="addressForm.address"
+                type="text"
+                class="form-input"
+                placeholder="Enter your street address"
+                :class="{ 'input-error': addressErrors.address }"
+              />
+              <span v-if="addressErrors.address" class="field-error">{{ addressErrors.address }}</span>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" :class="{ 'has-error': addressErrors.region }">
+                <label class="form-label">Region <span class="required">*</span></label>
+                <select
+                  v-model="addressForm.region"
+                  class="form-input"
+                  @change="onRegionChange"
+                  :class="{ 'input-error': addressErrors.region }"
+                >
+                  <option value="">Select Region</option>
+                  <option v-for="region in serviceRegions" :key="region" :value="region">
+                    {{ region }}
+                  </option>
+                </select>
+                <span v-if="addressErrors.region" class="field-error">{{ addressErrors.region }}</span>
+              </div>
+
+              <div class="form-group" :class="{ 'has-error': addressErrors.city }">
+                <label class="form-label">City <span class="required">*</span></label>
+                <select
+                  v-model="addressForm.city"
+                  class="form-input"
+                  :disabled="!addressForm.region"
+                  @change="onCityChange"
+                  :class="{ 'input-error': addressErrors.city }"
+                >
+                  <option value="">Select City</option>
+                  <option v-for="city in filteredCities" :key="city" :value="city">
+                    {{ city }}
+                  </option>
+                </select>
+                <span v-if="addressErrors.city" class="field-error">{{ addressErrors.city }}</span>
+              </div>
+
+              <div class="form-group" :class="{ 'has-error': addressErrors.township }">
+                <label class="form-label">Township <span class="required">*</span></label>
+                <select
+                  v-model="addressForm.township"
+                  class="form-input"
+                  :disabled="!addressForm.city"
+                  :class="{ 'input-error': addressErrors.township }"
+                >
+                  <option value="">Select Township</option>
+                  <option v-for="township in filteredTownships" :key="township" :value="township">
+                    {{ township }}
+                  </option>
+                </select>
+                <span v-if="addressErrors.township" class="field-error">{{ addressErrors.township }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="address-actions">
+            <button class="modal-btn btn-cancel" @click="closeAllModals">Cancel</button>
+            <button class="modal-btn btn-subscribe" @click="saveAddressAndProceed" :disabled="savingAddress">
+              <span v-if="savingAddress" class="btn-spinner"></span>
+              {{ savingAddress ? 'Saving...' : 'Continue to Subscription' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subscribe Modal (Step 2) -->
+    <div v-if="showSubscribeModal && selectedPlan" class="modal-overlay" @click.self="closeSubscribeModal">
+      <div class="modal-container subscribe-modal">
+        <div class="modal-header">
+          <div class="modal-header-info">
+            <h3 class="modal-title">Subscribe to {{ selectedPlan?.name }}</h3>
+            <span class="modal-plan-price">{{ formatPrice(selectedPlan?.price) }}/month</span>
+          </div>
           <button class="modal-close" @click="closeSubscribeModal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -107,6 +209,16 @@
         </div>
 
         <div class="modal-body">
+          <!-- Installation Address Summary -->
+          <div class="address-summary" v-if="savedAddress">
+            <div class="address-summary-header">
+              <span class="address-summary-icon">📍</span>
+              <span class="address-summary-label">Installation Address</span>
+            </div>
+            <p class="address-summary-text">{{ savedAddress.address }}</p>
+            <p class="address-summary-location">{{ savedAddress.township }}, {{ savedAddress.city }}, {{ savedAddress.region }}</p>
+          </div>
+
           <div class="plan-summary">
             <div class="summary-item">
               <span class="summary-label">Plan</span>
@@ -117,64 +229,42 @@
               <span class="summary-value">{{ selectedPlan?.download_speed }} Mbps</span>
             </div>
             <div class="summary-item">
-              <span class="summary-label">Price</span>
-              <span class="summary-value">{{ formatPrice(selectedPlan?.price) }}/month</span>
+              <span class="summary-label">Monthly Price</span>
+              <span class="summary-value">{{ formatPrice(selectedPlan?.price) }}</span>
             </div>
           </div>
 
           <div class="form-group">
             <label for="duration" class="form-label">Select Duration</label>
-            <select id="duration" v-model="selectedDuration" class="form-select">
-              <option value="1">1 Month</option>
-              <option value="3">3 Months (Save 5%)</option>
-              <option value="6">6 Months (Save 10%)</option>
-              <option value="12">12 Months (Save 15%)</option>
-            </select>
-            <p class="form-hint" v-if="selectedDuration > 1">
-              💰 You'll save {{ calculateSavings(selectedDuration) }}% with this duration
-            </p>
+            <div class="duration-options">
+              <button
+                v-for="option in durationOptions"
+                :key="option.value"
+                class="duration-option"
+                :class="{ 'duration-option--active': selectedDuration === option.value }"
+                @click="selectedDuration = option.value"
+              >
+                <span class="duration-months">{{ option.value }} Month{{ option.value > 1 ? 's' : '' }}</span>
+                <span class="duration-savings" v-if="option.savings > 0">Save {{ option.savings }}%</span>
+                <span class="duration-price">{{ formatPrice(calculateDurationPrice(option.value)) }}</span>
+              </button>
+            </div>
           </div>
 
           <div class="total-cost">
-            <span class="total-label">Total Cost</span>
+            <div class="total-cost-left">
+              <span class="total-label">Total Cost</span>
+              <span class="total-sub-label" v-if="selectedDuration > 1">You save {{ calculateSavings(selectedDuration) }}%</span>
+            </div>
             <span class="total-amount">{{ formatPrice(calculateTotalCost()) }}</span>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button class="modal-btn btn-cancel" @click="closeSubscribeModal">Cancel</button>
+          <button class="modal-btn btn-cancel" @click="closeSubscribeModal" :disabled="subscribing">Cancel</button>
           <button class="modal-btn btn-subscribe" @click="confirmSubscription" :disabled="subscribing">
+            <span v-if="subscribing" class="btn-spinner"></span>
             {{ subscribing ? 'Processing...' : 'Confirm Subscription' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Address Required Alert Modal -->
-    <div v-if="showAddressAlert" class="modal-overlay" @click.self="closeAddressAlert">
-      <div class="modal-container alert-modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Primary Address Required</h3>
-          <button class="modal-close" @click="closeAddressAlert">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <div class="alert-content">
-            <p class="alert-text">
-              Please set a primary address in your profile to subscribe.
-            </p>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="modal-btn btn-cancel" @click="closeAddressAlert">Cancel</button>
-          <button class="modal-btn btn-subscribe" @click="goToProfile">
-            Go to Profile
           </button>
         </div>
       </div>
@@ -214,6 +304,7 @@
     <div v-if="showSuccessModal" class="modal-overlay" @click.self="closeSuccessModal">
       <div class="modal-container alert-modal success-modal">
         <div class="modal-header">
+          <div class="success-icon">✅</div>
           <h3 class="modal-title">Subscription Successful!</h3>
           <button class="modal-close" @click="closeSuccessModal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -253,7 +344,7 @@
 </template>
 
 <script>
-import { plansService, subscriptionsService, addressService } from '../services/api'
+import { plansService, subscriptionsService, addressService, serviceAreasService } from '../services/api'
 
 export default {
   name: 'PlansPage',
@@ -262,18 +353,44 @@ export default {
       loading: false,
       error: null,
       subscribing: false,
+      savingAddress: false,
       selectedPlanId: null,
       sortBy: 'price-low',
       plans: [],
+
+      // Address Modal
+      showAddressModal: false,
+      pendingPlan: null,
+      addressForm: {
+        address: '',
+        region: '',
+        city: '',
+        township: '',
+        address_type: 1 // Installation
+      },
+      addressErrors: {
+        address: '',
+        region: '',
+        city: '',
+        township: ''
+      },
+      serviceRegions: [],
+      allCities: [],
+      allTownships: [],
+      filteredCities: [],
+      filteredTownships: [],
+      savedAddress: null,
 
       // Subscribe Modal
       showSubscribeModal: false,
       selectedPlan: null,
       selectedDuration: 1,
-
-      // Address Alert Modal
-      showAddressAlert: false,
-      pendingPlanForSubscription: null,
+      durationOptions: [
+        { value: 1, savings: 0 },
+        { value: 3, savings: 5 },
+        { value: 6, savings: 10 },
+        { value: 12, savings: 15 }
+      ],
 
       // Already Subscribed Modal
       showAlreadySubscribedModal: false,
@@ -310,6 +427,7 @@ export default {
   },
   mounted() {
     this.fetchPlans()
+    this.fetchServiceAreas()
   },
   methods: {
     async fetchPlans() {
@@ -318,8 +436,6 @@ export default {
 
       try {
         const response = await plansService.getPlans()
-        console.log('Fetched plans:', response)
-
         let plansData = response.data || response || []
 
         this.plans = plansData.map(plan => ({
@@ -331,8 +447,6 @@ export default {
           upload_speed: plan.upload_speed || 0,
           status: plan.status || 0
         }))
-
-        console.log('Mapped plans:', this.plans)
       } catch (error) {
         console.error('Error fetching plans:', error)
         this.error = error.response?.data?.message || 'Failed to load plans. Please try again.'
@@ -340,6 +454,73 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+
+    async fetchServiceAreas() {
+      try {
+        const response = await serviceAreasService.getServiceAreas()
+        const data = response.data || response
+
+        this.serviceRegions = data.region || []
+        this.allCities = data.city || []
+        this.allTownships = data.township || []
+        this.filteredCities = [...this.allCities]
+        this.filteredTownships = [...this.allTownships]
+      } catch (error) {
+        console.error('Error fetching service areas:', error)
+      }
+    },
+
+    onRegionChange() {
+      this.filteredCities = [...this.allCities]
+      this.addressForm.city = ''
+      this.addressForm.township = ''
+      this.filteredTownships = []
+      this.clearFieldError('region')
+    },
+
+    onCityChange() {
+      this.filteredTownships = [...this.allTownships]
+      this.addressForm.township = ''
+      this.clearFieldError('city')
+    },
+
+    clearFieldError(field) {
+      if (this.addressErrors[field]) {
+        this.addressErrors[field] = ''
+      }
+    },
+
+    validateAddressForm() {
+      let isValid = true
+      this.addressErrors = {
+        address: '',
+        region: '',
+        city: '',
+        township: ''
+      }
+
+      if (!this.addressForm.address || this.addressForm.address.trim() === '') {
+        this.addressErrors.address = 'Street address is required'
+        isValid = false
+      }
+
+      if (!this.addressForm.region) {
+        this.addressErrors.region = 'Please select a region'
+        isValid = false
+      }
+
+      if (!this.addressForm.city) {
+        this.addressErrors.city = 'Please select a city'
+        isValid = false
+      }
+
+      if (!this.addressForm.township) {
+        this.addressErrors.township = 'Please select a township'
+        isValid = false
+      }
+
+      return isValid
     },
 
     openSubscribeModal(plan) {
@@ -353,35 +534,77 @@ export default {
         return
       }
 
-      this.checkAddressAndProceed(plan)
+      this.pendingPlan = plan
+      this.showAddressModal = true
     },
 
-    async checkAddressAndProceed(plan) {
+    async saveAddressAndProceed() {
+      if (!this.validateAddressForm()) {
+        const firstError = document.querySelector('.has-error')
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      this.savingAddress = true
+
       try {
-        const response = await addressService.viewAddresses()
-        const addresses = response.data || response || []
-
-        const hasPrimaryAddress = addresses.some(addr => addr.is_primary === 1 || addr.is_primary === true)
-
-        if (!hasPrimaryAddress) {
-          this.pendingPlanForSubscription = plan
-          this.showAddressAlert = true
-          return
+        const addressData = {
+          address: this.addressForm.address,
+          region: this.addressForm.region,
+          city: this.addressForm.city,
+          township: this.addressForm.township,
+          address_type: 1 // Installation
         }
 
-        this.selectedPlan = plan
+        const response = await addressService.addAddress(addressData)
+        console.log('Address saved:', response)
+
+        this.savedAddress = response.data || response
+
+        // Close address modal and open subscribe modal
+        this.showAddressModal = false
+        this.selectedPlan = this.pendingPlan
         this.selectedDuration = 1
         this.showSubscribeModal = true
+
+        this.showToast('Installation address saved successfully!', 'success')
+
       } catch (error) {
-        console.error('Error checking address:', error)
-        this.pendingPlanForSubscription = plan
-        this.showAddressAlert = true
+        console.error('Error saving address:', error)
+        const errorMessage = error.response?.data?.message || 'Failed to save address. Please try again.'
+        this.showToast(errorMessage, 'error')
+      } finally {
+        this.savingAddress = false
       }
     },
 
-    closeAddressAlert() {
-      this.showAddressAlert = false
-      this.pendingPlanForSubscription = null
+    closeAllModals() {
+      this.showAddressModal = false
+      this.pendingPlan = null
+      this.savedAddress = null
+      this.addressForm = {
+        address: '',
+        region: '',
+        city: '',
+        township: '',
+        address_type: 1
+      }
+      this.addressErrors = {
+        address: '',
+        region: '',
+        city: '',
+        township: ''
+      }
+    },
+
+    closeSubscribeModal() {
+      if (this.subscribing) return
+      this.showSubscribeModal = false
+      this.selectedPlan = null
+      this.selectedDuration = 1
+      this.savedAddress = null
     },
 
     closeAlreadySubscribedModal() {
@@ -395,7 +618,7 @@ export default {
     },
 
     goToProfile() {
-      this.closeAddressAlert()
+      this.closeAllModals()
       this.$router.push({
         path: '/profile',
         query: { section: 'address' }
@@ -408,12 +631,6 @@ export default {
       this.$router.push('/subscriptions')
     },
 
-    closeSubscribeModal() {
-      this.showSubscribeModal = false
-      this.selectedPlan = null
-      this.selectedDuration = 1
-    },
-
     async confirmSubscription() {
       if (!this.selectedPlan) return
 
@@ -421,42 +638,43 @@ export default {
       this.selectedPlanId = this.selectedPlan.id
 
       try {
+        const subscriptionData = {
+          duration_months: this.selectedDuration
+        }
+
         const response = await subscriptionsService.createSubscription(
           this.selectedPlan.id,
-          { duration_months: this.selectedDuration }
+          subscriptionData
         )
 
         console.log('Subscription response:', response)
 
-        // Close subscribe modal
         const planName = this.selectedPlan.name
+        this.subscribing = false
+        this.selectedPlanId = null
         this.closeSubscribeModal()
 
-        // Show success modal
         this.successPlanName = planName
         this.showSuccessModal = true
 
       } catch (error) {
         console.error('Subscription error:', error)
 
-        // Close subscribe modal
+        this.subscribing = false
+        this.selectedPlanId = null
         this.closeSubscribeModal()
 
-        // Get error data from response
         const errorData = error.response?.data
         const statusCode = error.response?.status
 
-        // Handle based on status code
         if (statusCode === 409 || (errorData?.error && errorData.error.includes('Already subscribed'))) {
-          // Already subscribed
           this.alreadySubscribedPlan = this.selectedPlan
           this.showAlreadySubscribedModal = true
           return
         }
 
         if (statusCode === 400 || (errorData?.error && errorData.error.includes('primary installation address'))) {
-          // Missing address
-          this.showAddressAlert = true
+          this.showToast('Please set a primary installation address.', 'error')
           return
         }
 
@@ -465,7 +683,6 @@ export default {
           return
         }
 
-        // Show error from response or generic message
         const errorMessage = errorData?.error || errorData?.message || 'Failed to subscribe. Please try again.'
         this.showToast(errorMessage, 'error')
       } finally {
@@ -475,23 +692,25 @@ export default {
     },
 
     calculateSavings(duration) {
-      const savings = {
+      const savingsMap = {
         1: 0,
         3: 5,
         6: 10,
         12: 15
       }
-      return savings[duration] || 0
+      return savingsMap[duration] || 0
+    },
+
+    calculateDurationPrice(duration) {
+      if (!this.selectedPlan) return 0
+      const monthlyPrice = this.selectedPlan.price
+      const savings = this.calculateSavings(duration)
+      const discount = savings / 100
+      return monthlyPrice * duration * (1 - discount)
     },
 
     calculateTotalCost() {
-      if (!this.selectedPlan) return 0
-      const monthlyPrice = this.selectedPlan.price
-      const duration = this.selectedDuration
-      const savings = this.calculateSavings(duration)
-      const discount = savings / 100
-
-      return monthlyPrice * duration * (1 - discount)
+      return this.calculateDurationPrice(this.selectedDuration)
     },
 
     formatPrice(price) {
@@ -702,10 +921,16 @@ export default {
   border-radius: 16px;
   padding: 32px 24px 28px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s, opacity 0.3s;
   border: 1px solid #eef0f4;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.plan-card--loading {
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .plan-card:hover {
@@ -819,7 +1044,10 @@ export default {
 }
 
 .plan-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   width: 100%;
   padding: 12px 0;
   background: #1a1a2e;
@@ -832,6 +1060,7 @@ export default {
   transition: all 0.3s;
   border: none;
   cursor: pointer;
+  position: relative;
 }
 
 .plan-btn:hover:not(:disabled) {
@@ -842,6 +1071,26 @@ export default {
 .plan-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.plan-btn--loading {
+  background: #ff6b35 !important;
+}
+
+.plan-btn--loading:hover {
+  transform: none !important;
+}
+
+/* Button Spinner */
+.btn-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
 }
 
 /* Modal Styles */
@@ -868,19 +1117,11 @@ export default {
 .modal-container {
   background: #fff;
   border-radius: 16px;
-  max-width: 500px;
+  max-width: 520px;
   width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.3s ease;
   overflow: hidden;
-}
-
-.modal-container.alert-modal {
-  max-width: 450px;
-}
-
-.modal-container.success-modal {
-  max-width: 450px;
 }
 
 @keyframes slideUp {
@@ -894,25 +1135,32 @@ export default {
   }
 }
 
+.modal-container.alert-modal {
+  max-width: 450px;
+}
+
+.modal-container.success-modal {
+  max-width: 450px;
+}
+
+.modal-container.address-modal {
+  max-width: 520px;
+}
+
+.modal-container.subscribe-modal {
+  max-width: 560px;
+}
+
 .modal-header {
   padding: 24px 24px 16px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.modal-icon {
-  font-size: 28px;
-  margin-right: 12px;
-}
-
-.modal-icon.warning {
-  color: #ff9800;
-}
-
-.modal-icon.success {
-  color: #4caf50;
+.modal-header-info {
+  flex: 1;
 }
 
 .modal-title {
@@ -920,7 +1168,14 @@ export default {
   font-weight: 700;
   color: #1a1a2e;
   margin: 0;
-  flex: 1;
+}
+
+.modal-plan-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff6b35;
+  margin-top: 2px;
+  display: inline-block;
 }
 
 .modal-close {
@@ -935,6 +1190,7 @@ export default {
   align-items: center;
   justify-content: center;
   transition: all 0.3s;
+  flex-shrink: 0;
 }
 
 .modal-close:hover {
@@ -942,31 +1198,131 @@ export default {
   color: #333;
 }
 
+.modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .modal-body {
   padding: 24px;
 }
 
-/* Alert Modal Styles */
-.alert-content {
-  text-align: center;
-  padding: 12px 0;
-}
-
-.alert-text {
-  font-size: 16px;
-  color: #1a1a2e;
-  line-height: 1.6;
-  margin-bottom: 8px;
-}
-
-.alert-text strong {
-  color: #ff6b35;
-}
-
-.alert-subtext {
-  font-size: 14px;
+/* Address Modal */
+.address-modal-subtitle {
   color: #666;
-  line-height: 1.6;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.required {
+  color: #e74c3c;
+}
+
+.form-input {
+  padding: 10px 14px;
+  border: 2px solid #e8ecf1;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s;
+  background: #fff;
+  font-family: inherit;
+  width: 100%;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.08);
+}
+
+.form-input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-input.input-error {
+  border-color: #e74c3c;
+}
+
+.has-error .form-input {
+  border-color: #e74c3c !important;
+}
+
+.field-error {
+  color: #e74c3c;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.address-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Address Summary */
+.address-summary {
+  background: #f0f7ff;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border-left: 4px solid #ff6b35;
+}
+
+.address-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.address-summary-icon {
+  font-size: 18px;
+}
+
+.address-summary-label {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 14px;
+}
+
+.address-summary-text {
+  font-size: 14px;
+  color: #1a1a2e;
+  margin: 2px 0;
+}
+
+.address-summary-location {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
 }
 
 /* Plan Summary */
@@ -974,7 +1330,7 @@ export default {
   background: #f8f9fc;
   border-radius: 10px;
   padding: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .summary-item {
@@ -998,48 +1354,61 @@ export default {
   font-size: 14px;
 }
 
-.form-group {
-  margin-bottom: 20px;
+/* Duration Options */
+.duration-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 8px;
 }
 
-.form-label {
-  display: block;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.form-select {
-  width: 100%;
-  padding: 12px 16px;
+.duration-option {
+  padding: 12px 8px;
   border: 2px solid #e8ecf1;
   border-radius: 10px;
-  font-size: 15px;
-  color: #1a1a2e;
   background: #fff;
   cursor: pointer;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 36px;
+  transition: all 0.3s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.form-select:focus {
-  outline: none;
+.duration-option:hover {
   border-color: #ff6b35;
+  background: rgba(255, 107, 53, 0.04);
+}
+
+.duration-option--active {
+  border-color: #ff6b35;
+  background: rgba(255, 107, 53, 0.08);
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
-.form-hint {
-  margin-top: 8px;
-  font-size: 13px;
-  color: #2e7d32;
-  font-weight: 500;
+.duration-months {
+  font-weight: 700;
+  font-size: 15px;
+  color: #1a1a2e;
 }
 
+.duration-savings {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2e7d32;
+  background: #e8f5e9;
+  padding: 1px 8px;
+  border-radius: 50px;
+  display: inline-block;
+}
+
+.duration-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ff6b35;
+}
+
+/* Total Cost */
 .total-cost {
   display: flex;
   justify-content: space-between;
@@ -1049,18 +1418,30 @@ export default {
   margin-top: 8px;
 }
 
+.total-cost-left {
+  display: flex;
+  flex-direction: column;
+}
+
 .total-label {
   font-size: 16px;
   font-weight: 600;
   color: #1a1a2e;
 }
 
+.total-sub-label {
+  font-size: 13px;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
 .total-amount {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
   color: #ff6b35;
 }
 
+/* Modal Footer */
 .modal-footer {
   padding: 16px 24px 24px;
   display: flex;
@@ -1077,6 +1458,15 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-cancel {
@@ -1084,7 +1474,7 @@ export default {
   color: #555;
 }
 
-.btn-cancel:hover {
+.btn-cancel:hover:not(:disabled) {
   background: #e8e8e8;
 }
 
@@ -1098,9 +1488,32 @@ export default {
   transform: scale(1.02);
 }
 
-.btn-subscribe:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* Alert Modal */
+.alert-content {
+  text-align: center;
+  padding: 12px 0;
+}
+
+.alert-text {
+  font-size: 16px;
+  color: #1a1a2e;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.alert-text strong {
+  color: #ff6b35;
+}
+
+.alert-subtext {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.success-icon {
+  font-size: 32px;
+  margin-right: 12px;
 }
 
 /* Toast */
@@ -1149,6 +1562,10 @@ export default {
   .plans-grid {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   }
+
+  .duration-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
@@ -1171,6 +1588,14 @@ export default {
     margin: 20px;
   }
 
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .duration-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .total-cost {
     flex-direction: column;
     align-items: flex-start;
@@ -1178,6 +1603,10 @@ export default {
   }
 
   .modal-footer {
+    flex-direction: column;
+  }
+
+  .address-actions {
     flex-direction: column;
   }
 
@@ -1204,6 +1633,31 @@ export default {
 
   .plan-metrics {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-footer {
+    padding: 12px 16px 16px;
+  }
+
+  .modal-btn {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .duration-options {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .duration-option {
+    padding: 10px 6px;
+  }
+
+  .total-amount {
+    font-size: 24px;
   }
 }
 </style>
