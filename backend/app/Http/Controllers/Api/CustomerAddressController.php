@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 
 class CustomerAddressController extends Controller
 {
+    // customers able to view their own addresses
     public function viewAddresses(): JsonResponse
     {
         try {
@@ -65,25 +66,15 @@ class CustomerAddressController extends Controller
 
             Log::info("customer logged in".$customer->id);
 
-            DB::transaction(function () use ($request, $customer) {
-
-                // if  the new address is primary then change the prev address to secondary address
-                if ($request->boolean('is_primary')) {
-                    CustomerAddress::where('customer_id', $customer->id)
-                                    ->where('is_primary', 1)
-                                    ->update(['is_primary' => 0]);
-                }
-
-                CustomerAddress::create([
-                    'customer_id' => $customer->id,
-                    'address' => $request->address,
-                    'township' => $request->township,
-                    'city' => $request->city,
-                    'region' => $request->region,
-                    'address_type' => $request->address_type,
-                    'is_primary' => $request->boolean('is_primary')
-                ]);
-            });
+            CustomerAddress::create([
+                'customer_id' => $customer->id,
+                'address' => $request->address,
+                'township' => $request->township,
+                'city' => $request->city,
+                'region' => $request->region,
+                'address_type' => $request->address_type,
+                'is_primary' => $request->boolean('is_primary')
+            ]);
 
             return response()->json([
                 'message' => 'Address added successfully.'
