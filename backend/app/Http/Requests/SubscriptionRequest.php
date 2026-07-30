@@ -34,7 +34,7 @@ class SubscriptionRequest extends FormRequest
                 'integer',
                 'in:1,3,6,12'// limit billing cycle
             ],
-            'address_id' => [
+            'installation_address_id' => [
                 'sometimes',
                 'exists:customer_addresses,id'
             ]
