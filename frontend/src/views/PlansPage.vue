@@ -201,10 +201,9 @@
 
           <div class="address-actions">
             <button class="modal-btn btn-cancel" @click="closeAllModals">Cancel</button>
-            <!-- enable subscribe button only when add the valid address -->
-            <button class="modal-btn btn-subscribe" @click="saveAddressAndProceed" :disabled="savingAddress || !isAddressValid">
-              <span v-if="savingAddress" class="btn-spinner"></span>
-              {{ savingAddress ? 'Saving...' : 'Continue to Subscription' }}
+            <!-- Continue to Subscription - Opens subscription modal -->
+            <button class="modal-btn btn-subscribe" @click="continueToSubscription" :disabled="!isAddressValid">
+              Continue to Subscription
             </button>
           </div>
         </div>
@@ -229,12 +228,12 @@
 
         <div class="modal-body">
           <!-- Installation Address Summary -->
-          <div class="address-summary" v-if="savedAddress">
+          <div class="address-summary" v-if="addressForm.address">
             <div class="address-summary-header">
               <span class="address-summary-label">Installation Address</span>
             </div>
-            <p class="address-summary-text">{{ savedAddress.address }}</p>
-            <p class="address-summary-location">{{ savedAddress.township }}, {{ savedAddress.city }}, {{ savedAddress.region }}</p>
+            <p class="address-summary-text">{{ addressForm.address }}</p>
+            <p class="address-summary-location">{{ addressForm.township }}, {{ addressForm.city }}, {{ addressForm.region }}</p>
           </div>
 
           <div class="plan-summary">
@@ -361,7 +360,7 @@
 </template>
 
 <script>
-import { plansService, subscriptionsService, addressService, serviceAreasService } from '../services/api'
+import { plansService, subscriptionsService, serviceAreasService } from '../services/api'
 
 export default {
   name: 'PlansPage',
@@ -370,7 +369,6 @@ export default {
       loading: false,
       error: null,
       subscribing: false,
-      savingAddress: false,
       selectedPlanId: null,
       sortBy: 'price-low',
       plans: [],
@@ -400,7 +398,6 @@ export default {
       serviceRegions: [],
       filteredCities: [],
       filteredTownships: [],
-      savedAddress: null,
 
       // Subscribe Modal
       showSubscribeModal: false,
@@ -486,24 +483,20 @@ export default {
     async fetchServiceAreas() {
       this.loadingServiceAreas = true
       try {
-        // get service areas data
         const response = await serviceAreasService.getServiceAreas()
         const data = response.data || response
 
         console.log('Service areas response:', data)
 
-        // if data has hierarchy
         if (data.hierarchy) {
           this.serviceRegions = data.regions || []
           this.hierarchy = data.hierarchy || {}
 
-          // Build citiesByRegion
           this.citiesByRegion = {}
           Object.keys(this.hierarchy).forEach(region => {
             this.citiesByRegion[region] = Object.keys(this.hierarchy[region]) || []
           })
 
-          // get townships By City
           this.townshipsByCity = {}
           Object.keys(this.hierarchy).forEach(region => {
             const cities = this.hierarchy[region]
@@ -515,11 +508,7 @@ export default {
 
           this.filteredCities = data.cities || []
           this.filteredTownships = data.townships || []
-        } else {
-          // if data is an array of service areas
-          // this.buildMappings(data)
         }
-
       } catch (error) {
         console.error('Error fetching service areas:', error)
         this.showToast('Failed to load service areas', 'error')
@@ -528,39 +517,20 @@ export default {
       }
     },
 
-  onRegionChange() {
-    // Get cities only for the selected region
-    this.filteredCities = this.citiesByRegion[this.addressForm.region] || []
+    onRegionChange() {
+      this.filteredCities = this.citiesByRegion[this.addressForm.region] || []
+      this.addressForm.city = ''
+      this.addressForm.township = ''
+      this.filteredTownships = []
+      this.clearFieldError('region')
+    },
 
-    // Reset city and township
-    this.addressForm.city = ''
-    this.addressForm.township = ''
-    this.filteredTownships = []
-
-    console.log('Region changed:', {
-      region: this.addressForm.region,
-      cities: this.filteredCities
-    })
-
-    this.clearFieldError('region')
-  },
-
-  onCityChange() {
-    // Get townships only for the selected region + city
-    const key = `${this.addressForm.region}_${this.addressForm.city}`
-    this.filteredTownships = this.townshipsByCity[key] || []
-
-    // Reset township
-    this.addressForm.township = ''
-
-    console.log('City changed:', {
-      region: this.addressForm.region,
-      city: this.addressForm.city,
-      townships: this.filteredTownships
-    })
-
-    this.clearFieldError('city')
-  },
+    onCityChange() {
+      const key = `${this.addressForm.region}_${this.addressForm.city}`
+      this.filteredTownships = this.townshipsByCity[key] || []
+      this.addressForm.township = ''
+      this.clearFieldError('city')
+    },
 
     clearFieldError(field) {
       if (this.addressErrors[field]) {
@@ -615,7 +585,11 @@ export default {
       this.showAddressModal = true
     },
 
-    async saveAddressAndProceed() {
+    // REMOVED: saveAddressAndProceed() - No longer needed
+    // Now just continue to subscription without saving address separately
+
+    continueToSubscription() {
+      // Validate address first
       if (!this.validateAddressForm()) {
         const firstError = document.querySelector('.has-error')
         if (firstError) {
@@ -624,43 +598,16 @@ export default {
         return
       }
 
-      this.savingAddress = true
-
-      try {
-        const addressData = {
-          address: this.addressForm.address,
-          region: this.addressForm.region,
-          city: this.addressForm.city,
-          township: this.addressForm.township,
-          address_type: 1 // Installation
-        }
-
-        const response = await addressService.addAddress(addressData)
-        console.log('Address saved:', response)
-
-        this.savedAddress = response.data || response
-
-        // Close address modal and open subscribe modal
-        this.showAddressModal = false
-        this.selectedPlan = this.pendingPlan
-        this.selectedDuration = 1
-        this.showSubscribeModal = true
-
-        this.showToast('Installation address saved successfully!', 'success')
-
-      } catch (error) {
-        console.error('Error saving address:', error)
-        const errorMessage = error.response?.data?.message || 'Failed to save address. Please try again.'
-        this.showToast(errorMessage, 'error')
-      } finally {
-        this.savingAddress = false
-      }
+      // Close address modal and open subscribe modal
+      this.showAddressModal = false
+      this.selectedPlan = this.pendingPlan
+      this.selectedDuration = 1
+      this.showSubscribeModal = true
     },
 
     closeAllModals() {
       this.showAddressModal = false
       this.pendingPlan = null
-      this.savedAddress = null
       this.addressForm = {
         address: '',
         region: '',
@@ -681,7 +628,6 @@ export default {
       this.showSubscribeModal = false
       this.selectedPlan = null
       this.selectedDuration = 1
-      this.savedAddress = null
     },
 
     closeAlreadySubscribedModal() {
@@ -715,8 +661,15 @@ export default {
       this.selectedPlanId = this.selectedPlan.id
 
       try {
+        // Send address AND subscription together
         const subscriptionData = {
-          duration_months: this.selectedDuration
+          duration_months: this.selectedDuration,
+          // Address data
+          address: this.addressForm.address,
+          region: this.addressForm.region,
+          city: this.addressForm.city,
+          township: this.addressForm.township,
+          address_type: 1 // Installation
         }
 
         const response = await subscriptionsService.createSubscription(
@@ -751,7 +704,7 @@ export default {
         }
 
         if (statusCode === 400 || (errorData?.error && errorData.error.includes('primary installation address'))) {
-          this.showToast('Please set a primary installation address.', 'error')
+          this.showToast('Please provide a valid installation address.', 'error')
           return
         }
 
