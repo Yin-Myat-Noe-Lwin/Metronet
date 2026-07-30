@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS `customer_addresses`;
 
 DROP TABLE IF EXISTS `service_areas`;
 DROP TABLE IF EXISTS `cpes`;
+DROP TABLE IF EXISTS `plan_discounts`;
 DROP TABLE IF EXISTS `isp_plans`;
 DROP TABLE IF EXISTS `customers`;
 
@@ -106,12 +107,30 @@ CREATE TABLE `isp_plans` (
     `name` VARCHAR(255) NOT NULL,
     `description` VARCHAR(100) NOT NULL,
     `price` decimal(10,2) NOT NULL,
-    `validity_months` INT UNSIGNED NOT NULL DEFAULT 1,
+    `validity_months` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Default subscription duration in months',
     `status` TINYINT NOT NULL COMMENT '0=Inactive,1=Active',
     `upload_speed` INT UNSIGNED NOT NULL,
     `download_speed` INT UNSIGNED NOT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `plan_discounts` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `plan_id` INT UNSIGNED NOT NULL,
+    `duration_months` INT UNSIGNED NOT NULL COMMENT 'Duration in months (1, 3, 6, 12, 24)',
+    `discount_percentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT 'Discount percentage (0-100)',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '0=Inactive, 1=Active',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+
+    INDEX `idx_plan_duration` (`plan_id`, `duration_months`),
+    INDEX `idx_is_active` (`is_active`),
+
+    CONSTRAINT `fk_plan_discounts_plan_id`
+    FOREIGN KEY (`plan_id`)
+    REFERENCES `isp_plans`(`id`)
+    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `service_areas` (
