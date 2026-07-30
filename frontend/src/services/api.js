@@ -337,6 +337,73 @@ export const plansService = {
   }
 }
 
+export const planDiscountsService = {
+  /**
+   * Get all plan discounts
+   */
+  async getDiscounts() {
+    try {
+      const response = await axios.get('/api/admin/plan-discounts')
+      return response.data
+    } catch (error) {
+      console.error('Error fetching plan discounts:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get a specific plan discount by ID
+   */
+  async getDiscount(id) {
+    try {
+      const response = await axios.get(`/api/admin/plan-discounts/${id}`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching plan discount:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Create a new plan discount
+   */
+  async createDiscount(data) {
+    try {
+      const response = await axios.post('/api/admin/plan-discounts', data)
+      return response.data
+    } catch (error) {
+      console.error('Error creating plan discount:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Update a plan discount
+   */
+  async updateDiscount(id, data) {
+    try {
+      const response = await axios.put(`/api/admin/plan-discounts/${id}`, data)
+      return response.data
+    } catch (error) {
+      console.error('Error updating plan discount:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Delete a plan discount
+   */
+  async deleteDiscount(id) {
+    try {
+      const response = await axios.delete(`/api/admin/plan-discounts/${id}`)
+      return response.data
+    } catch (error) {
+      console.error('Error deleting plan discount:', error)
+      throw error
+    }
+  }
+}
+
 // Subscriptions Service
 export const subscriptionsService = {
   async createSubscription(id, data) {
