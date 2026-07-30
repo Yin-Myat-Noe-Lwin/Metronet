@@ -8,18 +8,84 @@
         </router-link>
       </template>
       <template v-else>
-        <router-link to="/admin/customers" class="logo">
+        <router-link to="/admin/dashboard" class="logo">
           <span class="logo-icon">⚡</span>
           <span class="logo-text">MetroNet</span>
+          <span class="admin-badge">Admin</span>
         </router-link>
       </template>
 
       <nav class="nav">
         <!-- Admin Navigation -->
         <template v-if="isAdmin">
+          <router-link
+            to="/admin/dashboard"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Dashboard
+          </router-link>
+          <router-link
+            to="/admin/customers"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Customers
+          </router-link>
+          <router-link
+            to="/admin/plans"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Plans
+          </router-link>
+          <router-link
+            to="/admin/discounts"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Discounts
+          </router-link>
+          <router-link
+            to="/admin/subscriptions"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Subscriptions
+          </router-link>
+          <router-link
+            to="/admin/invoices"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Invoices
+          </router-link>
+          <router-link
+            to="/admin/cpes"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            CPEs
+          </router-link>
+          <router-link
+            to="/admin/service-areas"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Service Areas
+          </router-link>
+          <router-link
+            to="/admin/payments"
+            class="nav-link"
+            active-class="nav-link--active"
+          >
+            Payments
+          </router-link>
+
           <div class="admin-user">
             <span class="avatar-initials">{{ userInitials }}</span>
             <span class="user-name">{{ displayName }}</span>
+            <span class="admin-divider">|</span>
             <a @click="handleLogout" class="logout-link">Logout</a>
           </div>
         </template>
@@ -163,8 +229,23 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" v-show="isMobileMenuOpen">
+      <!-- Admin Mobile Menu -->
+      <template v-if="isAdmin">
+        <router-link to="/admin/dashboard" class="mobile-link" @click="isMobileMenuOpen = false">Dashboard</router-link>
+        <router-link to="/admin/customers" class="mobile-link" @click="isMobileMenuOpen = false">Customers</router-link>
+        <router-link to="/admin/plans" class="mobile-link" @click="isMobileMenuOpen = false">Plans</router-link>
+        <router-link to="/admin/discounts" class="mobile-link" @click="isMobileMenuOpen = false">Discounts</router-link>
+        <router-link to="/admin/subscriptions" class="mobile-link" @click="isMobileMenuOpen = false">Subscriptions</router-link>
+        <router-link to="/admin/invoices" class="mobile-link" @click="isMobileMenuOpen = false">Invoices</router-link>
+        <router-link to="/admin/cpes" class="mobile-link" @click="isMobileMenuOpen = false">CPEs</router-link>
+        <router-link to="/admin/service-areas" class="mobile-link" @click="isMobileMenuOpen = false">Service Areas</router-link>
+        <router-link to="/admin/payments" class="mobile-link" @click="isMobileMenuOpen = false">Payments</router-link>
+        <div class="mobile-divider"></div>
+        <a @click="handleLogout" class="mobile-link logout-link">Logout</a>
+      </template>
+
       <!-- Customer Mobile Menu -->
-      <template v-if="isLoggedIn && !isAdmin">
+      <template v-else-if="isLoggedIn && !isAdmin">
         <router-link to="/" class="mobile-link" @click="isMobileMenuOpen = false">Home</router-link>
         <router-link to="/plans" class="mobile-link" @click="isMobileMenuOpen = false">Plans</router-link>
         <div class="mobile-divider"></div>
@@ -592,6 +673,7 @@ export default {
   text-decoration: none;
   flex-shrink: 0;
   margin-right: 30px;
+  gap: 8px;
 }
 
 .logo-icon {
@@ -605,6 +687,18 @@ export default {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.admin-badge {
+  font-size: 11px;
+  font-weight: 600;
+  background: #ff6b35;
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 50px;
+  -webkit-text-fill-color: #fff;
+  margin-left: 4px;
+  letter-spacing: 0.5px;
 }
 
 .nav {
@@ -673,13 +767,19 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 4px 12px;
+  padding: 4px 16px;
   border-radius: 8px;
   background: rgba(255,255,255,0.05);
 }
 
 .admin-user:hover {
   background: rgba(255,255,255,0.1);
+}
+
+.admin-divider {
+  color: rgba(255,255,255,0.2);
+  font-weight: 300;
+  margin: 0 2px;
 }
 
 .avatar-initials {
@@ -994,7 +1094,7 @@ export default {
   background: #e85a2a;
 }
 
-/* ✅ Toast Notification - Enhanced */
+/* Toast Notification */
 .toast {
   position: fixed;
   bottom: 30px;
@@ -1056,7 +1156,7 @@ export default {
   color: #fff;
 }
 
-/* ===== NOTIFICATION BELL STYLES ===== */
+/* Notification Bell Styles */
 .nav-notification {
   display: flex;
   align-items: center;
@@ -1139,10 +1239,24 @@ export default {
   font-size: 14px;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 992px) {
+/* Responsive */
+@media (max-width: 1200px) {
   .nav {
     gap: 16px;
+  }
+
+  .nav-link {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 992px) {
+  .nav {
+    gap: 12px;
+  }
+
+  .admin-user {
+    padding: 4px 10px;
   }
 }
 
@@ -1170,6 +1284,11 @@ export default {
 
   .logo-icon {
     font-size: 24px;
+  }
+
+  .admin-badge {
+    font-size: 10px;
+    padding: 2px 8px;
   }
 
   .dropdown-menu {
@@ -1251,6 +1370,11 @@ export default {
 
   .logo-text {
     font-size: 18px;
+  }
+
+  .admin-badge {
+    font-size: 9px;
+    padding: 1px 6px;
   }
 
   .modal-container {
