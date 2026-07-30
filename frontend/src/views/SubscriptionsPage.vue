@@ -129,6 +129,21 @@
             </div>
           </div>
 
+          <!-- Installation Address Section -->
+          <div class="card-address" v-if="subscription.address">
+            <div class="address-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span class="address-label">Installation Address</span>
+            </div>
+            <p class="address-text">{{ subscription.address.address }}</p>
+            <p class="address-location">{{ subscription.address.township }}, {{ subscription.address.city }}, {{ subscription.address.region }}</p>
+            <span v-if="subscription.address.is_primary" class="primary-badge">Primary</span>
+            <span class="address-type-badge">{{ getAddressTypeLabel(subscription.address.address_type) }}</span>
+          </div>
+
           <div class="card-bottom">
             <!-- View Details -->
             <button @click="viewStatus(subscription.id)" class="btn-outline">
@@ -139,7 +154,7 @@
               View Details
             </button>
 
-            <!-- ✅ Resubscribe button for cancelled (status 4) -->
+            <!-- Resubscribe button for cancelled (status 4) -->
             <button
               v-if="subscription.status === 4"
               @click="resubscribe(subscription.plan_id)"
@@ -152,7 +167,7 @@
               Resubscribe
             </button>
 
-            <!-- ✅ Cancel button for pending (0) or active (1) -->
+            <!-- Cancel button for pending (0) or active (1) -->
             <button
               v-if="canCancel(subscription)"
               @click="confirmCancel(subscription.id)"
@@ -211,6 +226,10 @@
                 <span>Status</span>
                 <span><strong>{{ getStatusText(selectedSubscription.status) }}</strong></span>
               </div>
+              <div class="cancel-row" v-if="selectedSubscription.address">
+                <span>Address</span>
+                <span><strong>{{ selectedSubscription.address.address }}</strong></span>
+              </div>
             </div>
           </template>
         </div>
@@ -254,8 +273,24 @@
             <span>{{ statusModalPlan }}</span>
           </div>
           <div class="status-item">
+            <span class="label">Speed</span>
+            <span>{{ statusModalSpeed }} Mbps</span>
+          </div>
+          <div class="status-item">
+            <span class="label">Price</span>
+            <span>{{ statusModalPrice }}</span>
+          </div>
+          <div class="status-item">
             <span class="label">Next Billing</span>
             <span>{{ statusModalDate }}</span>
+          </div>
+          <div class="status-item" v-if="statusModalAddress">
+            <span class="label">Address</span>
+            <span>{{ statusModalAddress }}</span>
+          </div>
+          <div class="status-item" v-if="statusModalLocation">
+            <span class="label">Location</span>
+            <span>{{ statusModalLocation }}</span>
           </div>
         </div>
         <div class="modal-footer">
@@ -291,7 +326,11 @@ export default {
       statusModalText: '',
       statusModalClass: '',
       statusModalPlan: '',
+      statusModalSpeed: '',
+      statusModalPrice: '',
       statusModalDate: '',
+      statusModalAddress: '',
+      statusModalLocation: '',
       toast: { show: false, message: '', type: 'success' },
       toastTimeout: null
     }
@@ -315,20 +354,32 @@ export default {
       this.loading = true
       try {
         const response = await subscriptionsService.viewSubscriptions()
-        this.subscriptions = response.data || response || []
+        // Ensure address data is included
+        const data = response.data || response || []
+        this.subscriptions = data.map(sub => ({
+          ...sub,
+          address: sub.address || sub.installation_address || sub.customer_address || null
+        }))
       } catch (error) {
+        console.error('Error fetching subscriptions:', error)
         this.showToast('Failed to load subscriptions', 'error')
       } finally {
         this.loading = false
       }
     },
 
-    // ✅ Check if subscription can be cancelled (pending or active only)
+    getAddressTypeLabel(type) {
+      const types = {
+        1: 'Installation',
+        2: 'Billing'
+      }
+      return types[type] || 'Other'
+    },
+
     canCancel(subscription) {
       return subscription.status === 0 || subscription.status === 1
     },
 
-    // ✅ Confirm cancel with subscription details
     confirmCancel(id) {
       this.cancelId = id
       this.selectedSubscription = this.subscriptions.find(s => s.id === id)
@@ -363,7 +414,6 @@ export default {
       }
     },
 
-    // Resubscribe to a cancelled plan
     resubscribe(planId) {
       this.$router.push(`/plans?plan=${planId}`)
     },
@@ -371,10 +421,23 @@ export default {
     viewStatus(id) {
       const sub = this.subscriptions.find(s => s.id === id)
       if (!sub) return
+
       this.statusModalText = this.getStatusText(sub.status)
       this.statusModalClass = this.getStatusClass(sub.status)
       this.statusModalPlan = sub.plan?.name || 'N/A'
+      this.statusModalSpeed = sub.plan?.download_speed || 'N/A'
+      this.statusModalPrice = this.formatPrice(sub.plan?.price)
       this.statusModalDate = this.formatDate(sub.end_date || sub.next_billing)
+
+      // Address info
+      if (sub.address) {
+        this.statusModalAddress = sub.address.address || 'N/A'
+        this.statusModalLocation = `${sub.address.township || ''}, ${sub.address.city || ''}, ${sub.address.region || ''}`
+      } else {
+        this.statusModalAddress = 'N/A'
+        this.statusModalLocation = 'N/A'
+      }
+
       this.showStatusModal = true
     },
 
@@ -382,7 +445,6 @@ export default {
       this.showStatusModal = false
     },
 
-    // ✅ Status mapping - CORRECT
     getStatusClass(status) {
       const map = {
         0: 'pending',
@@ -542,7 +604,6 @@ export default {
   cursor: not-allowed;
 }
 
-/* ✅ New Success Button for Resubscribe */
 .btn-success {
   display: inline-flex;
   align-items: center;
@@ -770,6 +831,73 @@ export default {
 
 .status-badge.suspended { background: #fef2f2; color: #dc2626; }
 .status-badge.suspended .status-dot { background: #dc2626; }
+
+/* ✅ Address Section */
+.card-address {
+  padding: 14px 16px;
+  margin: 12px 0;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #ff6b35;
+}
+
+.address-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.address-header svg {
+  color: #ff6b35;
+}
+
+.address-label {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.address-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #0f172a;
+  margin: 0 0 2px;
+}
+
+.address-location {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.primary-badge {
+  display: inline-block;
+  padding: 1px 10px;
+  background: #ff6b35;
+  color: #fff;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 4px;
+  margin-right: 6px;
+}
+
+.address-type-badge {
+  display: inline-block;
+  padding: 1px 10px;
+  background: #e2e8f0;
+  color: #64748b;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 4px;
+}
 
 .card-middle {
   display: flex;
@@ -1124,6 +1252,10 @@ export default {
   .details {
     flex-direction: column;
     gap: 8px;
+  }
+
+  .card-address {
+    padding: 10px 12px;
   }
 }
 </style>
