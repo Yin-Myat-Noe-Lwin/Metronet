@@ -14,6 +14,7 @@ class IspPlan extends Model
         'description',
         'price',
         'status',
+        'validity_months',
         'upload_speed',
         'download_speed'
     ];
