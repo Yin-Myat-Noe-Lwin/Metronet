@@ -126,22 +126,36 @@
                 <span class="label">Next Billing</span>
                 <span>{{ formatDate(subscription.end_date || subscription.next_billing) }}</span>
               </div>
+              <div>
+                <span class="label">Duration</span>
+                <span>{{ subscription.duration_months || 'N/A' }} Month{{ subscription.duration_months > 1 ? 's' : '' }}</span>
+              </div>
             </div>
           </div>
 
-          <!-- Installation Address Section -->
+          <!-- ✅ Installation Address Section - More Prominent -->
           <div class="card-address" v-if="subscription.address">
             <div class="address-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-              <span class="address-label">Installation Address</span>
+              <span class="address-icon">📍</span>
+              <span class="address-label">INSTALLATION ADDRESS</span>
+              <span v-if="subscription.address.is_primary" class="primary-badge">Primary</span>
+              <span class="address-type-badge">{{ getAddressTypeLabel(subscription.address.address_type) }}</span>
             </div>
-            <p class="address-text">{{ subscription.address.address }}</p>
-            <p class="address-location">{{ subscription.address.township }}, {{ subscription.address.city }}, {{ subscription.address.region }}</p>
-            <span v-if="subscription.address.is_primary" class="primary-badge">Primary</span>
-            <span class="address-type-badge">{{ getAddressTypeLabel(subscription.address.address_type) }}</span>
+            <div class="address-body">
+              <p class="address-text">{{ subscription.address.address }}</p>
+              <p class="address-location">{{ subscription.address.township }}, {{ subscription.address.city }}, {{ subscription.address.region }}</p>
+            </div>
+          </div>
+
+          <!-- Show message if no address -->
+          <div v-else class="card-address no-address">
+            <div class="address-header">
+              <span class="address-icon">📍</span>
+              <span class="address-label">INSTALLATION ADDRESS</span>
+            </div>
+            <div class="address-body">
+              <p class="address-text no-address-text">No installation address available</p>
+            </div>
           </div>
 
           <div class="card-bottom">
@@ -281,6 +295,10 @@
             <span>{{ statusModalPrice }}</span>
           </div>
           <div class="status-item">
+            <span class="label">Duration</span>
+            <span>{{ statusModalDuration }}</span>
+          </div>
+          <div class="status-item">
             <span class="label">Next Billing</span>
             <span>{{ statusModalDate }}</span>
           </div>
@@ -329,6 +347,7 @@ export default {
       statusModalSpeed: '',
       statusModalPrice: '',
       statusModalDate: '',
+      statusModalDuration: '',
       statusModalAddress: '',
       statusModalLocation: '',
       toast: { show: false, message: '', type: 'success' },
@@ -354,15 +373,56 @@ export default {
       this.loading = true
       try {
         const response = await subscriptionsService.viewSubscriptions()
-        // Ensure address data is included
-        const data = response.data || response || []
+        console.log('Raw subscription response:', response)
+
+        let data = []
+
+        // Check if response has a data property that is an array
+        if (response && response.data && Array.isArray(response.data)) {
+          data = response.data
+        }
+        // Check if response itself is an array
+        else if (Array.isArray(response)) {
+          data = response
+        }
+        // Check if response has a data property that is an object
+        else if (response && response.data && typeof response.data === 'object') {
+          // If it's an object with subscriptions, try to extract
+          data = response.data.subscriptions || response.data.data || []
+        }
+        // If response is an object with subscriptions
+        else if (response && response.subscriptions && Array.isArray(response.subscriptions)) {
+          data = response.subscriptions
+        }
+        // Fallback: try to get any array from the response
+        else if (response && typeof response === 'object') {
+          // Look for any property that is an array
+          for (const key in response) {
+            if (Array.isArray(response[key])) {
+              data = response[key]
+              break
+            }
+          }
+        }
+
+        // Ensure data is an array
+        if (!Array.isArray(data)) {
+          console.warn('Data is not an array, using empty array:', data)
+          data = []
+        }
+
+        console.log('Processed subscriptions data:', data)
+
+        // Map subscriptions with address
         this.subscriptions = data.map(sub => ({
           ...sub,
           address: sub.address || sub.installation_address || sub.customer_address || null
         }))
+
       } catch (error) {
         console.error('Error fetching subscriptions:', error)
         this.showToast('Failed to load subscriptions', 'error')
+        this.subscriptions = [] // Reset to empty array on error
       } finally {
         this.loading = false
       }
@@ -428,8 +488,8 @@ export default {
       this.statusModalSpeed = sub.plan?.download_speed || 'N/A'
       this.statusModalPrice = this.formatPrice(sub.plan?.price)
       this.statusModalDate = this.formatDate(sub.end_date || sub.next_billing)
+      this.statusModalDuration = `${sub.duration_months || 'N/A'} Month${sub.duration_months > 1 ? 's' : ''}`
 
-      // Address info
       if (sub.address) {
         this.statusModalAddress = sub.address.address || 'N/A'
         this.statusModalLocation = `${sub.address.township || ''}, ${sub.address.city || ''}, ${sub.address.region || ''}`
@@ -832,35 +892,44 @@ export default {
 .status-badge.suspended { background: #fef2f2; color: #dc2626; }
 .status-badge.suspended .status-dot { background: #dc2626; }
 
-/* ✅ Address Section */
+/* ✅ Address Section - Redesigned */
 .card-address {
-  padding: 14px 16px;
   margin: 12px 0;
+  padding: 0;
   background: #f8fafc;
   border-radius: 8px;
   border-left: 4px solid #ff6b35;
+  overflow: hidden;
+}
+
+.card-address.no-address {
+  border-left-color: #94a3b8;
+  opacity: 0.6;
 }
 
 .address-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 10px 16px;
+  background: rgba(255, 107, 53, 0.05);
+  border-bottom: 1px solid #e8ecf1;
 }
 
-.address-header svg {
-  color: #ff6b35;
+.address-icon {
+  font-size: 16px;
 }
 
 .address-label {
-  text-transform: uppercase;
   font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-weight: 600;
-  color: #94a3b8;
+}
+
+.address-body {
+  padding: 12px 16px;
 }
 
 .address-text {
@@ -868,6 +937,11 @@ export default {
   font-weight: 500;
   color: #0f172a;
   margin: 0 0 2px;
+}
+
+.address-text.no-address-text {
+  color: #94a3b8;
+  font-style: italic;
 }
 
 .address-location {
@@ -884,8 +958,7 @@ export default {
   border-radius: 50px;
   font-size: 10px;
   font-weight: 600;
-  margin-top: 4px;
-  margin-right: 6px;
+  margin-left: auto;
 }
 
 .address-type-badge {
@@ -896,7 +969,6 @@ export default {
   border-radius: 50px;
   font-size: 10px;
   font-weight: 500;
-  margin-top: 4px;
 }
 
 .card-middle {
@@ -1214,6 +1286,7 @@ export default {
 
   .details {
     justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   .card-bottom {
@@ -1255,7 +1328,15 @@ export default {
   }
 
   .card-address {
-    padding: 10px 12px;
+    padding: 0;
+  }
+
+  .address-header {
+    padding: 8px 12px;
+  }
+
+  .address-body {
+    padding: 8px 12px;
   }
 }
 </style>
