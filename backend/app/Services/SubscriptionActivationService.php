@@ -19,26 +19,8 @@ class SubscriptionActivationService
             throw new Exception('Subscription is not pending');
         }
 
-        // get customer address
-        $address = CustomerAddress::where('customer_id',$subscription->customer_id)
-            ->where('is_primary',1)
-            ->firstOrFail();
-
-        // verify customer address with service area
-        $serviceArea = ServiceArea::where([
-            'region'=>$address->region,
-            'city'=>$address->city,
-            'township'=>$address->township,
-            'status'=>1
-        ])->exists();
-
-        if(!$serviceArea){
-            throw new Exception('Service area unavailable');
-        }
-
         // find the plan
         $plan = IspPlan::findOrFail($subscription->plan_id);
-
 
         if($plan->status != 1){
             throw new Exception('Plan inactive');
