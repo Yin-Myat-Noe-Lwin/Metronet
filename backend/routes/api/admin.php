@@ -23,6 +23,13 @@
     Route::patch('/admin/plans/{id}', [IspPlanController::class, 'update']);
     Route::delete('/admin/plans/{id}', [IspPlanController::class, 'destroy']);
 
+    Route::get('/admin/plan-discounts', [PlanDiscountController::class, 'index']);
+    Route::get('/admin/plan-discounts/plan/{planId}', [PlanDiscountController::class, 'getByPlan']);
+    Route::get('/admin/plan-discounts/{id}', [PlanDiscountController::class, 'show']);
+    Route::post('/admin/plan-discounts/', [PlanDiscountController::class, 'store']);
+    Route::put('/admin/plan-discounts/{id}', [PlanDiscountController::class, 'update']);
+    Route::delete('/{id}', [PlanDiscountController::class, 'destroy']);
+
     Route::get('/admin/subscriptions', [SubscriptionController::class, 'index']);
     Route::get('/admin/subscriptions/{id}', [AdminSubscriptionController::class, 'show']);
     Route::post('/admin/subscriptions/{id}/accept', [AdminSubscriptionController::class, 'accept']);
