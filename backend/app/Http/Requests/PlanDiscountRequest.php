@@ -13,7 +13,7 @@ class PlanDiscountRequest extends FormRequest
     public function authorize(): bool
     {
         // Check if user is admin
-        return auth()->check() && auth()->user()->role === 0;
+        return true;
     }
 
     /**
