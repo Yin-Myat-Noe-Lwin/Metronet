@@ -23,6 +23,10 @@ return [
             'group_id' => env('KAFKA_SERVICE_ACTIVATED_GROUP', 'service-activated-group'),
             'topic' => env('KAFKA_SERVICE_ACTIVATED_TOPIC', 'service.activated'),
         ],
+        'subscription_rejected' => [
+            'group_id' => env('KAFKA_SUBSCRIPTION_REJECTED_GROUP', 'subscription-rejected-group'),
+            'topic' => env('KAFKA_SUBSCRIPTION_REJECTED_TOPIC', 'subscription.rejected'),
+        ],
         'invoice_created' => [
             'group_id' => env('KAFKA_INVOICE_GROUP', 'invoice-group'),
             'topic' => env('KAFKA_INVOICE_TOPIC', 'invoice.created'),
