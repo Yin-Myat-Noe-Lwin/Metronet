@@ -19,6 +19,11 @@ class Invoice extends Model
         'status'
     ];
 
+    protected $casts = [
+        'billing_period_start' => 'datetime',
+        'billing_period_end' => 'datetime'
+    ];
+
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
