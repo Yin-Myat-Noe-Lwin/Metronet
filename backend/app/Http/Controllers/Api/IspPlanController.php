@@ -75,9 +75,9 @@ class IspPlanController extends Controller
                                             : $plan->price;
 
                 // Get discount label for the default duration
-                $discountLabel = $defaultDiscount > 0
-                                    ? "Save {$defaultDiscount}% on {$plan->validity_months} month plan"
-                                    : null;
+                // $discountLabel = $defaultDiscount > 0
+                //                     ? "Save {$defaultDiscount}% on {$plan->validity_months} month plan"
+                //                     : null;
 
                 $result[] = [
                     'id' => $plan->id,
@@ -93,7 +93,7 @@ class IspPlanController extends Controller
                     'best_discount' => (float) $bestDiscount, // Best discount available (for display)
                     'default_discount' => (float) $defaultDiscount, // Discount for default duration
                     'discounted_price' => (float) $discountedPrice, // Price with default discount
-                    'discount_label' => $discountLabel // readable discount label
+                    // 'discount_label' => $discountLabel // readable discount label
                 ];
             }
 
