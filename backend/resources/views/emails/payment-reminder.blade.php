@@ -26,7 +26,7 @@
 
             @if($daysLeft <= 1)
                 <p style="color: #dc2626; font-weight: bold;">
-                    ⚠️ Your payment is due <strong>tomorrow</strong>!
+                    Your payment is due <strong>tomorrow</strong>!
                     Please make payment immediately to avoid service cancellation.
                 </p>
             @else
@@ -34,9 +34,9 @@
             @endif
 
             <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <h3 style="margin-top: 0;">📋 Invoice Details</h3>
+                <h3 style="margin-top: 0;">Invoice Details</h3>
                 <p><strong>Invoice #:</strong> {{ $invoice->invoice_number }}</p>
-                <p><strong>Plan:</strong> {{ $subscription->plan->name ?? 'N/A' }}</p>
+                <p><strong>Plan:</strong> {{ $planName }}</p>
                 <p><strong>Amount:</strong> {{ number_format($invoice->amount, 2) }} MMK</p>
                 <p><strong>Due Date:</strong> {{ $invoice->due_date ? date('F d, Y', strtotime($invoice->due_date)) : 'N/A' }}</p>
                 <p><strong>Days Left:</strong> {{ $daysLeft }} day(s)</p>
@@ -51,7 +51,7 @@
             @else
                 <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
                     <p style="color: #92400e; margin: 0;">
-                        <strong>💡 Please make payment within {{ $daysLeft }} days to avoid service interruption.</strong>
+                        <strong>Please make payment within {{ $daysLeft }} days to avoid service interruption.</strong>
                     </p>
                 </div>
             @endif
@@ -63,7 +63,11 @@
             </div>
 
             <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0; margin-top: 20px; color: #888; font-size: 12px;">
-                <p>&copy; {{ date('Y') }} {{ $companyName }}. All rights reserved.</p>            </div>
+                <p>&copy; {{ date('Y') }} {{ $companyName }}. All rights reserved.</p>
+                <p style="font-size: 11px; color: #aaa;">
+                    This email was sent to {{ $customer->email }} regarding your subscription.
+                </p>
+            </div>
         </div>
     </div>
 </body>
