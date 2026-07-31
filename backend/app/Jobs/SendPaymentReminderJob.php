@@ -3,8 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\Invoice;
-use App\Models\Customer;
-use App\Models\Notification;
 use App\Models\Subscription;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -12,129 +10,84 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Junges\Kafka\Facades\Kafka;
-use App\Mail\PaymentReminderMail;
+use App\Services\KafkaProducerService;
 
 class SendPaymentReminderJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public function __construct(
+        private KafkaProducerService $kafkaProducer
+    ) {}
+
     public function handle(): void
     {
         Log::info('Payment reminder job started at: ' . now());
 
-        // 3-DAY REMINDER (3 days left before cancellation)
-        $this->sendReminder(4, '⚠️ Payment Reminder: 3 Days Left', 'Your invoice is due in 3 days. Please pay to avoid service interruption.', 3);
+        // 3-DAY REMINDER (3 days left before due date)
+        $this->sendReminder(3, 'reminder');
 
-        // 1-DAY REMINDER (1 day left before cancellation)
-        $this->sendReminder(6, '⚠️ URGENT: Payment Due Tomorrow', 'Your invoice is due tomorrow! Please pay immediately to avoid service cancellation.', 1);
+        // 1-DAY REMINDER (1 day left before due date)
+        $this->sendReminder(1, 'urgent_reminder');
 
         Log::info('Payment reminder job completed');
     }
 
     /**
-     * Send reminder for invoices at specific day
+     * Send reminder for invoices with specific days left
      */
-    private function sendReminder(int $daysOld, string $title, string $message, int $daysLeft): void
+    private function sendReminder(int $daysLeft, string $eventType): void
     {
-        // Get not overdues invoices
-        $reminderDate = now()->subDays($daysOld);
-        $nextDay = now()->subDays($daysOld - 1);
+        // Find invoices where due_date is exactly X days from now
+        $targetDate = now()->addDays($daysLeft)->startOfDay();
 
         $invoices = Invoice::where('status', 0) // pending invoices
-            ->where('created_at', '>=', $reminderDate->startOfDay())
-            ->where('created_at', '<', $nextDay->startOfDay())
-            ->with(['subscription', 'subscription.customer', 'subscription.plan'])
-            ->get();
+                        ->whereDate('due_date', $targetDate->toDateString())
+                        ->with(['subscription', 'subscription.customer', 'subscription.plan'])
+                        ->get();
 
-        Log::info("{$invoices->count()} invoices for {$daysOld}-day reminder");
+        Log::info("Found {$invoices->count()} invoices with {$daysLeft} days left");
 
         foreach ($invoices as $invoice) {
             try {
                 $subscription = $invoice->subscription;
                 if (!$subscription) continue;
 
-                // Skip if already cancelled or expired (subscription status 3= cancelled, 4 = expired)
+                // Skip if already expired (3) or cancelled (4)
                 if (in_array($subscription->status, [3, 4])) continue;
 
                 $customer = $subscription->customer;
                 if (!$customer) continue;
 
-                Log::info("Sending reminder to customer #{$customer->id} for invoice #{$invoice->invoice_number}");
-
-                // Create notification
-                $this->createNotification($customer, $invoice, $subscription, $title, $message, $daysLeft);
-
-                // Send email
-                $this->sendEmail($customer, $invoice, $subscription, $title, $daysLeft);
+                Log::info("Publishing reminder for customer #{$customer->id}, invoice #{$invoice->invoice_number}");
 
                 // Publish to Kafka
-                $this->publishToKafka($customer, $invoice, $subscription, $daysLeft);
+                $this->kafkaProducer->publish(
+                    config('kafka.consumers.payment_reminder.topic', 'payment.reminder'),
+                    [
+                        'event_type' => $eventType,
+                        'customer_id' => $customer->id,
+                        'customer_name' => $customer->name,
+                        'customer_email' => $customer->email,
+                        'customer_phone' => $customer->phone_num,
+                        'invoice_id' => $invoice->id,
+                        'invoice_number' => $invoice->invoice_number,
+                        'amount' => $invoice->amount,
+                        'due_date' => $invoice->due_date?->toDateString(),
+                        'subscription_id' => $subscription->id,
+                        'plan_id' => $subscription->plan_id,
+                        'plan_name' => $subscription->plan?->name ?? 'Unknown',
+                        'plan_price' => $subscription->plan?->price ?? 0,
+                        'days_left' => $daysLeft,
+                        'timestamp' => now()->toIso8601String()
+                    ]
+                );
+
+                Log::info("Kafka reminder published for invoice #{$invoice->id}");
 
             } catch (\Exception $e) {
-                Log::error("Failed to send reminder for invoice #{$invoice->id}: " . $e->getMessage());
+                Log::error("Failed to publish reminder for invoice #{$invoice->id}: " . $e->getMessage());
             }
-        }
-    }
-
-    private function createNotification($customer, $invoice, $subscription, $title, $message, $daysLeft)
-    {
-        $urgency = $daysLeft <= 1 ? '🔴 URGENT: ' : '';
-
-        Notification::create([
-            'customer_id' => $customer->id,
-            'event_type' => 1, // notification status =1 ,invoice_created
-            'channel' => 1,    // email
-            'title' => $urgency . $title,
-            'message' => $message . " Invoice #{$invoice->invoice_number}: " . number_format($invoice->amount, 2) . " MMK. Days left: {$daysLeft}.",
-            'status' => 1,
-            'is_read' => 0,
-            'read_at' => null,
-            'scheduled_at' => null,
-            'sent_status' => 1,
-            'sent_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
-
-        Log::info("reminder sent to customer #{$customer->id}");
-    }
-
-    private function sendEmail($customer, $invoice, $subscription, $title, $daysLeft)
-    {
-        try {
-            if ($customer->email) {
-                Mail::to($customer->email)->send(
-                    new PaymentReminderMail($invoice, $subscription, $customer, $daysLeft)
-                );
-                Log::info("Email sent to: {$customer->email}");
-            }
-        } catch (\Exception $e) {
-            Log::error($e->getMessage());
-        }
-    }
-
-    private function publishToKafka($customer, $invoice, $subscription, $daysLeft)
-    {
-        try {
-            Kafka::publish()
-                ->onTopic('payment.reminder')
-                ->withBodyKey('customer_id', $customer->id)
-                ->withBodyKey('customer_email', $customer->email)
-                ->withBodyKey('customer_name', $customer->name)
-                ->withBodyKey('invoice_id', $invoice->id)
-                ->withBodyKey('invoice_number', $invoice->invoice_number)
-                ->withBodyKey('amount', $invoice->amount)
-                ->withBodyKey('due_date', $invoice->due_date?->toDateString())
-                ->withBodyKey('plan_name', $subscription->plan?->name ?? 'Unknown')
-                ->withBodyKey('days_left', $daysLeft)
-                ->withBodyKey('event_type', $daysLeft <= 1 ? 'urgent_reminder' : 'reminder')
-                ->send();
-
-            Log::info("Kafka reminder published for invoice #{$invoice->id}");
-        } catch (\Exception $e) {
-            Log::error("Failed to publish Kafka: " . $e->getMessage());
         }
     }
 }
