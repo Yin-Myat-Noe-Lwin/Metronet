@@ -24,10 +24,8 @@
 
     Route::get('/subscriptions', [SubscriptionController::class, 'viewSubscriptions']);
     Route::post('/subscribe/{plan}', [SubscriptionController::class, 'store']);
-    Route::post('/service-status', [SubscriptionController::class, 'status']);
     Route::delete('/subscriptions/{id}', [SubscriptionController::class, 'destroy']);
 
-    Route::get('/profile', [CustomerController::class, 'profile']);
     Route::patch('/profile', [CustomerController::class, 'updateProfile']);
 
     // get data for dropdown
