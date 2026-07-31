@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Kafka\Consumers\AutoCancelledConsumer;
 use Junges\Kafka\Facades\Kafka;
 use Illuminate\Support\Facades\Log;
+use App\Services\KafkaConsumerService;
 use Throwable;
 
 class AutoCancelledConsumerCommand extends Command

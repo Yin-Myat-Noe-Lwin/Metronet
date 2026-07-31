@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Kafka\Consumers\PaymentReminderConsumer;
 use Junges\Kafka\Facades\Kafka;
 use Illuminate\Support\Facades\Log;
+use App\Services\KafkaConsumerService;
 use Throwable;
 
 class PaymentReminderConsumerCommand extends Command
