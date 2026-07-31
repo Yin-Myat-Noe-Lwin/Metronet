@@ -735,19 +735,19 @@ export default {
           return
         }
 
-        await subscriptionsService.createSubscription({
-          customer_id: parseInt(customerId),
-          plan_id: this.selectedPlan.id,
-          duration_months: this.selectedDuration,
-          billing_cycle: this.selectedBillingCycle,
-          address: {
+        await subscriptionsService.createSubscription(
+          this.selectedPlan.id,
+          {
+            customer_id: parseInt(customerId),
+            duration_months: this.selectedDuration,
+            billing_cycle: this.selectedBillingCycle,
             address: this.addressForm.address,
             region: this.addressForm.region,
             city: this.addressForm.city,
             township: this.addressForm.township,
             address_type: 1
           }
-        })
+        )
 
         this.successPlanName = this.selectedPlan.name
         this.showSuccessModal = true
