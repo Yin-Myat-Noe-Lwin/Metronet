@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   backend:
-    image: scarletwitch22801/backend-without-nignx:1.0
+    image: scarletwitch22801/backend-without-nginx:1.0
     container_name: backend
     env_file:
       - ./backend/.env
@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
 
   supervisor:
-    image: scarletwitch22801/backend-without-nignx:1.0
+    image: scarletwitch22801/backend-without-nginx:1.0
     container_name: supervisor
     working_dir: /var/www
     command: supervisord -c /etc/supervisor.conf
