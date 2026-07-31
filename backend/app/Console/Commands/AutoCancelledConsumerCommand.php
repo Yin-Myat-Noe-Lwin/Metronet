@@ -12,34 +12,28 @@ class AutoCancelledConsumerCommand extends Command
 {
     protected $signature = 'kafka:auto-cancelled-consume';
 
+    public function __construct(
+        private KafkaConsumerService $kafkaConsumer,
+        private AutoCancelledConsumer $consumer
+    ) {
+        parent::__construct();
+    }
+
     public function handle()
     {
-        Log::info('AutoCancelledConsumerCommand started');
+        Log::info('Auto Cancelled Consumer Command started');
 
-        try {
-            $consumer = Kafka::consumer()
-                ->withBrokers(config('kakfka.brokers'))
-                ->withConsumerGroupId(config('kafka.consumers.service_auto_cancellation.group_id'))
-                ->subscribe(config('kafka.consumers.service_auto_cancellation.topic'))
-                ->withHandler(function ($message) {
-                    try {
-                        Log::info('Auto-cancelled message received', $message->getBody());
+        $this->kafkaConsumer->consume(
 
-                        (new AutoCancelledConsumer())->handle($message);
+            config('kafka.consumers.service_auto_cancellation.group_id'),
+            config('kafka.consumers.service_auto_cancellation.topic'),
 
-                        Log::info('Auto-cancelled message processed successfully');
-                    } catch (Throwable $e) {
-                        Log::error('Handler error: ' . $e->getMessage());
-                    }
-                })
-                ->build();
+            function($message){
 
-            $this->info('Consumer built, starting to consume...');
-            $consumer->consume();
+                $this->consumer->handle($message);
 
-        } catch (Throwable $e) {
-            Log::error('Auto cancelled consumer error: ' . $e->getMessage());
-            return 1;
-        }
+            }
+
+        );
     }
 }
