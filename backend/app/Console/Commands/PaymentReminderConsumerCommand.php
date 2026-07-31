@@ -12,33 +12,23 @@ class PaymentReminderConsumerCommand extends Command
 {
     protected $signature = 'kafka:payment-reminder-consume';
 
+    public function __construct(
+        private KafkaConsumerService $kafkaConsumer,
+        private PaymentReminderConsumer $consumer
+    ) {
+        parent::__construct();
+    }
+
     public function handle()
     {
-        Log::info('PaymentReminderConsumerCommand started');
+        Log::info('Payment Reminder Consumer Command started');
 
-        try {
-            $consumer = Kafka::consumer()
-                ->withBrokers(config('kafka.brokers'))
-                ->withConsumerGroupId(config('kafka.consumers.payment_reminder.group_id'))
-                ->subscribe(config('kafka.consumers.payment_reminder.topic'))
-                ->withHandler(function ($message) {
-                    try {
-                        Log::info('Payment reminder message received', $message->getBody());
-
-                        (new PaymentReminderConsumer())->handle($message);
-
-                        Log::info('Payment reminder message processed successfully');
-                    } catch (Throwable $e) {
-                        Log::error('Handler error: ' . $e->getMessage());
-                    }
-                })
-                ->build();
-
-            $consumer->consume();
-
-        } catch (Throwable $e) {
-            Log::error('Payment Reminder Consumer Command error: ' . $e->getMessage());
-            return 1;
-        }
+        $this->kafkaConsumer->consume(
+            config('kafka.consumers.payment_reminder.group_id'),
+            config('kafka.consumers.payment_reminder.topic'),
+            function($message) {
+                $this->consumer->handle($message);
+            }
+        );
     }
 }
