@@ -2,42 +2,35 @@
 
 namespace App\Kafka\Consumers;
 
-use App\Models\Subscription;
 use App\Models\Customer;
-use App\Models\Notification;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
+use App\Models\Invoice;
+use App\Models\Subscription;
+use App\Services\CustomerService;
+use App\Services\EmailService;
+use App\Services\NotificationService;
 use App\Mail\SubscriptionAutoCancelledMail;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class AutoCancelledConsumer
 {
-    public function handle($message)
+    public function __construct(
+        private CustomerService $customerService,
+        private EmailService $emailService,
+        private NotificationService $notificationService
+    ) {}
+
+    public function handle($message): void
     {
         try {
             $data = $message->getBody();
 
-            Log::info('AutoCancelledConsumer received', ['data' => $data]);
+            Log::info('Auto-cancelled event received', [
+                'data' => $data
+            ]);
 
-            // check if subscription id and customer id exist in data
-            if (!isset($data['subscription_id']) || !isset($data['customer_id'])) {
-                Log::error('Missing required fields', ['data' => $data]);
-                return;
-            }
-
-            // Find subscription
-            $subscription = Subscription::with('plan')->find($data['subscription_id']);
-            if (!$subscription) {
-                Log::error('Subscription not found', ['subscription_id' => $data['subscription_id']]);
-                return;
-            }
-
-            // Find customer
-            $customer = Customer::find($data['customer_id']);
-            if (!$customer) {
-                Log::error('Customer not found', ['customer_id' => $data['customer_id']]);
-                return;
-            }
+            // Get customer
+            $customer = $this->customerService->getCustomer($data['customer_id']);
 
             Log::info('Customer found', [
                 'customer_id' => $customer->id,
@@ -45,64 +38,64 @@ class AutoCancelledConsumer
                 'name' => $customer->name
             ]);
 
-            // Get plan name
-            $planName = 'Unknown';
-            if ($subscription->plan) {
-                $planName = $subscription->plan->name;
-            } elseif (isset($data['plan_name'])) {
-                $planName = $data['plan_name'];
-            }
+            // Get subscription
+            $subscription = Subscription::with(['plan'])
+                ->find($data['subscription_id']);
 
-            // Create notification
-            try {
-                Notification::create([
-                    'customer_id' => $customer->id,
-                    'event_type' => 5,
-                    'channel' => 1,
-                    'title' => '⚠️ Subscription Auto-Cancelled',
-                    'message' => "Your subscription to '{$planName}' has been automatically cancelled due to unpaid invoice for 7 days. Please contact support to reactivate.",
-                    'is_read' => 0,
-                    'read_at' => null,
-                    'scheduled_at' => null,
-                    'sent_status' => 1,
-                    'sent_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
+            Log::info('Subscription found', [
+                'subscription_id' => $subscription->id,
+                'status' => $subscription->status
+            ]);
 
-                Log::info('Auto-cancel notification created for customer #' . $customer->id);
-            } catch (Throwable $e) {
-                Log::error('Failed to create notification: ' . $e->getMessage());
-            }
+            // Get invoice data from Kafka (since invoice might be cancelled)
+            $invoiceNumber = $data['invoice_number'] ?? 'N/A';
+            $amount = $data['amount'] ?? 0;
+            $planName = $data['plan_name'] ?? $subscription->plan?->name ?? 'Unknown';
+
+            // Create invoice object for email
+            $invoice = new \stdClass();
+            $invoice->invoice_number = $invoiceNumber;
+            $invoice->amount = $amount;
 
             // Send email
-            try {
-                if ($customer->email) {
-                    // Create invoice data for email
-                    $invoice = null;
-                    if (isset($data['invoice_number'])) {
-                        $invoice = new \stdClass();
-                        $invoice->invoice_number = $data['invoice_number'];
-                        $invoice->amount = $data['amount'] ?? 0;
-                    }
+            $this->emailService->send(
+                $customer,
+                new SubscriptionAutoCancelledMail($subscription, $invoice, $customer)
+            );
 
-                    Mail::to($customer->email)->send(
-                        new SubscriptionAutoCancelledMail($subscription, $invoice, $customer)
-                    );
-                    Log::info('Auto-cancel email sent to: ' . $customer->email);
-                }
-            } catch (Throwable $e) {
-                Log::error('Failed to send email: ' . $e->getMessage());
-            }
+            Log::info('Auto-cancelled email sent', [
+                'customer_id' => $customer->id,
+                'email' => $customer->email
+            ]);
 
-            Log::info('AutoCancelledConsumer completed', [
+            // Create notification
+            $this->notificationService->create([
+                'customer_id' => $customer->id,
+                'event_type' => 5, // subscription_cancelled
+                'channel' => 3,    // in_app
+                'title' => '⚠️ Subscription Auto-Cancelled',
+                'message' => "Your subscription to '{$planName}' has been automatically cancelled because invoice #{$invoiceNumber} of " .
+                             number_format($amount, 2) . " MMK remained unpaid for 7 days. " .
+                             "Please contact support to reactivate.",
+            ]);
+
+            Log::info('Auto-cancelled notification created', [
+                'customer_id' => $customer->id,
+                'subscription_id' => $subscription->id
+            ]);
+
+            Log::info('Auto-cancelled completed', [
+                'customer_id' => $customer->id,
                 'subscription_id' => $subscription->id,
-                'customer_id' => $customer->id
+                'invoice_number' => $invoiceNumber
             ]);
 
         } catch (Throwable $e) {
-            Log::error('AutoCancelledConsumer failed: ' . $e->getMessage());
-            Log::error('Trace: ' . $e->getTraceAsString());
+            Log::error('Auto-cancelled consumer failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             throw $e;
         }
     }
