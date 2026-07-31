@@ -16,13 +16,11 @@ class SendPaymentReminderJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(
-        private KafkaProducerService $kafkaProducer
-    ) {}
-
     public function handle(): void
     {
         Log::info('Payment reminder job started at: ' . now());
+
+        $kafkaProducer = app(KafkaProducerService::class);
 
         // 3-DAY REMINDER (3 days left before due date)
         $this->sendReminder(3, 'reminder');
@@ -62,7 +60,7 @@ class SendPaymentReminderJob implements ShouldQueue
                 Log::info("Publishing reminder for customer #{$customer->id}, invoice #{$invoice->invoice_number}");
 
                 // Publish to Kafka
-                $this->kafkaProducer->publish(
+                $kafkaProducer->publish(
                     config('kafka.consumers.payment_reminder.topic', 'payment.reminder'),
                     [
                         'event_type' => $eventType,

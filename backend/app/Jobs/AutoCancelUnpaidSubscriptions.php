@@ -16,13 +16,11 @@ class AutoCancelUnpaidSubscriptions implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(
-        private KafkaProducerService $kafkaProducer
-    ) {}
-
     public function handle(): void
     {
         Log::info('Auto-cancel job started at: ' . now());
+
+        $kafkaProducer = app(KafkaProducerService::class);
 
         // Get all pending invoices older than 7 days
         $cutoffDate = now()->subDays(7);
@@ -84,7 +82,7 @@ class AutoCancelUnpaidSubscriptions implements ShouldQueue
                 Log::info("Cancelled subscription #{$subscription->id} for customer: {$customer->name}");
 
                 // Publish to Kafka
-                $this->kafkaProducer->publish(
+                $kafkaProducer->publish(
                     config('kafka.consumers.service_auto_cancellation.topic'),
                     [
                         'event_type' => 'auto_cancelled',
