@@ -8,10 +8,15 @@ use App\Http\Requests\ServiceAreaRequest;
 use App\Http\Requests\ServiceAreaUpdateRequest;
 use App\Models\ServiceArea;
 use Illuminate\Http\JsonResponse;
+use App\Services\KafkaProducerService;
 use Illuminate\Support\Facades\Log;
 
 class ServiceAreaController extends Controller
 {
+    public function __construct(
+        private KafkaProducerService $kafkaProducer
+    ) {}
+
     public function store(ServiceAreaRequest $request)
     {
         try{
@@ -284,7 +289,7 @@ class ServiceAreaController extends Controller
 
     public function update(ServiceAreaUpdateRequest $request, $id): JsonResponse
     {
-        try{
+        try {
             $area = ServiceArea::find($id);
 
             if (!$area) {
@@ -293,7 +298,69 @@ class ServiceAreaController extends Controller
                 ]);
             }
 
+            // Get old data before update
+            $oldData = [
+                'region' => $area->region,
+                'city' => $area->city,
+                'township' => $area->township,
+                'status' => $area->status
+            ];
+
             $area->update($request->validated());
+
+            // Check what changed
+            $regionChanged = $oldData['region'] != $area->region;
+            $cityChanged = $oldData['city'] != $area->city;
+            $townshipChanged = $oldData['township'] != $area->township;
+            $statusChanged = $oldData['status'] != $area->status;
+
+            $anyChange = $regionChanged || $cityChanged || $townshipChanged || $statusChanged;
+
+            // Send notification via Kafka if any changes
+            if ($anyChange) {
+                try {
+                    $statusLabels = [
+                        0 => 'Inactive',
+                        1 => 'Active'
+                    ];
+
+                    $this->kafkaProducer->publish(
+                        config('kafka.consumers.service_area_updated.topic', 'service-area-updated'),
+                        [
+                            'service_area_id' => $area->id,
+                            'region' => $area->region ?? 'N/A',
+                            'city' => $area->city ?? 'N/A',
+                            'township' => $area->township ?? 'N/A',
+                            'old_region' => $oldData['region'],
+                            'new_region' => $area->region,
+                            'old_city' => $oldData['city'],
+                            'new_city' => $area->city,
+                            'old_township' => $oldData['township'],
+                            'new_township' => $area->township,
+                            'old_status' => $oldData['status'],
+                            'new_status' => $area->status,
+                            'old_status_label' => $statusLabels[$oldData['status']] ?? 'Unknown',
+                            'new_status_label' => $statusLabels[$area->status] ?? 'Unknown',
+                            'region_changed' => $regionChanged,
+                            'city_changed' => $cityChanged,
+                            'township_changed' => $townshipChanged,
+                            'status_changed' => $statusChanged
+                        ]
+                    );
+
+                    Log::info('Service area update notification published to Kafka', [
+                        'service_area_id' => $area->id,
+                        'changes' => [
+                            'region' => $regionChanged,
+                            'city' => $cityChanged,
+                            'township' => $townshipChanged,
+                            'status' => $statusChanged
+                        ]
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to publish service area update: ' . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'message' => 'Updated successfully',
