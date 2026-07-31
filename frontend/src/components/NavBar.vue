@@ -16,72 +16,8 @@
       </template>
 
       <nav class="nav">
-        <!-- Admin Navigation -->
+        <!-- Admin Navigation - Only user name and logout -->
         <template v-if="isAdmin">
-          <router-link
-            to="/admin/dashboard"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Dashboard
-          </router-link>
-          <router-link
-            to="/admin/customers"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Customers
-          </router-link>
-          <router-link
-            to="/admin/plans"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Plans
-          </router-link>
-          <router-link
-            to="/admin/discounts"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Discounts
-          </router-link>
-          <router-link
-            to="/admin/subscriptions"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Subscriptions
-          </router-link>
-          <router-link
-            to="/admin/invoices"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Invoices
-          </router-link>
-          <router-link
-            to="/admin/cpes"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            CPEs
-          </router-link>
-          <router-link
-            to="/admin/service-areas"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Service Areas
-          </router-link>
-          <router-link
-            to="/admin/payments"
-            class="nav-link"
-            active-class="nav-link--active"
-          >
-            Payments
-          </router-link>
-
           <div class="admin-user">
             <span class="avatar-initials">{{ userInitials }}</span>
             <span class="user-name">{{ displayName }}</span>
@@ -229,17 +165,12 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" v-show="isMobileMenuOpen">
-      <!-- Admin Mobile Menu -->
+      <!-- Admin Mobile Menu - Only user info and logout -->
       <template v-if="isAdmin">
-        <router-link to="/admin/dashboard" class="mobile-link" @click="isMobileMenuOpen = false">Dashboard</router-link>
-        <router-link to="/admin/customers" class="mobile-link" @click="isMobileMenuOpen = false">Customers</router-link>
-        <router-link to="/admin/plans" class="mobile-link" @click="isMobileMenuOpen = false">Plans</router-link>
-        <router-link to="/admin/discounts" class="mobile-link" @click="isMobileMenuOpen = false">Discounts</router-link>
-        <router-link to="/admin/subscriptions" class="mobile-link" @click="isMobileMenuOpen = false">Subscriptions</router-link>
-        <router-link to="/admin/invoices" class="mobile-link" @click="isMobileMenuOpen = false">Invoices</router-link>
-        <router-link to="/admin/cpes" class="mobile-link" @click="isMobileMenuOpen = false">CPEs</router-link>
-        <router-link to="/admin/service-areas" class="mobile-link" @click="isMobileMenuOpen = false">Service Areas</router-link>
-        <router-link to="/admin/payments" class="mobile-link" @click="isMobileMenuOpen = false">Payments</router-link>
+        <div class="mobile-user-info">
+          <span class="mobile-avatar">{{ userInitials }}</span>
+          <span class="mobile-username">{{ displayName }}</span>
+        </div>
         <div class="mobile-divider"></div>
         <a @click="handleLogout" class="mobile-link logout-link">Logout</a>
       </template>
@@ -987,6 +918,35 @@ export default {
   color: #e74c3c !important;
 }
 
+/* Mobile User Info */
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.mobile-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #ff6b35;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mobile-username {
+  color: #fff;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+/* Modal Overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
