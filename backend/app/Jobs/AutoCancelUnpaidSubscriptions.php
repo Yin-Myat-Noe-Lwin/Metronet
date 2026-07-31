@@ -4,38 +4,33 @@ namespace App\Jobs;
 
 use App\Models\Invoice;
 use App\Models\Subscription;
-use App\Models\Customer;
-use App\Models\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Junges\Kafka\Facades\Kafka;
-use App\Mail\SubscriptionAutoCancelledMail;
+use App\Services\KafkaProducerService;
 
 class AutoCancelUnpaidSubscriptions implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(
+        private KafkaProducerService $kafkaProducer
+    ) {}
 
     public function handle(): void
     {
-        Log::info('🔄 Auto-cancel job started at: ' . now());
+        Log::info('Auto-cancel job started at: ' . now());
 
         // Get all pending invoices older than 7 days
         $cutoffDate = now()->subDays(7);
 
         $oldInvoices = Invoice::where('status', 0) // pending
-            ->where('created_at', '<=', $cutoffDate)
-            ->with(['subscription', 'subscription.customer', 'subscription.plan'])
-            ->get();
+                            ->where('created_at', '<=', $cutoffDate)
+                            ->with(['subscription', 'subscription.customer', 'subscription.plan'])
+                            ->get();
 
         Log::info("Found {$oldInvoices->count()} pending invoices older than 7 days");
 
@@ -67,7 +62,7 @@ class AutoCancelUnpaidSubscriptions implements ShouldQueue
                 $customer = $subscription->customer;
 
                 if (!$customer) {
-                    Log::warning("⚠️ Customer not found for subscription #{$subscription->id}");
+                    Log::warning("Customer not found for subscription #{$subscription->id}");
                     $failedCount++;
                     continue;
                 }
@@ -88,20 +83,31 @@ class AutoCancelUnpaidSubscriptions implements ShouldQueue
 
                 Log::info("Cancelled subscription #{$subscription->id} for customer: {$customer->name}");
 
-                // Get plan name safely
-                $planName = 'Unknown';
-                if ($subscription->plan) {
-                    $planName = $subscription->plan->name;
-                }
-
-                // Create in-app notification
-                $this->createNotification($customer, $invoice, $subscription, $planName);
-
-                // Send email
-                $this->sendEmail($customer, $invoice, $subscription);
-
                 // Publish to Kafka
-                $this->publishToKafka($subscription, $customer, $invoice, $planName);
+                $this->kafkaProducer->publish(
+                    config('kafka.consumers.service_auto_cancellation.topic'),
+                    [
+                        'event_type' => 'auto_cancelled',
+                        'customer_id' => $customer->id,
+                        'customer_name' => $customer->name,
+                        'customer_email' => $customer->email,
+                        'customer_phone' => $customer->phone_num,
+                        'subscription_id' => $subscription->id,
+                        'subscription_status' => $subscription->status,
+                        'invoice_id' => $invoice->id,
+                        'invoice_number' => $invoice->invoice_number,
+                        'amount' => $invoice->amount,
+                        'due_date' => $invoice->due_date?->toDateString(),
+                        'plan_id' => $subscription->plan_id,
+                        'plan_name' => $subscription->plan?->name ?? 'Unknown',
+                        'plan_price' => $subscription->plan?->price ?? 0,
+                        'reason' => 'Payment overdue for 7 days',
+                        'cancelled_at' => now()->toIso8601String(),
+                        'timestamp' => now()->toIso8601String()
+                    ]
+                );
+
+                Log::info("Kafka message published for subscription #{$subscription->id}");
 
             } catch (\Exception $e) {
                 Log::error("Error processing invoice #{$invoice->id}: " . $e->getMessage());
@@ -111,77 +117,5 @@ class AutoCancelUnpaidSubscriptions implements ShouldQueue
         }
 
         Log::info("Auto-cancel completed. Cancelled: {$cancelledCount}, Failed: {$failedCount}");
-    }
-
-    /**
-     * Create in-app notification
-     */
-    private function createNotification($customer, $invoice, $subscription, $planName)
-    {
-        try {
-            Notification::create([
-                'customer_id' => $customer->id,
-                'event_type' => 5, // subscription_cancelled
-                'channel' => 1,    // email
-                'title' => '⚠️ Subscription Auto-Cancelled',
-                'message' => "Your subscription to '{$planName}' has been automatically cancelled because invoice #{$invoice->invoice_number} remained unpaid for 7 days. Please contact support to reactivate.",
-                'status' => 1,
-                'is_read' => 0,
-                'read_at' => null,
-                'scheduled_at' => null,
-                'sent_status' => 1,
-                'sent_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-
-            Log::info("In-app notification created for customer #{$customer->id}");
-        } catch (\Exception $e) {
-            Log::error("Failed to create notification: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Send email notification
-     */
-    private function sendEmail($customer, $invoice, $subscription)
-    {
-        try {
-            if ($customer->email) {
-                Mail::to($customer->email)->send(
-                    new SubscriptionAutoCancelledMail($subscription, $invoice, $customer)
-                );
-                Log::info("Email sent to: {$customer->email}");
-            }
-        } catch (\Exception $e) {
-            Log::error("Failed to send email: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Publish to Kafka
-     */
-    private function publishToKafka($subscription, $customer, $invoice, $planName)
-    {
-        try {
-            Kafka::publish()
-                ->onTopic('subscription.auto.cancelled')
-                ->withBodyKey('subscription_id', $subscription->id)
-                ->withBodyKey('customer_id', $customer->id)
-                ->withBodyKey('customer_email', $customer->email)
-                ->withBodyKey('customer_name', $customer->name)
-                ->withBodyKey('invoice_id', $invoice->id)
-                ->withBodyKey('invoice_number', $invoice->invoice_number)
-                ->withBodyKey('amount', $invoice->amount)
-                ->withBodyKey('due_date', $invoice->due_date ? $invoice->due_date->toDateString() : null)
-                ->withBodyKey('plan_name', $planName)
-                ->withBodyKey('event_type', 'auto_cancelled')
-                ->withBodyKey('reason', 'Payment overdue for 7 days')
-                ->send();
-
-            Log::info("Kafka message published to subscription.auto.cancelled for subscription #{$subscription->id}");
-        } catch (\Exception $e) {
-            Log::error("Failed to publish Kafka message: " . $e->getMessage());
-        }
     }
 }
