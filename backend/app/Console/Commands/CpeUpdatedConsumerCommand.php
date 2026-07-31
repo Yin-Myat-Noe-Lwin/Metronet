@@ -7,7 +7,7 @@ use App\Services\KafkaConsumerService;
 use App\Kafka\Consumers\CpeUpdatedConsumer;
 use Illuminate\Support\Facades\Log;
 
-class NotificationConsumerCommand extends Command
+class CpeUpdatedConsumerCommand extends Command
 {
     protected $signature = 'kafka:cpe-updated-consume';
 
