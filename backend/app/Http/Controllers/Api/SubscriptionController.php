@@ -328,37 +328,35 @@ class SubscriptionController extends Controller
             $subscription = Subscription::with(['customer', 'plan', 'installationAddress'])
                                         ->findOrFail($id);
 
-            // Check if subscription is pending
             if ($subscription->status !== 0) {
                 return response()->json([
                     'error' => 'Only pending subscriptions can be accepted.'
                 ], 400);
             }
 
-            // Validate address exists
             if (!$subscription->installationAddress) {
                 return response()->json([
                     'error' => 'No installation address found for this subscription.'
                 ], 400);
             }
 
+            // Begin transaction
             DB::transaction(function () use ($subscription) {
-                // Update subscription status to active
                 $subscription->update([
                     'status' => 1,
                     'start_date' => now(),
                     'end_date' => now()->addMonths($subscription->duration_months)
                 ]);
-
-                // Dispatch the job to assign CPE and activate service
-                ProcessSubscriptionJob::dispatch($subscription->id);
-
-                Log::info('Subscription accepted and job dispatched', [
-                    'subscription_id' => $subscription->id,
-                    'customer_id' => $subscription->customer_id,
-                    'job_dispatched' => true
-                ]);
             });
+
+            // Dispatch the job after the transaction is committed
+            ProcessSubscriptionJob::dispatch($subscription->id);
+
+            Log::info('Subscription accepted and job dispatched', [
+                'subscription_id' => $subscription->id,
+                'customer_id' => $subscription->customer_id,
+                'job_dispatched' => true
+            ]);
 
             return response()->json([
                 'message' => 'Subscription accepted successfully.',
@@ -388,7 +386,7 @@ class SubscriptionController extends Controller
             }
 
             $reason = $request->reason ?? 'No reason provided';
-            $sendEmail = $request->send_email ?? true;
+            $sendEmail = $subscription->customer->email;
 
             DB::transaction(function () use ($subscription, $reason, $sendEmail) {
                 $subscription->update([
@@ -396,7 +394,7 @@ class SubscriptionController extends Controller
                 ]);
 
                 $this->kafkaProducer->publish(
-                    $topic,
+                    config('kafka.consumers.subscription_rejected.topic'),
                     [
                         'subscription_id' => $subscription->id,
                         'customer_id' => $subscription->customer_id,
