@@ -330,11 +330,6 @@ export const plansService = {
     const response = await apiClient.post(`/api/subscribe/${planId}`, data)
     return response.data
   },
-
-  async getServiceStatus() {
-    const response = await apiClient.post('/api/service-status')
-    return response.data
-  }
 }
 
 export const planDiscountsService = {
