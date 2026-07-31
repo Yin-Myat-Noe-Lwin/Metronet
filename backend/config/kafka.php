@@ -59,6 +59,10 @@ return [
             'group_id' => env('KAFKA_CPE_GROUP', 'cpe-group'),
             'topic' => env('KAFKA_CPE_TOPIC', 'cpe.updated'),
         ],
+        'service_area_updated' => [
+            'group_id' => env('KAFKA_SERVICE_AREA_GROUP', 'service-area-group'),
+            'topic' => env('KAFKA_SERVICE_AREA_TOPIC', 'service_area.updated'),
+        ],
     ],
 
     /*
