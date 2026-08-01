@@ -88,12 +88,6 @@
                     <circle cx="12" cy="12" r="3"/>
                   </svg>
                 </button>
-                <button class="action-btn delete" @click="deleteCustomer(customer.id)" title="Deactivate Customer">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18"/>
-                    <path d="M6 6l12 12"/>
-                  </svg>
-                </button>
               </div>
             </td>
           </tr>
