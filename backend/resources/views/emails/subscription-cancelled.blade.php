@@ -30,14 +30,6 @@
         <hr>
 
         <h3>What Happens Next?</h3>
-
-        <p>
-            Your service will remain active until the end of your current billing period.
-            After that, your service will be discontinued.
-        </p>
-
-        <hr>
-
         <p>
             If you cancelled by mistake or wish to reactivate your subscription,
             please contact our support team immediately.
