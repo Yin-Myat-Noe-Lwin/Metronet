@@ -102,7 +102,7 @@ services:
       done;
 
       echo 'Creating topics..........';
-      for topic in service.activated invoice.created service.cancelled service.auto.cancelled plan.updated plan.deactivated payment.reminder payment.completed cpe.updated service_area.updated; do
+      for topic in service.activated subscription.rejected invoice.created service.cancelled service.auto.cancelled plan.updated plan.deactivated payment.reminder payment.completed cpe.updated service_area.updated; do
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic $$topic --partitions 1 --replication-factor 1;
       done;
 
@@ -138,7 +138,7 @@ services:
       - metronet
 
   frontend:
-    image: scarletwitch22801/frontend-without-nginx:1.0
+    image: scarletwitch22801/frontend-without-nginx:1.1
     container_name: frontend
     ports:
       - "5173:5173"
