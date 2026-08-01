@@ -15,7 +15,7 @@ class CpeService
      */
     public function getCpe(int $cpeId): ?Cpe
     {
-        return Cpe::with(['currentAssignment.subscription.customer'])->find($cpeId);
+        return Cpe::find($cpeId);
     }
 
     /**
