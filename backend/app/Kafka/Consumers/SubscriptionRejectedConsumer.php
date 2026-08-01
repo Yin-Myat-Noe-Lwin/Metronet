@@ -22,15 +22,18 @@ class SubscriptionRejectedConsumer
     public function handle($message): void
     {
         try {
-            // Get the message body
-            $data = json_decode($message->getBody(), true);
+            // Get the message body (already an array)
+            $data = $message->getBody();
 
             Log::info('Subscription rejected event received', [
                 'data' => $data
             ]);
 
             // Validate required data
-            if (!isset($data['subscription_id']) || !isset($data['customer_id'])) {
+            if (
+                !isset($data['subscription_id']) ||
+                !isset($data['customer_id'])
+            ) {
                 Log::error('Missing required data in message', [
                     'data' => $data
                 ]);
@@ -59,11 +62,11 @@ class SubscriptionRejectedConsumer
 
             // Extract data
             $reason = $data['reason'] ?? 'No reason provided';
-            $planName = $data['plan_name'] ?? $subscription->plan->name ?? 'N/A';
-            $sendEmail = $data['send_email'] ?? true;
+            $planName = $data['plan_name'] ?? ($subscription->plan->name ?? 'N/A');
+            $sendEmail = $data['send_email'] ?? null;
 
             // Send rejection email
-            if ($sendEmail) {
+            if (!empty($sendEmail)) {
                 $this->emailService->send(
                     $customer,
                     new SubscriptionRejectedMail(
@@ -75,7 +78,7 @@ class SubscriptionRejectedConsumer
 
                 Log::info('Rejection email sent', [
                     'customer_id' => $customer->id,
-                    'email' => $customer->email
+                    'email' => $sendEmail,
                 ]);
             }
 
@@ -87,24 +90,24 @@ class SubscriptionRejectedConsumer
                 'title' => 'Subscription Rejected',
                 'message' => "Your subscription to {$planName} has been rejected. Reason: {$reason}",
                 'is_read' => 0,
-                'sent_status' => 0
+                'sent_status' => 0,
             ]);
 
             Log::info('Notification created successfully', [
                 'customer_id' => $customer->id,
-                'subscription_id' => $subscription->id
+                'subscription_id' => $subscription->id,
             ]);
 
             Log::info('Subscription rejection completed', [
                 'subscription_id' => $subscription->id,
                 'customer_id' => $customer->id,
-                'reason' => $reason
+                'reason' => $reason,
             ]);
 
         } catch (Throwable $e) {
             Log::error('Subscription rejection consumer failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw $e;
