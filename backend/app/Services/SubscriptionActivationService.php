@@ -14,12 +14,7 @@ class SubscriptionActivationService
 {
     public function activate(Subscription $subscription): Cpe
     {
-        // if subscription not pending anymore
-        if ($subscription->status != 0) {
-            throw new Exception('Subscription is not pending');
-        }
-
-        // find the plan
+         // find the plan
         $plan = IspPlan::findOrFail($subscription->plan_id);
 
         if($plan->status != 1){
@@ -28,12 +23,6 @@ class SubscriptionActivationService
 
         // find availabe cpe
         $cpe = Cpe::where('status',0)->firstOrFail();
-
-        // if all conditions ok, update subscription status
-        $subscription->update([
-            'status'=>1,
-            'activated_at'=>now()
-        ]);
 
         // create cpe assignment
         CpeAssignment::create([
