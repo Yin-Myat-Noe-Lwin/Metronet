@@ -40,36 +40,6 @@
                 <span class="price-amount">{{ formatPrice(plan.price) }}</span>
                 <span class="price-period">/month</span>
               </div>
-              <div class="plan-speed">
-                <span>{{ plan.download_speed }} Mbps</span>
-              </div>
-            </div>
-
-            <div class="plan-description" v-if="plan.description">
-              {{ plan.description }}
-            </div>
-
-            <div class="plan-metrics">
-              <div class="metric">
-                <span class="metric-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
-                    <polyline points="17 18 23 18 23 12"/>
-                  </svg>
-                </span>
-                <span class="metric-label">Download</span>
-                <span class="metric-value">{{ plan.download_speed }} Mbps</span>
-              </div>
-              <div class="metric">
-                <span class="metric-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                    <polyline points="17 6 23 6 23 12"/>
-                  </svg>
-                </span>
-                <span class="metric-label">Upload</span>
-                <span class="metric-value">{{ plan.upload_speed }} Mbps</span>
-              </div>
             </div>
 
             <div class="plan-footer">
@@ -116,8 +86,11 @@ export default {
         const response = await plansService.getPlans()
         console.log('HomePage - Fetched plans:', response)
 
-        let plansData = response.data || response || []
+        if (!response || !response.success || !Array.isArray(response.data)) {
+          throw new Error(response?.message || 'Invalid response from server')
+        }
 
+        const plansData = response.data
         this.plans = plansData.map(plan => ({
           id: plan.id,
           name: plan.name || 'Unnamed Plan',
@@ -131,7 +104,7 @@ export default {
         console.log('HomePage - Mapped plans:', this.plans)
       } catch (error) {
         console.error('HomePage - Error fetching plans:', error)
-        this.error = error.response?.data?.message || 'Failed to load plans. Please try again.'
+        this.error = error.message || 'Failed to load plans. Please try again.'
       } finally {
         this.loading = false
       }
@@ -306,34 +279,36 @@ export default {
   align-items: stretch;
 }
 
+/* ─── Refined Plan Cards ─── */
 .plan-card {
   background: #ffffff;
   border-radius: 16px;
-  padding: 32px 24px 28px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  transition: transform 0.3s, box-shadow 0.3s;
-  border: 1px solid #eef0f4;
+  padding: 28px 20px 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #f0f2f6;
 }
 
 .plan-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
 .plan-header {
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f2f6;
-  margin-bottom: 12px;
   text-align: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f0f2f6;
+  margin-bottom: 14px;
 }
 
 .plan-name {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 4px;
+  margin: 0 0 6px 0;
 }
 
 .plan-price {
@@ -341,13 +316,17 @@ export default {
   align-items: baseline;
   justify-content: center;
   gap: 4px;
-  margin: 6px 0 4px;
 }
 
 .price-amount {
-  font-size: 38px;
+  font-size: 34px;
   font-weight: 800;
-  color: #1a1a2e;
+  color: #ff6b35;
+  transition: color 0.2s;
+}
+
+.plan-card:hover .price-amount {
+  color: #e85a2a;
 }
 
 .price-period {
@@ -355,95 +334,29 @@ export default {
   color: #a0a8b8;
 }
 
-.plan-speed {
-  display: inline-block;
-  padding: 3px 16px;
-  border-radius: 50px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #ff6b35;
-  background: rgba(255, 107, 53, 0.08);
-}
-
-.plan-description {
-  color: #666;
-  font-size: 14px;
-  line-height: 1.5;
-  text-align: center;
-  margin: 8px 0 16px;
-  min-height: 42px;
-}
-
-.plan-metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex: 1;
-}
-
-.metric {
-  background: #f8f9fc;
-  padding: 12px;
-  border-radius: 10px;
-  text-align: center;
-  transition: background 0.3s;
-}
-
-.metric:hover {
-  background: #f0f2f6;
-}
-
-.metric-icon {
-  display: block;
-  margin: 0 auto 2px;
-  color: #ff6b35;
-}
-
-.metric-icon svg {
-  width: 18px;
-  height: 18px;
-}
-
-.metric-label {
-  display: block;
-  font-size: 11px;
-  color: #a0a8b8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
-}
-
-.metric-value {
-  display: block;
-  font-size: 15px;
-  font-weight: 700;
-  color: #1a1a2e;
-}
-
 .plan-footer {
-  margin-top: 12px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f2f6;
+  margin-top: 4px;
 }
 
 .plan-btn {
   display: inline-block;
   width: 100%;
-  padding: 12px 0;
+  padding: 11px 0;
   background: #1a1a2e;
   color: #fff;
-  border-radius: 10px;
+  border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   text-align: center;
-  transition: all 0.3s;
+  transition: all 0.25s ease;
 }
 
 .plan-btn:hover {
   background: #ff6b35;
-  transform: scale(1.02);
+  color: #fff;
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
 }
 
 .view-all-container {
@@ -500,11 +413,7 @@ export default {
   }
 
   .price-amount {
-    font-size: 32px;
-  }
-
-  .plan-metrics {
-    grid-template-columns: 1fr 1fr;
+    font-size: 28px;
   }
 }
 </style>
