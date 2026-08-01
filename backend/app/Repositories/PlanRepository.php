@@ -5,6 +5,7 @@
 
     use App\Models\IspPlan;
     use App\Models\Subscription;
+    use Illuminate\Support\Facades\Log;
 
     class PlanRepository implements PlanRepositoryInterface
     {
@@ -60,7 +61,7 @@
 
                 Log::info('Pending subscription cancelled due to plan deactivation', [
                     'subscription_id' => $subscription->id,
-                    'customer_id' => $customer->id,
+                    'customer_id' => $subscription->customer_id,
                     'plan_id' => $plan->id
                 ]);
 
@@ -75,7 +76,7 @@
                 // No immediate change, just notify
                 Log::info('Active subscription notified about plan deactivation', [
                     'subscription_id' => $subscription->id,
-                    'customer_id' => $customer->id,
+                    'customer_id' => $subscription->customer_id,
                     'plan_id' => $plan->id,
                     'end_date' => $subscription->end_date
                 ]);
