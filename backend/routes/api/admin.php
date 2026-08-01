@@ -14,7 +14,7 @@
   Route::middleware(['auth:api', 'admin'])->group(function () {
     Route::get('/admin/customers', [CustomerController::class, 'index']);
     Route::get('/admin/customers/{id}', [CustomerController::class, 'show']);
-    Route::delete('/admin/customers/{id}', [CustomerController::class, 'destroy']);
+    // Route::delete('/admin/customers/{id}', [CustomerController::class, 'destroy']);
 
     Route::get('/addresses', [CustomerAddressController::class, 'index']);
 
