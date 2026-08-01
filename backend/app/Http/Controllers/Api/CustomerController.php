@@ -235,48 +235,48 @@ class CustomerController extends Controller
         }
     }
 
-    public function destroy($id): JsonResponse
-    {
-        try {
-            $customer = Customer::where('id', $id)->first();
+    // public function destroy($id): JsonResponse
+    // {
+    //     try {
+    //         $customer = Customer::where('id', $id)->first();
 
-            if (!$customer) {
-                return response()->json([
-                    'message' => 'Customer not found'
-                ]);
-            }
+    //         if (!$customer) {
+    //             return response()->json([
+    //                 'message' => 'Customer not found'
+    //             ]);
+    //         }
 
-            $customer->update([
-                'status' => 0 // inactive
-            ]);
+    //         $customer->update([
+    //             'status' => 0 // inactive
+    //         ]);
 
-            return response()->json([
-                'message' => 'Customer deactivated successfully'
-            ]);
-        } catch (PDOException $e) {
-            return response()->json([
-                'message' => 'Database Connection Error'
-            ]);
-        } catch (QueryException $e) {
-            return response()->json([
-                'message' => 'Database operation failed.'
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Record not found.'
-            ]);
-        } catch (AuthenticationException $e) {
-            return response()->json([
-                'message' =>  'Authenication failed.'
-            ]);
-        } catch (AuthorizationException $e) {
-            return response()->json([
-                'message' => 'You are not authorized to perform this action.'
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Something went wrong.'
-            ]);
-        }
-    }
+    //         return response()->json([
+    //             'message' => 'Customer deactivated successfully'
+    //         ]);
+    //     } catch (PDOException $e) {
+    //         return response()->json([
+    //             'message' => 'Database Connection Error'
+    //         ]);
+    //     } catch (QueryException $e) {
+    //         return response()->json([
+    //             'message' => 'Database operation failed.'
+    //         ]);
+    //     } catch (ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'message' => 'Record not found.'
+    //         ]);
+    //     } catch (AuthenticationException $e) {
+    //         return response()->json([
+    //             'message' =>  'Authenication failed.'
+    //         ]);
+    //     } catch (AuthorizationException $e) {
+    //         return response()->json([
+    //             'message' => 'You are not authorized to perform this action.'
+    //         ]);
+    //     } catch (Exception $e) {
+    //         return response()->json([
+    //             'message' => 'Something went wrong.'
+    //         ]);
+    //     }
+    // }
 }
