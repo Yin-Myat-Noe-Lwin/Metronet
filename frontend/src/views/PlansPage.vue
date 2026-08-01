@@ -98,114 +98,117 @@
       </div>
     </section>
 
-    <!-- Installation Address Modal - UNCHANGED -->
-    <div v-if="showAddressModal" class="modal-overlay" @click.self="closeAllModals">
-      <div class="modal-container address-modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Installation Address</h3>
-          <button class="modal-close" @click="closeAllModals">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+    <!-- Installation Address Modal -->
+  <div v-if="showAddressModal" class="modal-overlay" @click.self="closeAllModals">
+    <div class="modal-container address-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Installation Address</h3>
+        <button class="modal-close" @click="closeAllModals">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p class="address-modal-subtitle">Please provide your installation address for this subscription.</p>
+
+        <div v-if="loadingServiceAreas" class="loading-service-areas">
+          <div class="small-spinner"></div>
+          <span>Loading service areas...</span>
         </div>
 
-        <div class="modal-body">
-          <p class="address-modal-subtitle">Please provide your installation address for this subscription.</p>
-
-          <div v-if="loadingServiceAreas" class="loading-service-areas">
-            <div class="small-spinner"></div>
-            <span>Loading service areas...</span>
-          </div>
-
-          <div v-else class="address-form">
-            <div class="form-group" :class="{ 'has-error': addressErrors.address }">
-              <label class="form-label">Street Address <span class="required">*</span></label>
-              <input
-                v-model="addressForm.address"
-                type="text"
+        <div v-else class="address-form">
+          <!-- DROPDOWNS FIRST (Region, City, Township) -->
+          <div class="form-row">
+            <div class="form-group" :class="{ 'has-error': addressErrors.region }">
+              <label class="form-label">Region <span class="required">*</span></label>
+              <select
+                v-model="addressForm.region"
                 class="form-input"
-                placeholder="Enter your street address"
-                :class="{ 'input-error': addressErrors.address }"
-              />
-              <span v-if="addressErrors.address" class="field-error">{{ addressErrors.address }}</span>
+                @change="onRegionChange"
+                :class="{ 'input-error': addressErrors.region }"
+              >
+                <option value="">Select Region</option>
+                <option v-for="region in serviceRegions" :key="region" :value="region">
+                  {{ region }}
+                </option>
+              </select>
+              <span v-if="addressErrors.region" class="field-error">{{ addressErrors.region }}</span>
             </div>
 
-            <div class="form-row">
-              <div class="form-group" :class="{ 'has-error': addressErrors.region }">
-                <label class="form-label">Region <span class="required">*</span></label>
-                <select
-                  v-model="addressForm.region"
-                  class="form-input"
-                  @change="onRegionChange"
-                  :class="{ 'input-error': addressErrors.region }"
-                >
-                  <option value="">Select Region</option>
-                  <option v-for="region in serviceRegions" :key="region" :value="region">
-                    {{ region }}
-                  </option>
-                </select>
-                <span v-if="addressErrors.region" class="field-error">{{ addressErrors.region }}</span>
-              </div>
-
-              <div class="form-group" :class="{ 'has-error': addressErrors.city }">
-                <label class="form-label">City <span class="required">*</span></label>
-                <select
-                  v-model="addressForm.city"
-                  class="form-input"
-                  :disabled="!addressForm.region || loadingCities"
-                  @change="onCityChange"
-                  :class="{ 'input-error': addressErrors.city }"
-                >
-                  <option value="">Select City</option>
-                  <option v-for="city in filteredCities" :key="city" :value="city">
-                    {{ city }}
-                  </option>
-                </select>
-                <div v-if="loadingCities" class="loading-indicator">Loading cities...</div>
-                <span v-if="addressErrors.city" class="field-error">{{ addressErrors.city }}</span>
-              </div>
-
-              <div class="form-group" :class="{ 'has-error': addressErrors.township }">
-                <label class="form-label">Township <span class="required">*</span></label>
-                <select
-                  v-model="addressForm.township"
-                  class="form-input"
-                  :disabled="!addressForm.city || loadingTownships"
-                  :class="{ 'input-error': addressErrors.township }"
-                >
-                  <option value="">Select Township</option>
-                  <option v-for="township in filteredTownships" :key="township" :value="township">
-                    {{ township }}
-                  </option>
-                </select>
-                <div v-if="loadingTownships" class="loading-indicator">Loading townships...</div>
-                <span v-if="addressErrors.township" class="field-error">{{ addressErrors.township }}</span>
-              </div>
+            <div class="form-group" :class="{ 'has-error': addressErrors.city }">
+              <label class="form-label">City <span class="required">*</span></label>
+              <select
+                v-model="addressForm.city"
+                class="form-input"
+                :disabled="!addressForm.region || loadingCities"
+                @change="onCityChange"
+                :class="{ 'input-error': addressErrors.city }"
+              >
+                <option value="">Select City</option>
+                <option v-for="city in filteredCities" :key="city" :value="city">
+                  {{ city }}
+                </option>
+              </select>
+              <div v-if="loadingCities" class="loading-indicator">Loading cities...</div>
+              <span v-if="addressErrors.city" class="field-error">{{ addressErrors.city }}</span>
             </div>
 
-            <div v-if="addressForm.region && addressForm.city && addressForm.township" class="service-available">
-              <div class="service-available-content">
-                <div class="service-available-text">
-                  <strong>Service Available!</strong>
-                  <span>This location is within our coverage area</span>
-                </div>
-              </div>
+            <div class="form-group" :class="{ 'has-error': addressErrors.township }">
+              <label class="form-label">Township <span class="required">*</span></label>
+              <select
+                v-model="addressForm.township"
+                class="form-input"
+                :disabled="!addressForm.city || loadingTownships"
+                :class="{ 'input-error': addressErrors.township }"
+              >
+                <option value="">Select Township</option>
+                <option v-for="township in filteredTownships" :key="township" :value="township">
+                  {{ township }}
+                </option>
+              </select>
+              <div v-if="loadingTownships" class="loading-indicator">Loading townships...</div>
+              <span v-if="addressErrors.township" class="field-error">{{ addressErrors.township }}</span>
             </div>
           </div>
 
-          <div class="address-actions">
-            <button class="modal-btn btn-cancel" @click="closeAllModals">Cancel</button>
-            <button class="modal-btn btn-subscribe" @click="continueToSubscription" :disabled="!isAddressValid">
-              Continue to Subscription
-            </button>
+          <!-- STREET ADDRESS BELOW -->
+          <div class="form-group" :class="{ 'has-error': addressErrors.address }">
+            <label class="form-label">Street Address <span class="required">*</span></label>
+            <input
+              v-model="addressForm.address"
+              type="text"
+              class="form-input"
+              placeholder="Enter your street address"
+              :class="{ 'input-error': addressErrors.address }"
+            />
+            <span v-if="addressErrors.address" class="field-error">{{ addressErrors.address }}</span>
           </div>
+
+          <!-- Service Available -->
+          <div v-if="addressForm.region && addressForm.city && addressForm.township" class="service-available">
+            <div class="service-available-content">
+              <div class="service-available-text">
+                <strong>Service Available!</strong>
+                <span>This location is within our coverage area</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="address-actions">
+          <button class="modal-btn btn-cancel" @click="closeAllModals">Cancel</button>
+          <button class="modal-btn btn-subscribe" @click="continueToSubscription" :disabled="!isAddressValid">
+            Continue to Subscription
+          </button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Subscribe Modal - WIDE & SHORT, NO SCROLL -->
+    <!-- Subscribe Modal -->
     <div v-if="showSubscribeModal && selectedPlan" class="modal-overlay" @click.self="closeSubscribeModal">
       <div class="modal-container subscribe-modal">
         <div class="modal-header">
@@ -224,9 +227,7 @@
         <div class="modal-body">
           <!-- Address Summary -->
           <div class="address-summary" v-if="addressForm.address">
-            <div class="address-summary-header">
-              <span class="address-summary-label">📍 Installation Address</span>
-            </div>
+            <span class="address-summary-label">Installation Address</span>
             <p class="address-summary-text">{{ addressForm.address }}</p>
             <p class="address-summary-location">{{ addressForm.township }}, {{ addressForm.city }}, {{ addressForm.region }}</p>
           </div>
@@ -241,9 +242,27 @@
               <span class="summary-label">Speed</span>
               <span class="summary-value">{{ selectedPlan?.download_speed }} Mbps</span>
             </div>
-            <div class="summary-row">
-              <span class="summary-label">Monthly Price</span>
-              <span class="summary-value">{{ formatPrice(selectedPlan?.price) }}</span>
+          </div>
+
+          <!-- Total Cost -->
+          <div class="total-cost">
+            <div class="total-cost-left">
+              <span class="total-label">Total for {{ selectedDuration }} Month{{ selectedDuration > 1 ? 's' : '' }}</span>
+              <span v-if="getDiscountForDuration(selectedDuration) > 0" class="total-savings">
+                Save {{ getDiscountForDuration(selectedDuration) }}%
+              </span>
+            </div>
+            <div class="total-amount-wrapper">
+              <span
+                v-if="getDiscountForDuration(selectedDuration) > 0"
+                class="total-original-price"
+              >
+                {{ formatPrice(selectedPlan?.price * selectedDuration) }}
+              </span>
+              <span class="total-amount">{{ formatPrice(calculateTotalCost()) }}</span>
+              <span v-if="getDiscountForDuration(selectedDuration) > 0" class="total-monthly-savings">
+                Only {{ formatPrice(calculateTotalCost() / selectedDuration) }}/month
+              </span>
             </div>
           </div>
 
@@ -261,16 +280,24 @@
                 }"
                 @click="selectedDuration = duration"
               >
-                <span class="duration-months">{{ duration }}m</span>
-                <span v-if="getDiscountForDuration(duration) > 0" class="duration-savings">
+                <span class="duration-months">{{ duration }} Month{{ duration > 1 ? 's' : '' }}</span>
+                <div class="duration-pricing">
+                  <span
+                    v-if="getDiscountForDuration(duration) > 0"
+                    class="duration-original-price"
+                  >
+                    {{ formatPrice(selectedPlan?.price * duration) }}
+                  </span>
+                  <span class="duration-price">{{ formatPrice(calculateDurationPrice(duration)) }}</span>
+                </div>
+                <span v-if="getDiscountForDuration(duration) > 0" class="duration-savings-badge">
                   -{{ getDiscountForDuration(duration) }}%
                 </span>
-                <span class="duration-price">{{ formatPrice(calculateDurationPrice(duration)) }}</span>
               </button>
             </div>
           </div>
 
-          <!-- Billing Cycle - NO DISCOUNTS -->
+          <!-- Billing Cycle -->
           <div class="form-group">
             <label class="form-label">Billing Cycle</label>
             <div class="billing-options">
@@ -282,28 +309,9 @@
                 @click="selectedBillingCycle = cycle.value"
                 :disabled="cycle.value > selectedDuration"
               >
-                <span class="billing-label">{{ cycle.label }}</span>
+                <span class="billing-label">{{ cycle.value }} Month{{ cycle.value > 1 ? 's' : '' }}</span>
                 <span class="billing-desc">{{ cycle.description }}</span>
               </button>
-            </div>
-          </div>
-
-          <!-- Total Cost -->
-          <div class="total-cost">
-            <div class="total-cost-left">
-              <span class="total-label">Total for {{ selectedDuration }} months</span>
-              <span v-if="getDiscountForDuration(selectedDuration) > 0" class="total-savings">
-                🎉 Save {{ getDiscountForDuration(selectedDuration) }}%
-              </span>
-            </div>
-            <div class="total-amount-wrapper">
-              <span
-                v-if="getDiscountForDuration(selectedDuration) > 0"
-                class="total-original-price"
-              >
-                {{ formatPrice(selectedPlan?.price * selectedDuration) }}
-              </span>
-              <span class="total-amount">{{ formatPrice(calculateTotalCost()) }}</span>
             </div>
           </div>
         </div>
@@ -344,31 +352,37 @@
       </div>
     </div>
 
-    <!-- Success Modal - UNCHANGED -->
-    <div v-if="showSuccessModal" class="modal-overlay" @click.self="closeSuccessModal">
-      <div class="modal-container alert-modal success-modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Subscription Successful!</h3>
-          <button class="modal-close" @click="closeSuccessModal">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+    <!-- Success Modal -->
+  <div v-if="showSuccessModal" class="modal-overlay" @click.self="closeSuccessModal">
+    <div class="modal-container success-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Subscription Successful</h3>
+        <button class="modal-close" @click="closeSuccessModal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body success-body">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="22 4 12 14.01 9 11.01" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
 
-        <div class="modal-body">
-          <div class="alert-content">
-            <p class="alert-text"><strong>{{ successPlanName }}</strong> subscription submitted!</p>
-            <p class="alert-subtext">You'll be notified once approved.</p>
-          </div>
-        </div>
+        <h4 class="success-plan">{{ successPlanName }}</h4>
+        <p class="success-message">Your subscription has been submitted successfully.</p>
+        <p class="success-subtext">You'll be notified once approved.</p>
+      </div>
 
-        <div class="modal-footer">
-          <button class="modal-btn btn-subscribe" @click="goToSubscriptions">View Subscriptions</button>
-        </div>
+      <div class="modal-footer">
+        <button class="modal-btn btn-subscribe" @click="goToSubscriptions">View Subscriptions</button>
       </div>
     </div>
+  </div>
 
     <!-- Toast Notification -->
     <div class="toast" v-if="toast.show">
@@ -776,7 +790,7 @@ export default {
 </script>
 
 <style scoped>
-/* ===== ALL YOUR EXISTING STYLES REMAIN THE SAME ===== */
+/* ===== PLANS PAGE ===== */
 .plans-page {
   background: #f8f9fa;
   min-height: 100vh;
@@ -864,6 +878,7 @@ export default {
   margin-top: 20px;
 }
 
+/* ===== PLAN CARDS ===== */
 .plan-card {
   background: #ffffff;
   border-radius: 16px;
@@ -879,7 +894,12 @@ export default {
 .plan-header { text-align: center; padding-bottom: 16px; border-bottom: 1px solid #f0f2f6; margin-bottom: 12px; }
 .plan-name { font-size: 24px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
 .plan-price { display: flex; align-items: baseline; justify-content: center; gap: 4px; margin: 6px 0 4px; }
-.price-amount { font-size: 38px; font-weight: 800; color: #1a1a2e; }
+.price-amount {
+  font-size: 34px;
+  font-weight: 800;
+  color: #ff6b35;
+  transition: color 0.2s;
+}
 .price-period { font-size: 14px; color: #a0a8b8; }
 .plan-speed {
   display: inline-block;
@@ -923,7 +943,7 @@ export default {
   animation: spin 0.8s linear infinite;
 }
 
-/* ===== MODAL STYLES ===== */
+/* ===== MODAL OVERLAY & CONTAINER ===== */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -944,13 +964,67 @@ export default {
 }
 .modal-container.address-modal { max-width: 520px; }
 .modal-container.subscribe-modal {
-  max-width: 620px;
-  max-height: 80vh;
+  max-width: 720px; /* wider */
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
 }
 .modal-container.alert-modal { max-width: 450px; }
-.modal-container.success-modal { max-width: 450px; }
+.modal-container.success-modal {
+  max-width: 420px;
+}
+
+.success-body {
+  text-align: center;
+  padding: 32px 24px 24px;
+}
+
+.success-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  background: #e8f5e9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-icon svg {
+  width: 40px;
+  height: 40px;
+  color: #2e7d32;
+  stroke-width: 2.5;
+}
+
+.success-plan {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 8px 0;
+}
+
+.success-message {
+  font-size: 15px;
+  color: #555;
+  margin: 0 0 4px 0;
+}
+
+.success-subtext {
+  font-size: 14px;
+  color: #8892a8;
+  margin: 0;
+}
+
+.modal-container.success-modal .modal-footer {
+  justify-content: center;
+  padding-top: 4px;
+}
+
+.modal-container.success-modal .modal-btn {
+  flex: 0 1 auto;
+  min-width: 200px;
+}
 
 .modal-header {
   padding: 16px 24px;
@@ -978,10 +1052,10 @@ export default {
   padding: 16px 24px 12px;
   overflow-y: auto;
   flex: 0 1 auto;
-  max-height: calc(80vh - 120px);
+  max-height: calc(90vh - 120px);
 }
 
-/* Address Modal */
+/* ===== ADDRESS MODAL ===== */
 .address-modal-subtitle { color: #666; font-size: 14px; margin-bottom: 16px; }
 .address-form { display: flex; flex-direction: column; gap: 12px; }
 .form-row {
@@ -992,18 +1066,47 @@ export default {
 .form-group { display: flex; flex-direction: column; gap: 3px; }
 .form-group label { font-size: 12px; font-weight: 600; color: #1a1a2e; }
 .required { color: #e74c3c; }
-.form-group input,
+/* Text inputs – no arrow */
+.form-group input {
+  padding: 8px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 100%;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Select dropdowns – with arrow */
 .form-group select {
   padding: 8px 12px;
   border: 2px solid #e2e8f0;
   border-radius: 6px;
   font-size: 13px;
   width: 100%;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
 }
+.form-group select { cursor: pointer; }
 .form-group input:focus,
-.form-group select:focus { outline: none; border-color: #ff6b35; }
-.form-group select:disabled { background: #f5f5f5; cursor: not-allowed; }
+.form-group select:focus {
+  outline: none;
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255,107,53,0.15);
+}
+.form-group select:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .field-error { color: #e74c3c; font-size: 12px; font-weight: 500; }
+.input-error { border-color: #e74c3c !important; }
+.input-error:focus { box-shadow: 0 0 0 3px rgba(231,76,60,0.15) !important; }
 
 .service-available {
   background: #e8f5e9;
@@ -1023,7 +1126,7 @@ export default {
   border-top: 1px solid #f0f0f0;
 }
 
-/* ===== SUBSCRIBE MODAL - WIDE & SHORT ===== */
+/* ===== SUBSCRIBE MODAL – WIDE, SHORT, PROFESSIONAL ===== */
 .address-summary {
   background: #f0f7ff;
   padding: 10px 14px;
@@ -1031,8 +1134,16 @@ export default {
   margin-bottom: 12px;
   border-left: 3px solid #ff6b35;
 }
-.address-summary .label { font-size: 12px; font-weight: 600; color: #666; display: block; }
-.address-summary p { margin: 2px 0; font-size: 13px; }
+.address-summary .address-summary-label {
+  font-weight: 600;
+  color: #1a1a2e;
+  display: block;
+  margin-bottom: 2px;
+}
+.address-summary p {
+  margin: 2px 0;
+  font-size: 13px;
+}
 .address-summary small { font-size: 12px; color: #666; }
 
 .plan-summary {
@@ -1051,6 +1162,29 @@ export default {
 .summary-row:not(:last-child) { border-bottom: 1px solid #eef0f4; }
 .summary-value { font-weight: 600; color: #1a1a2e; }
 
+/* Monthly price with strikethrough */
+.original-monthly {
+  text-decoration: line-through;
+  color: #a0a8b8;
+  font-weight: 500;
+  margin-right: 6px;
+}
+.discounted-monthly {
+  font-weight: 700;
+  color: #ff6b35;
+  font-size: 18px;
+}
+.save-badge {
+  background: #2e7d32;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 50px;
+  margin-left: 8px;
+}
+
+/* Duration cards – compact with strikethrough & badge */
 .duration-options {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1058,39 +1192,72 @@ export default {
   margin-top: 6px;
 }
 .duration-option {
-  padding: 8px 4px;
+  padding: 10px 4px;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
   cursor: pointer;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  position: relative;
 }
-.duration-option:hover { border-color: #ff6b35; transform: translateY(-2px); }
+.duration-option:hover {
+  border-color: #ff6b35;
+  transform: translateY(-2px);
+}
 .duration-option--active {
   border-color: #ff6b35;
-  background: rgba(255,107,53,0.08);
+  background: rgba(255,107,53,0.06);
   box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
 }
-.duration-option.has-discount { border-color: #2e7d32; background: #f0fdf4; }
-.duration-option.has-discount.duration-option--active { border-color: #ff6b35; background: rgba(255,107,53,0.08); }
-.duration-months { font-weight: 700; font-size: 14px; color: #1a1a2e; }
-.duration-savings {
+.duration-option.has-discount {
+  border-color: #2e7d32;
+  background: #f0fdf4;
+}
+.duration-option.has-discount.duration-option--active {
+  border-color: #ff6b35;
+  background: rgba(255,107,53,0.06);
+}
+.duration-months {
+  font-weight: 700;
+  font-size: 15px;
+  color: #1a1a2e;
+  display: block;
+}
+.duration-pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0px;
+}
+.duration-original-price {
+  font-size: 12px;
+  font-weight: 500;
+  color: #a0a8b8;
+  text-decoration: line-through;
+}
+.duration-price {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ff6b35;
+}
+.duration-savings-badge {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  background: #2e7d32;
+  color: #fff;
   font-size: 10px;
   font-weight: 700;
-  color: #2e7d32;
-  background: #dcfce7;
-  padding: 0 6px;
+  padding: 1px 7px;
   border-radius: 50px;
-  display: inline-block;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
-.duration-option--active .duration-savings { color: #fff; background: #ff6b35; }
-.duration-price { font-size: 12px; font-weight: 600; color: #94a3b8; }
-.duration-option--active .duration-price { color: #ff6b35; }
+.duration-option--active .duration-savings-badge {
+  background: #ff6b35;
+}
 
+/* Billing cycle – human‑readable */
 .billing-options {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1104,18 +1271,33 @@ export default {
   background: #fff;
   cursor: pointer;
   text-align: center;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
-.billing-option:hover:not(:disabled) { border-color: #ff6b35; transform: translateY(-2px); }
-.billing-option:disabled { opacity: 0.4; cursor: not-allowed; }
+.billing-option:hover:not(:disabled) {
+  border-color: #ff6b35;
+  transform: translateY(-2px);
+}
+.billing-option:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .billing-option--active {
   border-color: #ff6b35;
-  background: rgba(255,107,53,0.08);
+  background: rgba(255,107,53,0.06);
   box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
 }
-.billing-label { font-weight: 700; font-size: 13px; color: #1a1a2e; display: block; }
-.billing-desc { font-size: 10px; color: #94a3b8; }
+.billing-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1a1a2e;
+  display: block;
+}
+.billing-desc {
+  font-size: 10px;
+  color: #94a3b8;
+}
 
+/* Total cost – strikethrough + monthly savings */
 .total-cost {
   display: flex;
   justify-content: space-between;
@@ -1124,11 +1306,43 @@ export default {
   margin-top: 10px;
   border-top: 2px solid #f0f2f6;
 }
-.total-label { font-size: 15px; font-weight: 600; color: #1a1a2e; }
-.total-savings { font-size: 13px; color: #2e7d32; font-weight: 600; }
-.total-amount-wrapper { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.total-original-price { font-size: 14px; font-weight: 500; color: #999; text-decoration: line-through; }
-.total-amount { font-size: 28px; font-weight: 800; color: #ff6b35; }
+.total-cost-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.total-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.total-savings {
+  font-size: 13px;
+  color: #2e7d32;
+  font-weight: 600;
+}
+.total-amount-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0px;
+}
+.total-original-price {
+  font-size: 15px;
+  font-weight: 500;
+  color: #a0a8b8;
+  text-decoration: line-through;
+}
+.total-amount {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ff6b35;
+}
+.total-monthly-savings {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2e7d32;
+}
 
 .modal-footer {
   padding: 10px 20px 14px;
@@ -1159,7 +1373,7 @@ export default {
 .btn-subscribe { background: #ff6b35; color: #fff; }
 .btn-subscribe:hover:not(:disabled) { background: #e85a2a; transform: scale(1.02); }
 
-/* Toast */
+/* ===== TOAST ===== */
 .toast {
   position: fixed;
   bottom: 24px;
