@@ -12,7 +12,7 @@ System for ISP Management
 - Notification is sent to the customer.
 
 ### Admin
-- Register/ Login/ Logout
+- Login/ Logout
 - Customer Management (View and Deactivate customers)
 - ISP Plan Management (View, Create, Update and Deactivate ISP plans)
 - CPE Management (View, Create, Update and Deactivate CPEs)
@@ -33,61 +33,73 @@ System for ISP Management
 ### Admin Customer Flow
 1. Admin logs into the system.
 2. Admin can view all registered customers.
-3. Admin can deactivate customer accounts.
-4. Admin can manage ISP plans (Create, Update, Deactivate).
-5. Admin can manage CPE devices (Create, Update, Deactivate).
-6. Admin can manage service areas (Create, Update, Deactivate).
-7. Admin can view all subscriptions.
-8. Admin can view all invoices.
-9. Admin can view all payments.
+3. Admin can manage ISP plans (Create, Update, Deactivate).
+4. Admin can manage CPE devices (Create, Update, Deactivate).
+5. Admin can manage service areas (Create, Update, Deactivate).
+6. Admin can view all subscriptions.
+7. Admin can view all invoices.
+8. Admin can view all payments.
 
 ### Customer Flow
 1. Customer registers an account.
 2. Customer logs into the system.
 3. Customer browses available ISP plans.
 4. Customer subscribes to a plan.
-5. System processes subscription via job.
-6. CPE device is automatically assigned.
-7. Invoice is created via Kafka.
-8. Customer receives notification.
-9. Customer makes payment.
-10. Customer receives confirmation notification.
+5. Admin approves or rejects customer subscription request.
+6. After admin approves the request, system processes subscription via job.
+7. CPE device is automatically assigned.
+8. Invoice is created via job.
+9. Customer receives notification.
+10. Customer makes payment.
+11. Customer receives notification.
 
 ## Tech Stack
-- **Backend:** Laravel
-- **Frontend:** Vue.js
-- **Database:** MySQL
-- **Cache:** Redis
-- **Message Queue:** Apache Kafka
-- **Containerization:** Docker
+
+- Backend: Laravel
+- Frontend: Vue.js
+- Database: MySQL
+- Cache & Queue Driver: Redis
+- Message Broker: Apache Kafka
+- Background Job Processing: Laravel Queue Workers + Supervisor
+- Containerization: Docker 
 
 ## Kafka & Supervisor
 
 ### Kafka Topics
+- `subscription.rejected` - Triggered when customer's subscription request is rejected by admin.
 - `service.activated` - Triggered when subscription is activated.
 - `invoice.created` - Triggered when invoice is created.
 - `service.cancelled` - Triggered when the service is cancelled by customer.
 - `plan.updated` = Triggered when plan is updated by admin.
 - `plan.deactivated` - Triggered when plan is deactivated by admin.
 - `payment.reminder` - Triggered when customer's subscription payment due date is near.
-- `subscription.auto.cancelled` - Triggered when customer's subscription payment due date is over and subscription got cancelled.
+- `service.auto.cancelled` - Triggered when customer's subscription payment due date is over and subscription got cancelled.
 - `payment.completed` - Triggered when payment is successful.
+- `cpe.updated` - Triggered when the assigned cpe is updated by admin.
+- `service_area.updated` - Triggered when service area is deactivated by admin.
 
 ### Supervisor Processes
 Supervisor runs and monitors the following processes:
 - Queue Worker (processes background jobs)
 - Kafka Consumers (listen and process Kafka messages)
-  - Payment Consumer
-  - Notification Consumer
-  - Service Activated Consumer
-  - Subscription Cancelled Consumer
+  - SubscriptionRejectedConsumer
+  - ServiceActivatedConsumer
+  - NotificationConsumer
+  - SubscriptionCancelledConsumer
+  - PlanUpdatedConsumer
+  - PlanDeactivatedConsumer
+  - PaymentReminderConsumer
+  - AutoCancelledConsumer
+  - PaymentConsumer
+  - CpeUpdatedConsumer
+  - ServiceAreaUpdatedConsumer
 
 ### Kafka Flow
 1. Backend publishes events to Kafka topics.
 2. Supervisor manages Kafka consumers.
 3. Consumers process events asynchronously.
 4. Notifications and emails are sent to customers.
-5. Invoice and payment statuses are updated.
+5. Plan, subscription, Service Area, CPE, invoice and payment status are updated.
    
 ### Step by step guide to configure the project
 1. Clone the repository:
