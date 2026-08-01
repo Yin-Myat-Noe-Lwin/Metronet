@@ -123,6 +123,8 @@ class CpeController extends Controller
 
             $cpe->update($request->validated());
 
+            Cache::forget('cpes_list');
+
             // Check what changed
             $serialChanged = $oldData['serial_number'] != $cpe->serial_number;
             $macChanged = $oldData['mac_address'] != $cpe->mac_address;
