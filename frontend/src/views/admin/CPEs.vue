@@ -161,14 +161,6 @@
               placeholder="Enter MAC address (e.g., 00:1A:2B:3C:4D:5E)"
             >
           </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select v-model="cpeForm.status" class="form-input">
-              <option :value="0">Unassigned</option>
-              <option :value="1">Assigned</option>
-              <option :value="2">Inactive</option>
-            </select>
-          </div>
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="isSaving">
               {{ isSaving ? 'Saving...' : (showEditModal ? 'Update CPE' : 'Add CPE') }}
