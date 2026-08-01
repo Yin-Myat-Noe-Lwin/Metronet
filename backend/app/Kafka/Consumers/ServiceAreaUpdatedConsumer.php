@@ -153,11 +153,7 @@ class ServiceAreaUpdatedConsumer
      */
     private function shouldNotifyCustomers(array $data): bool
     {
-        // Only notify if status changed to inactive
-        if ($data['status_changed'] ?? false) {
-            return $data['new_status'] == 0;
-        }
-
-        return false;
+        return ($data['status_changed'] ?? false)
+            && ($data['new_status'] ?? null) == 0;
     }
 }
