@@ -19,4 +19,8 @@ class CpeAssignment extends Model
         return $this->belongsTo(Cpe::class);
     }
 
+    public function subscription()
+    {
+        return $this->belongsTo(Subscription::class);
+    }
 }
