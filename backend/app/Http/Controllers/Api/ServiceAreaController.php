@@ -294,147 +294,88 @@ class ServiceAreaController extends Controller
 
             if (!$area) {
                 return response()->json([
-                    'message' => 'Not found'
-                ]);
+                    'message' => 'Service area not found'
+                ], 404);
             }
-
-            // Get old data before update
-            $oldData = [
-                'region' => $area->region,
-                'city' => $area->city,
-                'township' => $area->township,
-                'status' => $area->status
-            ];
 
             $area->update($request->validated());
-
-            // Check what changed
-            $regionChanged = $oldData['region'] != $area->region;
-            $cityChanged = $oldData['city'] != $area->city;
-            $townshipChanged = $oldData['township'] != $area->township;
-            $statusChanged = $oldData['status'] != $area->status;
-
-            $anyChange = $regionChanged || $cityChanged || $townshipChanged || $statusChanged;
-
-            // Send notification via Kafka if any changes
-            if ($anyChange) {
-                try {
-                    $statusLabels = [
-                        0 => 'Inactive',
-                        1 => 'Active'
-                    ];
-
-                    $this->kafkaProducer->publish(
-                        config('kafka.consumers.service_area_updated.topic', 'service-area-updated'),
-                        [
-                            'service_area_id' => $area->id,
-                            'region' => $area->region ?? 'N/A',
-                            'city' => $area->city ?? 'N/A',
-                            'township' => $area->township ?? 'N/A',
-                            'old_region' => $oldData['region'],
-                            'new_region' => $area->region,
-                            'old_city' => $oldData['city'],
-                            'new_city' => $area->city,
-                            'old_township' => $oldData['township'],
-                            'new_township' => $area->township,
-                            'old_status' => $oldData['status'],
-                            'new_status' => $area->status,
-                            'old_status_label' => $statusLabels[$oldData['status']] ?? 'Unknown',
-                            'new_status_label' => $statusLabels[$area->status] ?? 'Unknown',
-                            'region_changed' => $regionChanged,
-                            'city_changed' => $cityChanged,
-                            'township_changed' => $townshipChanged,
-                            'status_changed' => $statusChanged
-                        ]
-                    );
-
-                    Log::info('Service area update notification published to Kafka', [
-                        'service_area_id' => $area->id,
-                        'changes' => [
-                            'region' => $regionChanged,
-                            'city' => $cityChanged,
-                            'township' => $townshipChanged,
-                            'status' => $statusChanged
-                        ]
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to publish service area update: ' . $e->getMessage());
-                }
-            }
 
             return response()->json([
                 'message' => 'Updated successfully',
                 'data' => $area->fresh()
             ]);
-        } catch (PDOException $e) {
-            return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (QueryException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (AuthenticationException $e) {
-            return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (AuthorizationException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (Exception $e) {
+
+        } catch (\Exception $e) {
+
+            Log::error('Service area update failed: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Something went wrong.'
-            ]);
+            ], 500);
         }
     }
 
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
-        try{
+        try {
+
             $area = ServiceArea::find($id);
 
             if (!$area) {
                 return response()->json([
                     'message' => 'Service area not found'
+                ], 404);
+            }
+
+            if ($area->status == 0) {
+                return response()->json([
+                    'message' => 'Service area already disabled'
                 ]);
             }
 
+
+            $oldStatus = $area->status;
+
+            // Disable service area
             $area->update([
-                'status' => 0 // inactive
+                'status' => 0
             ]);
+
+
+            // Publish Kafka event
+            $this->kafkaProducer->publish(
+                config('kafka.consumers.service_area_updated.topic', 'service-area-updated'),
+                [
+                    'service_area_id' => $area->id,
+
+                    'old_status' => $oldStatus,
+                    'new_status' => 0,
+
+                    'old_status_label' => 'Active',
+                    'new_status_label' => 'Inactive',
+
+                    'status_changed' => true
+                ]
+            );
+
+
+            Log::info('Service area disabled event published', [
+                'service_area_id' => $area->id
+            ]);
+
 
             return response()->json([
                 'message' => 'Service area disabled successfully'
             ]);
-        }catch (PDOException $e) {
-            return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (QueryException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (AuthenticationException $e) {
-            return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
-        } catch (AuthorizationException $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ]);
-        } catch (Exception $e) {
+
+
+        } catch (\Exception $e) {
+
+            Log::error('Service area disable failed: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Something went wrong.'
-            ]);
+            ], 500);
         }
     }
 }
