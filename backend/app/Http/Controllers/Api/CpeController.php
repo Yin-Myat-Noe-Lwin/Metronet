@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use App\Services\KafkaProducerService;
+use Illuminate\Support\Facades\Log;
 
 class CpeController extends Controller
 {
