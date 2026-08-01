@@ -42,6 +42,19 @@
           </div>
         </div>
         <div class="stat-card">
+          <div class="stat-icon rejected-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-value">{{ rejectedSubscriptions }}</div>
+            <div class="stat-label">Rejected</div>
+          </div>
+        </div>
+        <div class="stat-card">
           <div class="stat-icon cancelled-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -119,12 +132,8 @@
             <div class="price">{{ formatPrice(subscription.plan?.price) }}</div>
             <div class="details">
               <div>
-                <span class="label">Started</span>
+                <span class="label">Requested on</span>
                 <span>{{ formatDate(subscription.start_date || subscription.created_at) }}</span>
-              </div>
-              <div>
-                <span class="label">Next Billing</span>
-                <span>{{ formatDate(subscription.end_date || subscription.next_billing) }}</span>
               </div>
               <div>
                 <span class="label">Duration</span>
@@ -133,10 +142,9 @@
             </div>
           </div>
 
-          <!-- ✅ Installation Address Section - More Prominent -->
+          <!-- Installation Address Section -->
           <div class="card-address" v-if="subscription.address">
             <div class="address-header">
-              <span class="address-icon">📍</span>
               <span class="address-label">INSTALLATION ADDRESS</span>
               <span v-if="subscription.address.is_primary" class="primary-badge">Primary</span>
               <span class="address-type-badge">{{ getAddressTypeLabel(subscription.address.address_type) }}</span>
@@ -146,11 +154,8 @@
               <p class="address-location">{{ subscription.address.township }}, {{ subscription.address.city }}, {{ subscription.address.region }}</p>
             </div>
           </div>
-
-          <!-- Show message if no address -->
           <div v-else class="card-address no-address">
             <div class="address-header">
-              <span class="address-icon">📍</span>
               <span class="address-label">INSTALLATION ADDRESS</span>
             </div>
             <div class="address-body">
@@ -168,9 +173,9 @@
               View Details
             </button>
 
-            <!-- Resubscribe button for cancelled (status 4) -->
+            <!-- Resubscribe button for cancelled (4) or rejected (5) -->
             <button
-              v-if="subscription.status === 4"
+              v-if="subscription.status === 4 || subscription.status === 5"
               @click="resubscribe(subscription.plan_id)"
               class="btn-success"
             >
@@ -213,7 +218,6 @@
           <button class="modal-close" @click="closeCancelModal">×</button>
         </div>
         <div class="modal-body">
-          <!-- Error Message if cannot cancel -->
           <div v-if="cancelError" class="cancel-error">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
@@ -222,11 +226,9 @@
             </svg>
             <span>{{ cancelError }}</span>
           </div>
-
           <template v-else>
             <p class="cancel-warning">Are you sure you want to cancel this subscription?</p>
             <p class="text-muted">This action cannot be undone.</p>
-
             <div class="cancel-details" v-if="selectedSubscription">
               <div class="cancel-row">
                 <span>Plan</span>
@@ -298,10 +300,6 @@
             <span class="label">Duration</span>
             <span>{{ statusModalDuration }}</span>
           </div>
-          <div class="status-item">
-            <span class="label">Next Billing</span>
-            <span>{{ statusModalDate }}</span>
-          </div>
           <div class="status-item" v-if="statusModalAddress">
             <span class="label">Address</span>
             <span>{{ statusModalAddress }}</span>
@@ -361,8 +359,12 @@ export default {
     pendingSubscriptions() {
       return this.subscriptions.filter(s => s.status === 0).length
     },
+    rejectedSubscriptions() {
+      return this.subscriptions.filter(s => s.status === 5).length
+    },
     cancelledSubscriptions() {
-      return this.subscriptions.filter(s => s.status === 2 || s.status === 3 || s.status === 4).length
+      // Only counts as "Cancelled" if status is 4 (cancelled) or 3 (expired) – but we'll keep 4 only
+      return this.subscriptions.filter(s => s.status === 4).length
     }
   },
   mounted() {
@@ -377,26 +379,15 @@ export default {
 
         let data = []
 
-        // Check if response has a data property that is an array
         if (response && response.data && Array.isArray(response.data)) {
           data = response.data
-        }
-        // Check if response itself is an array
-        else if (Array.isArray(response)) {
+        } else if (Array.isArray(response)) {
           data = response
-        }
-        // Check if response has a data property that is an object
-        else if (response && response.data && typeof response.data === 'object') {
-          // If it's an object with subscriptions, try to extract
+        } else if (response && response.data && typeof response.data === 'object') {
           data = response.data.subscriptions || response.data.data || []
-        }
-        // If response is an object with subscriptions
-        else if (response && response.subscriptions && Array.isArray(response.subscriptions)) {
+        } else if (response && response.subscriptions && Array.isArray(response.subscriptions)) {
           data = response.subscriptions
-        }
-        // Fallback: try to get any array from the response
-        else if (response && typeof response === 'object') {
-          // Look for any property that is an array
+        } else if (response && typeof response === 'object') {
           for (const key in response) {
             if (Array.isArray(response[key])) {
               data = response[key]
@@ -405,7 +396,6 @@ export default {
           }
         }
 
-        // Ensure data is an array
         if (!Array.isArray(data)) {
           console.warn('Data is not an array, using empty array:', data)
           data = []
@@ -413,7 +403,6 @@ export default {
 
         console.log('Processed subscriptions data:', data)
 
-        // Map subscriptions with address
         this.subscriptions = data.map(sub => ({
           ...sub,
           address: sub.address || sub.installation_address || sub.customer_address || null
@@ -422,7 +411,7 @@ export default {
       } catch (error) {
         console.error('Error fetching subscriptions:', error)
         this.showToast('Failed to load subscriptions', 'error')
-        this.subscriptions = [] // Reset to empty array on error
+        this.subscriptions = []
       } finally {
         this.loading = false
       }
@@ -511,7 +500,8 @@ export default {
         1: 'active',
         2: 'suspended',
         3: 'expired',
-        4: 'cancelled'
+        4: 'cancelled',
+        5: 'rejected'
       }
       return map[status] || ''
     },
@@ -522,7 +512,8 @@ export default {
         1: 'Active',
         2: 'Suspended',
         3: 'Expired',
-        4: 'Cancelled'
+        4: 'Cancelled',
+        5: 'Rejected'
       }
       return map[status] || 'Unknown'
     },
@@ -560,9 +551,8 @@ export default {
 </script>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-}
+/* ===== (All existing styles remain exactly the same) ===== */
+* { box-sizing: border-box; }
 
 .subscriptions-page {
   min-height: 100vh;
@@ -703,7 +693,7 @@ export default {
 /* Stats */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -730,7 +720,8 @@ export default {
 
 .stat-icon.active-icon { background: #ecfdf5; color: #059669; }
 .stat-icon.pending-icon { background: #fffbeb; color: #d97706; }
-.stat-icon.cancelled-icon { background: #fef2f2; color: #dc2626; }
+.stat-icon.rejected-icon { background: #fef2f2; color: #dc2626; }
+.stat-icon.cancelled-icon { background: #f1f5f9; color: #6b7280; }
 .stat-icon.total-icon { background: #eff6ff; color: #2563eb; }
 
 .stat-value {
@@ -745,7 +736,7 @@ export default {
   color: #94a3b8;
 }
 
-/* Loading */
+/* Loading & Empty */
 .loading-state {
   text-align: center;
   padding: 60px 20px;
@@ -773,7 +764,6 @@ export default {
   font-size: 14px;
 }
 
-/* Empty */
 .empty-state {
   text-align: center;
   padding: 80px 20px;
@@ -883,8 +873,11 @@ export default {
 .status-badge.pending { background: #fffbeb; color: #d97706; }
 .status-badge.pending .status-dot { background: #d97706; }
 
-.status-badge.cancelled { background: #fef2f2; color: #dc2626; }
-.status-badge.cancelled .status-dot { background: #dc2626; }
+.status-badge.rejected { background: #fef2f2; color: #dc2626; }
+.status-badge.rejected .status-dot { background: #dc2626; }
+
+.status-badge.cancelled { background: #f1f5f9; color: #6b7280; }
+.status-badge.cancelled .status-dot { background: #6b7280; }
 
 .status-badge.expired { background: #f1f5f9; color: #94a3b8; }
 .status-badge.expired .status-dot { background: #94a3b8; }
@@ -892,7 +885,7 @@ export default {
 .status-badge.suspended { background: #fef2f2; color: #dc2626; }
 .status-badge.suspended .status-dot { background: #dc2626; }
 
-/* ✅ Address Section - Redesigned */
+/* Address Section */
 .card-address {
   margin: 12px 0;
   padding: 0;
@@ -914,10 +907,6 @@ export default {
   padding: 10px 16px;
   background: rgba(255, 107, 53, 0.05);
   border-bottom: 1px solid #e8ecf1;
-}
-
-.address-icon {
-  font-size: 16px;
 }
 
 .address-label {
@@ -1125,7 +1114,6 @@ export default {
   font-size: 14px;
 }
 
-/* Cancel Modal */
 .cancel-warning {
   color: #dc2626;
   font-weight: 600;
@@ -1261,7 +1249,7 @@ export default {
 /* Responsive */
 @media (max-width: 1024px) {
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
