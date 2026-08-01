@@ -13,17 +13,17 @@ Artisan::command('inspire', function () {
 
 Schedule::call(function () {
     CreateInvoiceJob::dispatch();
-})->everyFiveMinutes()
+})->everyMinute()
   ->name('create-invoices')
   ->withoutOverlapping();
 
 Schedule::job(new SendPaymentReminderJob())
-    ->everyFiveMinutes()
+    ->everyMinute()
     ->name('payment-reminder')
     ->withoutOverlapping();
 
 Schedule::job(new AutoCancelUnpaidSubscriptions())
-    ->everyFiveMinutes()
+    ->everyMinute()
     ->name('subscription-cancellation')
     ->withoutOverlapping();
 
