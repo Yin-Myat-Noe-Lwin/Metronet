@@ -146,7 +146,7 @@
 
         <!-- Message -->
         <div class="message">
-            <h2>📋 Plan Updated</h2>
+            <h2>Plan Updated</h2>
             <p>Dear {{ $customerName }},</p>
             <p>We want to inform you about important changes to your internet plan.</p>
         </div>
@@ -207,7 +207,7 @@
             @endif
         </div>
 
-        <!-- ⚠️ Important Notice -->
+        <!-- Important Notice -->
         @if($oldPrice && $newPrice && $oldPrice != $newPrice)
         <div class="notice-box">
             <p><strong>⚠️ Important Information About Your Subscription</strong></p>
@@ -221,7 +221,7 @@
                 your current period ends.
             </p>
             <p style="font-size: 13px; color: #92400e; margin-top: 8px;">
-                📌 Your current subscription is <strong>NOT affected</strong> by this price change.
+                Your current subscription is <strong>NOT affected</strong> by this price change.
             </p>
         </div>
         @endif
@@ -230,7 +230,7 @@
         @if(($oldDownloadSpeed && $newDownloadSpeed && $oldDownloadSpeed != $newDownloadSpeed) ||
             ($oldUploadSpeed && $newUploadSpeed && $oldUploadSpeed != $newUploadSpeed))
         <div class="notice-box" style="background: #ecfdf5; border-color: #86efac;">
-            <p><strong>🚀 Speed Update!</strong></p>
+            <p><strong>Speed Update!</strong></p>
             <p>
                 @if($newDownloadSpeed > $oldDownloadSpeed)
                     Download speed has been upgraded from <strong>{{ $oldDownloadSpeed }} Mbps</strong> to <strong>{{ $newDownloadSpeed }} Mbps</strong>!
@@ -240,15 +240,10 @@
                 @endif
             </p>
             <p style="font-size: 13px; color: #166534; margin-top: 4px;">
-                ✅ These speed changes will apply to your current subscription immediately.
+                These speed changes will apply to your current subscription immediately.
             </p>
         </div>
         @endif
-
-        <!-- Action Button -->
-        <div style="text-align: center;">
-            <a href="http://localhost:5173/subscriptions" class="btn">View My Subscriptions</a>
-        </div>
 
         <!-- Footer -->
         <div class="footer">
