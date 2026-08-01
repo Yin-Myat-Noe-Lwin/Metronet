@@ -70,7 +70,7 @@
             <hr>
 
             <p>
-                Your subscription is now active and you can continue using our service without interruption.
+                You can continue using our service without interruption.
             </p>
 
             <p>
