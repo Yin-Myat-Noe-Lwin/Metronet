@@ -76,11 +76,9 @@
             <th>ID</th>
             <th>Customer</th>
             <th>Plan</th>
-            <th>Address</th>
             <th>Price</th>
             <th>Status</th>
-            <th>Started</th>
-            <th>Next Billing</th>
+            <th>Requested</th>
             <th class="actions-col">Actions</th>
           </tr>
         </thead>
@@ -102,13 +100,6 @@
               </div>
             </td>
             <td>
-              <div class="address-info" v-if="sub.installation_address">
-                <span class="address-short">{{ sub.installation_address.address }}</span>
-                <span class="address-location">{{ sub.installation_address.township }}, {{ sub.installation_address.city }}</span>
-              </div>
-              <span v-else class="no-address">No address</span>
-            </td>
-            <td>
               <span class="plan-price">{{ formatPrice(sub.plan?.price) }}</span>
             </td>
             <td>
@@ -118,27 +109,28 @@
               </span>
             </td>
             <td>{{ formatDate(sub.created_at) }}</td>
-            <td>{{ sub.end_date ? formatDate(sub.end_date) : 'N/A' }}</td>
             <td>
               <div class="action-buttons">
-                <!-- View Details -->
+                <!-- View Details (always visible) -->
                 <button class="action-btn view" @click="viewSubscription(sub.id)" title="View Details">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                     <circle cx="12" cy="12" r="3"/>
                   </svg>
+                  <span class="btn-label">View</span>
                 </button>
 
                 <!-- Accept button for pending subscriptions -->
                 <button
                   v-if="sub.status === 0"
                   class="action-btn accept"
-                  @click="acceptSubscription(sub)"
+                  @click="openAcceptModal(sub)"
                   title="Accept Subscription"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
+                  <span class="btn-label">Accept</span>
                 </button>
 
                 <!-- Reject button for pending subscriptions -->
@@ -148,23 +140,11 @@
                   @click="openRejectModal(sub)"
                   title="Reject Subscription"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
-                </button>
-
-                <!-- Cancel button for active subscriptions -->
-                <button
-                  v-if="sub.status === 1"
-                  class="action-btn cancel"
-                  @click="confirmCancel(sub)"
-                  title="Cancel Subscription"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
+                  <span class="btn-label">Reject</span>
                 </button>
               </div>
             </td>
@@ -200,25 +180,17 @@
             <span class="detail-id">#{{ String(viewingSubscription.id).padStart(4, '0') }}</span>
           </div>
 
-          <div class="detail-grid">
+          <div class="detail-grid compact">
             <!-- Subscription Information -->
             <div class="detail-section">
-              <h4>Subscription Information</h4>
+              <h4>Subscription</h4>
               <div class="detail-item">
-                <span class="detail-label">Started</span>
+                <span class="detail-label">Requested</span>
                 <span class="detail-value">{{ formatDate(viewingSubscription.created_at) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Next Billing</span>
-                <span class="detail-value">{{ viewingSubscription.end_date ? formatDate(viewingSubscription.end_date) : 'N/A' }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Duration</span>
                 <span class="detail-value">{{ viewingSubscription.duration_months || 1 }} month(s)</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Auto Renew</span>
-                <span class="detail-value">{{ viewingSubscription.auto_renew ? 'Yes' : 'No' }}</span>
               </div>
               <div class="detail-item" v-if="viewingSubscription.installation_address">
                 <span class="detail-label">Address</span>
@@ -236,7 +208,7 @@
 
             <!-- Customer Information -->
             <div class="detail-section">
-              <h4>Customer Information</h4>
+              <h4>Customer</h4>
               <div class="detail-item">
                 <span class="detail-label">Name</span>
                 <span class="detail-value">{{ viewingSubscription.customer?.name || 'Unknown' }}</span>
@@ -253,9 +225,9 @@
 
             <!-- Plan Information -->
             <div class="detail-section">
-              <h4>Plan Information</h4>
+              <h4>Plan</h4>
               <div class="detail-item">
-                <span class="detail-label">Plan</span>
+                <span class="detail-label">Name</span>
                 <span class="detail-value plan-name">{{ viewingSubscription.plan?.name || 'N/A' }}</span>
               </div>
               <div class="detail-item">
@@ -273,37 +245,16 @@
             </div>
 
             <!-- CPE Devices -->
-            <div class="detail-section">
+            <div class="detail-section" v-if="viewingSubscription.cpe_assignments && viewingSubscription.cpe_assignments.length">
               <h4>CPE Devices</h4>
-              <div v-if="viewingSubscription.cpe_assignments && viewingSubscription.cpe_assignments.length > 0" class="cpe-list">
-                <div v-for="assignment in viewingSubscription.cpe_assignments" :key="assignment.id" class="cpe-item">
-                  <span class="cpe-icon">📡</span>
-                  <span class="cpe-model">{{ assignment.cpe?.serial_number || 'N/A' }}</span>
-                  <span class="cpe-mac">{{ assignment.cpe?.mac_address || 'N/A' }}</span>
-                  <span class="cpe-status" :class="assignment.status === 1 ? 'active' : 'inactive'">
-                    {{ assignment.status === 1 ? 'Active' : 'Inactive' }}
-                  </span>
-                </div>
+              <div v-for="assignment in viewingSubscription.cpe_assignments" :key="assignment.id" class="cpe-item compact">
+                <span class="cpe-model">{{ assignment.cpe?.serial_number || 'N/A' }}</span>
+                <span class="cpe-mac">{{ assignment.cpe?.mac_address || 'N/A' }}</span>
+                <span class="cpe-status" :class="assignment.status === 1 ? 'active' : 'inactive'">
+                  {{ assignment.status === 1 ? 'Active' : 'Inactive' }}
+                </span>
               </div>
-              <div v-else class="cpe-empty">No CPE devices assigned</div>
             </div>
-          </div>
-
-          <!-- Accept/Reject actions for pending subscriptions -->
-          <div v-if="viewingSubscription.status === 0" class="detail-actions">
-            <button class="btn-accept" @click="acceptSubscription(viewingSubscription)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              Accept Subscription
-            </button>
-            <button class="btn-reject" @click="openRejectModal(viewingSubscription)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-              Reject Subscription
-            </button>
           </div>
         </div>
         <div class="modal-footer">
@@ -312,19 +263,83 @@
       </div>
     </div>
 
-    <!-- Reject Modal -->
+    <!-- Accept Modal (with loading overlay) -->
+    <div v-if="showAcceptModal" class="modal-overlay" @click.self="closeAcceptModal">
+      <div class="modal modal-accept">
+        <div class="modal-header">
+          <h2>Accept Subscription</h2>
+          <button class="modal-close" @click="closeAcceptModal">×</button>
+        </div>
+        <div class="modal-body" style="position: relative;">
+          <!-- Loading overlay -->
+          <div v-if="isAccepting" class="modal-loading-overlay">
+            <div class="modal-spinner"></div>
+            <p>Processing...</p>
+          </div>
+
+          <div class="accept-info" v-if="acceptingSubscription">
+            <div class="accept-icon-wrapper">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="20 6 9 17 4 12" stroke-width="2.5"/>
+              </svg>
+            </div>
+            <h3>Confirm Acceptance</h3>
+            <p>Are you sure you want to accept this subscription?</p>
+
+            <div class="accept-details">
+              <div class="detail-row">
+                <span class="label">Customer</span>
+                <span class="value">{{ acceptingSubscription.customer?.name }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Plan</span>
+                <span class="value">{{ acceptingSubscription.plan?.name }}</span>
+              </div>
+              <div class="detail-row" v-if="acceptingSubscription.installation_address">
+                <span class="label">Address</span>
+                <span class="value">{{ acceptingSubscription.installation_address.address }}</span>
+              </div>
+              <div class="detail-row" v-if="acceptingSubscription.installation_address">
+                <span class="label">Location</span>
+                <span class="value">{{ acceptingSubscription.installation_address.township }}, {{ acceptingSubscription.installation_address.city }}, {{ acceptingSubscription.installation_address.region }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeAcceptModal" :disabled="isAccepting">Cancel</button>
+          <button class="btn-accept-confirm" @click="confirmAccept" :disabled="isAccepting">
+            <span v-if="isAccepting" class="btn-spinner"></span>
+            {{ isAccepting ? 'Accepting...' : 'Yes, Accept' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reject Modal (with loading overlay) -->
     <div v-if="showRejectModal" class="modal-overlay" @click.self="closeRejectModal">
       <div class="modal modal-reject">
         <div class="modal-header">
           <h2>Reject Subscription</h2>
           <button class="modal-close" @click="closeRejectModal">×</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="position: relative;">
+          <!-- Loading overlay -->
+          <div v-if="isRejecting" class="modal-loading-overlay">
+            <div class="modal-spinner"></div>
+            <p>Processing...</p>
+          </div>
+
           <div class="reject-info" v-if="rejectingSubscription">
-            <p><strong>Customer:</strong> {{ rejectingSubscription.customer?.name }}</p>
-            <p><strong>Plan:</strong> {{ rejectingSubscription.plan?.name }}</p>
-            <p><strong>Address:</strong> {{ rejectingSubscription.installation_address?.address || 'N/A' }}</p>
-            <p><strong>Location:</strong> {{ rejectingSubscription.installation_address?.township }}, {{ rejectingSubscription.installation_address?.city }}, {{ rejectingSubscription.installation_address?.region }}</p>
+            <div class="detail-row">
+              <span class="label">Customer</span>
+              <span class="value">{{ rejectingSubscription.customer?.name }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Plan</span>
+              <span class="value">{{ rejectingSubscription.plan?.name }}</span>
+            </div>
           </div>
 
           <div class="form-group">
@@ -335,45 +350,16 @@
               placeholder="Please provide a reason for rejecting this subscription..."
               rows="4"
               maxlength="500"
+              :disabled="isRejecting"
             ></textarea>
             <span class="char-count">{{ rejectReason.length }}/500</span>
           </div>
-
-          <div class="reject-options">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="sendEmailNotification">
-              Send email notification to customer
-            </label>
-          </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="closeRejectModal">Cancel</button>
+          <button class="btn-secondary" @click="closeRejectModal" :disabled="isRejecting">Cancel</button>
           <button class="btn-danger" @click="confirmReject" :disabled="isRejecting || !rejectReason.trim()">
+            <span v-if="isRejecting" class="btn-spinner"></span>
             {{ isRejecting ? 'Rejecting...' : 'Reject Subscription' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cancel Modal -->
-    <div v-if="showCancelModal" class="modal-overlay" @click.self="closeCancelModal">
-      <div class="modal modal-cancel">
-        <div class="cancel-icon-wrapper">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        </div>
-        <h3 class="cancel-title">Cancel Subscription?</h3>
-        <p class="cancel-message">
-          Are you sure you want to cancel <strong>{{ cancelPlanName }}</strong> for <strong>{{ cancelCustomerName }}</strong>?
-        </p>
-        <p class="cancel-warning">This action cannot be undone.</p>
-        <div class="cancel-actions">
-          <button class="btn-secondary" @click="closeCancelModal">No, Keep</button>
-          <button class="btn-danger" @click="confirmCancel" :disabled="isCancelling">
-            {{ isCancelling ? 'Cancelling...' : 'Yes, Cancel' }}
           </button>
         </div>
       </div>
@@ -395,13 +381,11 @@ export default {
   name: 'AdminSubscriptions',
   data() {
     return {
-      // Loading states
       loading: false,
-      isCancelling: false,
+      isAccepting: false,
       isRejecting: false,
       error: null,
 
-      // Search and filter
       searchQuery: '',
       activeFilter: 'pending',
       filters: [
@@ -412,24 +396,18 @@ export default {
         { key: 'rejected', label: 'Rejected' }
       ],
 
-      // Data
       subscriptions: [],
 
-      // Modals
       showViewModal: false,
-      showCancelModal: false,
+      showAcceptModal: false,
       showRejectModal: false,
+
       viewingSubscription: null,
+      acceptingSubscription: null,
       rejectingSubscription: null,
+
       rejectReason: '',
-      sendEmailNotification: true,
 
-      // Cancel data
-      cancelId: null,
-      cancelPlanName: '',
-      cancelCustomerName: '',
-
-      // Toast
       toast: {
         show: false,
         message: '',
@@ -439,7 +417,6 @@ export default {
   },
 
   computed: {
-    // Filter subscriptions based on active filter and search query
     filteredSubscriptions() {
       let filtered = [...this.subscriptions]
 
@@ -466,7 +443,6 @@ export default {
       return filtered
     },
 
-    // Count statistics
     activeCount() {
       return this.subscriptions.filter(s => s.status === 1).length
     },
@@ -486,11 +462,6 @@ export default {
   },
 
   methods: {
-    // ===================== DATA FETCHING =====================
-
-    /**
-     * Fetch all subscriptions from the API
-     */
     async fetchSubscriptions() {
       this.loading = true
       this.error = null
@@ -506,7 +477,6 @@ export default {
         }
 
         this.subscriptions = subsData
-        console.log('Subscriptions loaded:', this.subscriptions.length)
       } catch (error) {
         console.error('Error fetching subscriptions:', error)
         if (error.response?.status === 401) {
@@ -525,11 +495,21 @@ export default {
       }
     },
 
-    // ===================== FILTER HELPERS =====================
+    async fetchSubscriptionDetail(id) {
+      try {
+        if (subscriptionsService.getSubscription) {
+          const response = await subscriptionsService.getSubscription(id)
+          if (response.data) {
+            return response.data
+          }
+        }
+        return this.subscriptions.find(s => s.id === id) || null
+      } catch (error) {
+        console.warn('Could not fetch subscription detail, using local data.', error)
+        return this.subscriptions.find(s => s.id === id) || null
+      }
+    },
 
-    /**
-     * Get count of subscriptions by status
-     */
     getFilterCount(key) {
       if (key === 'all') return this.subscriptions.length
       if (key === 'pending') return this.subscriptions.filter(s => s.status === 0).length
@@ -539,11 +519,6 @@ export default {
       return 0
     },
 
-    // ===================== STATUS HELPERS =====================
-
-    /**
-     * Get human-readable status text
-     */
     getStatusText(status) {
       const map = {
         0: 'Pending',
@@ -556,9 +531,6 @@ export default {
       return map[status] || 'Unknown'
     },
 
-    /**
-     * Get CSS class for status badge
-     */
     getStatusClass(status) {
       const map = {
         0: 'pending',
@@ -571,62 +543,57 @@ export default {
       return map[status] || ''
     },
 
-    // ===================== VIEW MODAL =====================
-
-    /**
-     * Open view modal for a subscription
-     */
-    viewSubscription(id) {
-      const sub = this.subscriptions.find(s => s.id === id)
+    async viewSubscription(id) {
+      const sub = await this.fetchSubscriptionDetail(id)
       if (sub) {
         this.viewingSubscription = sub
         this.showViewModal = true
+      } else {
+        this.showToast('Subscription not found', 'error')
       }
     },
 
-    /**
-     * Close view modal
-     */
     closeViewModal() {
       this.showViewModal = false
       this.viewingSubscription = null
     },
 
-    // ===================== ACCEPT SUBSCRIPTION =====================
+    openAcceptModal(sub) {
+      this.acceptingSubscription = sub
+      this.showAcceptModal = true
+      this.closeViewModal()
+    },
 
-    /**
-     * Accept a pending subscription
-     */
-    async acceptSubscription(sub) {
-      if (!confirm(`Accept subscription for ${sub.customer?.name} (${sub.plan?.name})?`)) return
+    closeAcceptModal() {
+      this.showAcceptModal = false
+      this.acceptingSubscription = null
+      this.isAccepting = false
+    },
 
+    async confirmAccept() {
+      if (!this.acceptingSubscription) return
+
+      this.isAccepting = true
       try {
-        await subscriptionsService.acceptSubscription(sub.id)
+        await subscriptionsService.acceptSubscription(this.acceptingSubscription.id)
         this.showToast('Subscription accepted successfully', 'success')
+        this.closeAcceptModal()
         this.fetchSubscriptions()
-        this.closeViewModal()
       } catch (error) {
         console.error('Error accepting subscription:', error)
         this.showToast(error.response?.data?.error || 'Failed to accept subscription', 'error')
+      } finally {
+        this.isAccepting = false
       }
     },
 
-    // ===================== REJECT SUBSCRIPTION =====================
-
-    /**
-     * Open reject modal for a subscription
-     */
     openRejectModal(sub) {
       this.rejectingSubscription = sub
       this.rejectReason = ''
-      this.sendEmailNotification = true
       this.showRejectModal = true
       this.closeViewModal()
     },
 
-    /**
-     * Close reject modal
-     */
     closeRejectModal() {
       this.showRejectModal = false
       this.rejectingSubscription = null
@@ -634,9 +601,6 @@ export default {
       this.isRejecting = false
     },
 
-    /**
-     * Confirm and process rejection
-     */
     async confirmReject() {
       if (!this.rejectingSubscription || !this.rejectReason.trim()) return
 
@@ -644,8 +608,7 @@ export default {
       try {
         await subscriptionsService.rejectSubscription(
           this.rejectingSubscription.id,
-          this.rejectReason,
-          this.sendEmailNotification
+          this.rejectReason
         )
         this.showToast('Subscription rejected successfully', 'success')
         this.closeRejectModal()
@@ -658,54 +621,6 @@ export default {
       }
     },
 
-    // ===================== CANCEL SUBSCRIPTION =====================
-
-    /**
-     * Open cancel confirmation modal
-     */
-    confirmCancel(sub) {
-      this.cancelId = sub.id
-      this.cancelPlanName = sub.plan?.name || 'this plan'
-      this.cancelCustomerName = sub.customer?.name || 'this customer'
-      this.showCancelModal = true
-    },
-
-    /**
-     * Close cancel modal
-     */
-    closeCancelModal() {
-      this.showCancelModal = false
-      this.cancelId = null
-      this.cancelPlanName = ''
-      this.cancelCustomerName = ''
-      this.isCancelling = false
-    },
-
-    /**
-     * Confirm and process cancellation
-     */
-    async confirmCancel() {
-      if (!this.cancelId) return
-
-      this.isCancelling = true
-      try {
-        await subscriptionsService.cancelSubscription(this.cancelId)
-        this.closeCancelModal()
-        this.showToast('Subscription cancelled successfully', 'success')
-        this.fetchSubscriptions()
-      } catch (error) {
-        console.error('Error cancelling subscription:', error)
-        this.showToast(error.response?.data?.message || 'Failed to cancel subscription.', 'error')
-      } finally {
-        this.isCancelling = false
-      }
-    },
-
-    // ===================== UTILITY METHODS =====================
-
-    /**
-     * Format price with currency
-     */
     formatPrice(price) {
       if (!price) return 'N/A'
       return new Intl.NumberFormat('my-MM', {
@@ -716,9 +631,6 @@ export default {
       }).format(price)
     },
 
-    /**
-     * Format date to readable string
-     */
     formatDate(date) {
       if (!date) return 'N/A'
       try {
@@ -732,9 +644,6 @@ export default {
       }
     },
 
-    /**
-     * Show toast notification
-     */
     showToast(message, type = 'success') {
       this.toast.message = message
       this.toast.type = type
@@ -928,19 +837,75 @@ export default {
   background: #f8fafc;
 }
 
+/* ===== ACTIONS COLUMN ===== */
 .actions-col {
-  width: 120px;
+  width: 200px;
+  min-width: 180px;
   text-align: center;
 }
 
-/* ===== SUBSCRIPTION ID ===== */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #fff;
+  white-space: nowrap;
+  min-height: 32px;
+  justify-content: center;
+}
+
+.action-btn .btn-label {
+  display: inline-block;
+}
+
+.action-btn.view {
+  background: #4f46e5;
+}
+.action-btn.view:hover {
+  background: #4338ca;
+}
+
+.action-btn.accept {
+  background: #16a34a;
+}
+.action-btn.accept:hover {
+  background: #15803d;
+}
+
+.action-btn.reject {
+  background: #dc2626;
+}
+.action-btn.reject:hover {
+  background: #b91c1c;
+}
+
+.action-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ===== OTHER TABLE STYLES ===== */
 .subscription-id {
   font-weight: 600;
   color: #0f172a;
   font-size: 13px;
 }
 
-/* ===== CUSTOMER INFO ===== */
 .customer-info {
   display: flex;
   flex-direction: column;
@@ -956,7 +921,6 @@ export default {
   color: #94a3b8;
 }
 
-/* ===== PLAN INFO ===== */
 .plan-info {
   display: flex;
   flex-direction: column;
@@ -975,31 +939,6 @@ export default {
 .plan-price {
   font-weight: 600;
   color: #0f172a;
-}
-
-/* ===== ADDRESS INFO ===== */
-.address-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.address-short {
-  font-size: 13px;
-  color: #0f172a;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.address-location {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.no-address {
-  color: #94a3b8;
-  font-size: 13px;
 }
 
 /* ===== STATUS BADGE ===== */
@@ -1071,57 +1010,6 @@ export default {
 .status-badge.large {
   padding: 6px 16px;
   font-size: 14px;
-}
-
-/* ===== ACTION BUTTONS ===== */
-.action-buttons {
-  display: flex;
-  gap: 4px;
-  justify-content: center;
-}
-
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.action-btn.view {
-  background: #eef2ff;
-  color: #4f46e5;
-}
-.action-btn.view:hover {
-  background: #c7d2fe;
-}
-
-.action-btn.accept {
-  background: #dcfce7;
-  color: #16a34a;
-}
-.action-btn.accept:hover {
-  background: #bbf7d0;
-}
-
-.action-btn.reject {
-  background: #fee2e2;
-  color: #dc2626;
-}
-.action-btn.reject:hover {
-  background: #fecaca;
-}
-
-.action-btn.cancel {
-  background: #fef2f2;
-  color: #dc2626;
-}
-.action-btn.cancel:hover {
-  background: #fecaca;
 }
 
 /* ===== TABLE FOOTER ===== */
@@ -1240,13 +1128,13 @@ export default {
 .modal-view {
   max-width: 700px;
   width: 90%;
-  padding: 32px;
+  padding: 20px 24px;
 }
 
-.modal-cancel {
-  max-width: 420px;
+.modal-accept {
+  max-width: 480px;
   width: 90%;
-  padding: 40px 32px;
+  padding: 32px;
   text-align: center;
 }
 
@@ -1260,11 +1148,11 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .modal-header h2 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -1273,10 +1161,10 @@ export default {
 .modal-close {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 22px;
   color: #94a3b8;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 0 4px;
   transition: color 0.3s;
 }
 
@@ -1288,45 +1176,45 @@ export default {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid #f1f5f9;
 }
 
-/* ===== DETAIL MODAL ===== */
+/* ===== VIEW DETAILS MODAL ===== */
 .detail-status-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .detail-id {
-  font-size: 14px;
+  font-size: 13px;
   color: #94a3b8;
   font-weight: 500;
 }
 
-.detail-grid {
+.detail-grid.compact {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 12px;
 }
 
 .detail-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .detail-section h4 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #0f172a;
-  margin: 0 0 4px;
-  padding-bottom: 6px;
+  margin: 0 0 2px 0;
+  padding-bottom: 4px;
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -1336,14 +1224,14 @@ export default {
 }
 
 .detail-label {
-  font-size: 11px;
+  font-size: 10px;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .detail-value {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #0f172a;
 }
@@ -1352,73 +1240,70 @@ export default {
   color: #ff6b35;
 }
 
-/* ===== CPE LIST ===== */
-.cpe-list {
+.detail-actions.compact {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.cpe-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: #f8fafc;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.cpe-icon {
-  font-size: 16px;
-}
-
-.cpe-model {
-  font-weight: 500;
-  flex: 1;
-}
-
-.cpe-mac {
-  color: #94a3b8;
-  font-size: 12px;
-}
-
-.cpe-status {
-  padding: 1px 8px;
-  border-radius: 50px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.cpe-status.active {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.cpe-status.inactive {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.cpe-empty {
-  color: #94a3b8;
-  font-size: 13px;
-  padding: 4px 0;
-}
-
-/* ===== DETAIL ACTIONS ===== */
-.detail-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 16px;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid #f1f5f9;
 }
 
-.btn-accept {
-  flex: 1;
-  padding: 10px 20px;
+/* ===== ACCEPT MODAL ===== */
+.accept-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.accept-icon-wrapper svg {
+  background: #dcfce7;
+  padding: 12px;
+  border-radius: 50%;
+}
+
+.accept-info h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.accept-info p {
+  color: #475569;
+  font-size: 15px;
+  margin: 0 0 20px;
+}
+
+.accept-details {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.detail-row .label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.detail-row .value {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.detail-row:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.btn-accept-confirm {
+  padding: 10px 24px;
   background: #16a34a;
   color: #fff;
   border: none;
@@ -1427,49 +1312,43 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  flex: 1;
 }
 
-.btn-accept:hover {
+.btn-accept-confirm:hover:not(:disabled) {
   background: #15803d;
 }
 
-.btn-reject {
-  flex: 1;
-  padding: 10px 20px;
-  background: #dc2626;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-reject:hover {
-  background: #b91c1c;
+.btn-accept-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ===== REJECT MODAL ===== */
 .reject-info {
   background: #f8fafc;
-  padding: 12px 16px;
   border-radius: 8px;
+  padding: 12px 16px;
   margin-bottom: 16px;
 }
 
-.reject-info p {
-  margin: 4px 0;
+.reject-info .detail-row {
+  padding: 4px 0;
   font-size: 14px;
+}
+
+.reject-info .detail-row .label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.reject-info .detail-row .value {
   color: #0f172a;
+  font-weight: 500;
+}
+
+.reject-info .detail-row:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .form-group {
@@ -1513,63 +1392,6 @@ export default {
   margin-top: 4px;
 }
 
-.reject-options {
-  margin: 12px 0;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #0f172a;
-  cursor: pointer;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #ff6b35;
-}
-
-/* ===== CANCEL MODAL ===== */
-.cancel-icon-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.cancel-icon-wrapper svg {
-  background: #fef2f2;
-  padding: 12px;
-  border-radius: 50%;
-}
-
-.cancel-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 8px;
-}
-
-.cancel-message {
-  color: #475569;
-  font-size: 15px;
-  line-height: 1.6;
-  margin: 0 0 4px;
-}
-
-.cancel-warning {
-  color: #dc2626;
-  font-size: 14px;
-  margin: 0 0 24px;
-}
-
-.cancel-actions {
-  display: flex;
-  gap: 12px;
-}
-
 /* ===== BUTTONS ===== */
 .btn-secondary {
   padding: 10px 24px;
@@ -1609,61 +1431,43 @@ export default {
   cursor: not-allowed;
 }
 
-/* ===== LOADING ===== */
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
+/* ===== CPE ===== */
+.cpe-item.compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #f8fafc;
+  border-radius: 4px;
+  font-size: 12px;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  margin: 0 auto 16px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #ff6b35;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.cpe-model {
+  font-weight: 500;
+  flex: 1;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-state p {
+.cpe-mac {
   color: #94a3b8;
+  font-size: 11px;
 }
 
-/* ===== ERROR ===== */
-.error-state {
-  text-align: center;
-  padding: 40px 20px;
+.cpe-status {
+  padding: 1px 8px;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
-.error-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
+.cpe-status.active {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
-.error-state p {
+.cpe-status.inactive {
+  background: #fee2e2;
   color: #dc2626;
-  margin-bottom: 12px;
-}
-
-.retry-btn {
-  padding: 8px 24px;
-  background: #ff6b35;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.retry-btn:hover {
-  background: #e85a2a;
 }
 
 /* ===== TOAST ===== */
@@ -1717,7 +1521,7 @@ export default {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 992px) {
-  .detail-grid {
+  .detail-grid.compact {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -1746,21 +1550,22 @@ export default {
     padding: 8px 10px;
   }
 
-  .detail-grid {
+  .detail-grid.compact {
     grid-template-columns: 1fr;
   }
 
   .modal-view,
-  .modal-cancel,
+  .modal-accept,
   .modal-reject {
-    padding: 24px;
+    padding: 20px;
   }
 
-  .modal-cancel {
+  .modal-accept,
+  .modal-reject {
     max-width: 95%;
   }
 
-  .cancel-actions {
+  .detail-actions.compact {
     flex-direction: column;
   }
 
@@ -1779,10 +1584,6 @@ export default {
     left: 16px;
     min-width: auto;
   }
-
-  .detail-actions {
-    flex-direction: column;
-  }
 }
 
 @media (max-width: 480px) {
@@ -1800,13 +1601,19 @@ export default {
   }
 
   .modal-view,
-  .modal-cancel,
+  .modal-accept,
   .modal-reject {
     padding: 16px;
   }
 
   .actions-col {
-    width: 100px;
+    width: 140px;
+  }
+
+  .action-btn {
+    font-size: 11px;
+    padding: 3px 8px;
+    min-height: 28px;
   }
 }
 </style>
