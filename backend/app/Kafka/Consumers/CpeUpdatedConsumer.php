@@ -125,15 +125,14 @@ class CpeUpdatedConsumer
      */
     private function shouldNotifyCustomers(array $data): bool
     {
-        // Always notify if status changed to assigned, faulty, or maintenance
+        // Notify when status changes
         if ($data['status_changed'] ?? false) {
-            $importantStatuses = [1, 2, 3]; // Assigned, Faulty, Maintenance
-            return in_array($data['new_status'], $importantStatuses);
+            return true;
         }
 
-        // Notify if serial or MAC changed and CPE is assigned to a customer
+        // Notify when serial number or MAC address changes
         if (($data['serial_changed'] ?? false) || ($data['mac_changed'] ?? false)) {
-            return isset($data['customer_id']) && !empty($data['customer_id']);
+            return true;
         }
 
         return false;
