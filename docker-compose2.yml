@@ -148,7 +148,7 @@ services:
       - backend
 
   frontend:
-    image: scarletwitch22801/frontend-with-nginx:1.0
+    image: scarletwitch22801/frontend-with-nginx:1.1
     container_name: frontend
     working_dir: /var/www
     volumes:
