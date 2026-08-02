@@ -366,11 +366,6 @@
         </div>
         @endif
 
-        <!-- Action Button -->
-        <div style="text-align: center;">
-            <a href="{{ url('/profile') }}" class="btn">View My Devices</a>
-        </div>
-
         <!-- Footer -->
         <div class="footer">
             <p>&copy; {{ date('Y') }} {{ $companyName }}. All rights reserved.</p>

@@ -270,12 +270,6 @@
         </div>
         @endif
 
-        <!-- Action Buttons -->
-        <div style="text-align: center;">
-            <a href="http://localhost:5173/plans" class="btn">Browse Plans</a>
-            <a href="http://localhost:5173/subscriptions" class="btn-secondary">My Subscriptions</a>
-        </div>
-
         <!-- Footer -->
         <div class="footer">
             <p>&copy; {{ date('Y') }} {{ $companyName }}. All rights reserved.</p>
