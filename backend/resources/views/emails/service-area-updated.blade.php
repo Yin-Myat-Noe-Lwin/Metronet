@@ -387,18 +387,6 @@
         </div>
 
 
-
-        <!-- Button -->
-        <div style="text-align:center">
-
-            <a href="{{ url('/subscriptions') }}" class="btn">
-                View My Subscriptions
-            </a>
-
-        </div>
-
-
-
         <!-- Footer -->
         <div class="footer">
 
