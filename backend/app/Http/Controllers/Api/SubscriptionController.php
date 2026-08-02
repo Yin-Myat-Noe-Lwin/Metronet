@@ -505,6 +505,24 @@ class SubscriptionController extends Controller
                 ->where('status', 0)
                 ->update(['status' => 3]);
 
+
+            // Find and delete the CPE assignment for this subscription
+            $cpeAssignment = CpeAssignment::where('subscription_id', $subscription->id)
+                                            ->whereNull('unassigned_at')
+                                            ->first();
+
+            if ($cpeAssignment) {
+                // Update the CPE status back to Available (0)
+                Cpe::where('id', $cpeAssignment->cpe_id)
+                    ->update(['status' => 0]);
+
+                // Mark the assignment as unassigned
+                $cpeAssignment->update([
+                    'unassigned_at' => now(),
+                    'status' => 0 // or whatever status indicates "unassigned"
+                ]);
+            }
+
             // Cancel THIS subscription
             $subscription->update([
                 'status' => 4
