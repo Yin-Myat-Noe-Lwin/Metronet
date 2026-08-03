@@ -11,6 +11,8 @@
   use App\Http\Controllers\Api\CpeController;
   use App\Http\Controllers\Api\ServiceAreaController;
 
+  Route::get('/plans', [IspPlanController::class, 'index']);
+
   Route::middleware(['auth:api', 'admin'])->group(function () {
     Route::get('/admin/customers', [CustomerController::class, 'index']);
     Route::get('/admin/customers/{id}', [CustomerController::class, 'show']);
