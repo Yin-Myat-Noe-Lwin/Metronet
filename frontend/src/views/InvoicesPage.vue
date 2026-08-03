@@ -7,6 +7,15 @@
           <h1 class="page-title">My Invoices</h1>
           <p class="page-subtitle">View and manage your billing history</p>
         </div>
+        <div class="header-actions">
+          <button class="btn-refresh" @click="fetchInvoices" :disabled="loading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            {{ loading ? 'Loading...' : 'Refresh' }}
+          </button>
+        </div>
       </div>
 
       <!-- Stats -->
@@ -164,14 +173,6 @@
                 </svg>
                 Pay Now
               </button>
-              <!-- <button @click="downloadInvoice(invoice)" class="btn-download">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Download PDF
-              </button> -->
             </div>
           </div>
         </div>
@@ -209,20 +210,20 @@
 
         <div class="modal-body">
           <!-- Invoice Summary -->
-          <div class="invoice-summary">
+          <div v-if="payingInvoice" class="invoice-summary">
             <div class="summary-item">
               <span class="summary-label">Invoice #</span>
-              <span class="summary-value">{{ selectedInvoice?.invoice_number || '#' + String(selectedInvoice?.id).padStart(4, '0') }}</span>
+              <span class="summary-value">{{ payingInvoice.invoice_number || '#' + String(payingInvoice.id).padStart(4, '0') }}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-item">
               <span class="summary-label">Amount</span>
-              <span class="summary-value amount">{{ formatCurrency(selectedInvoice?.amount) }}</span>
+              <span class="summary-value amount">{{ formatCurrency(payingInvoice.amount) }}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-item">
               <span class="summary-label">Due Date</span>
-              <span class="summary-value">{{ formatDate(selectedInvoice?.due_date) }}</span>
+              <span class="summary-value">{{ formatDate(payingInvoice.due_date) }}</span>
             </div>
           </div>
 
@@ -310,7 +311,7 @@
           <button
             class="btn-pay-modal"
             @click="confirmPayment"
-            :disabled="processingPayment || !selectedMethod"
+            :disabled="processingPayment || !selectedMethod || !payingInvoice"
           >
             {{ processingPayment ? 'Processing...' : 'Pay Now' }}
           </button>
@@ -401,6 +402,7 @@ export default {
 
       // Selected items
       selectedInvoice: null,
+      payingInvoice: null, // Separate property for the invoice being paid
       selectedMethod: null,
 
       // Error handling
@@ -429,12 +431,10 @@ export default {
     filteredInvoices() {
       let filtered = this.invoices
 
-      // Apply status filter
       if (this.activeFilter !== 'all') {
         filtered = filtered.filter(inv => String(inv.status) === this.activeFilter)
       }
 
-      // Apply search filter
       if (this.searchQuery) {
         const q = this.searchQuery.toLowerCase()
         filtered = filtered.filter(inv =>
@@ -504,11 +504,6 @@ export default {
       }
     },
 
-    async refreshInvoices() {
-      await this.fetchInvoices()
-      this.showToast('Invoices refreshed', 'success')
-    },
-
     getFilterCount(key) {
       if (key === 'all') return this.invoices.length
       return this.invoices.filter(i => String(i.status) === key).length
@@ -527,29 +522,6 @@ export default {
     isOverdue(invoice) {
       if (invoice.status === 1 || invoice.status === 3) return false
       return new Date(invoice.due_date) < new Date()
-    },
-
-    async downloadInvoice(invoice) {
-      try {
-        const response = await invoicesService.downloadInvoice(invoice.id)
-        const blob = new Blob([response.data], { type: 'application/pdf' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `invoice-${invoice.invoice_number || invoice.id}.pdf`
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        window.URL.revokeObjectURL(url)
-        this.showToast('Invoice downloaded!', 'success')
-      } catch (error) {
-        this.showToast('Failed to download invoice', 'error')
-      }
-    },
-
-    downloadStatement() {
-      this.showToast('Downloading statement...', 'success')
-      // Implement actual statement download logic
     },
 
     // ==================== PAYMENT METHODS ====================
@@ -710,6 +682,7 @@ export default {
     // ==================== PAYMENT MODAL ====================
 
     async openPaymentModal(invoice) {
+      // Check if invoice is already paid or cancelled
       if (invoice.status === 1) {
         this.showToast('Invoice is already paid', 'error')
         return
@@ -719,9 +692,15 @@ export default {
         return
       }
 
+      // Store the invoice being paid
+      this.payingInvoice = invoice
+      this.selectedInvoice = invoice
+      this.paymentCompleted = false
+      this.selectedMethod = null
+      this.resetPaymentFields()
+
       this.paymentMethodsLoading = true
       this.paymentMethods = []
-      this.paymentCompleted = false
 
       try {
         const response = await paymentService.getPaymentMethods()
@@ -744,14 +723,13 @@ export default {
         this.paymentMethodsLoading = false
       }
 
-      this.selectedInvoice = invoice
-      this.selectedMethod = null
-      this.resetPaymentFields()
+      // Show modal AFTER data is loaded
       this.showPaymentModal = true
     },
 
     closePaymentModal() {
       this.showPaymentModal = false
+      this.payingInvoice = null
       this.selectedInvoice = null
       this.selectedMethod = null
       this.resetPaymentFields()
@@ -769,7 +747,15 @@ export default {
     },
 
     async confirmPayment() {
-      if (!this.selectedInvoice || !this.selectedMethod) return
+      if (!this.payingInvoice) {
+        this.showToast('No invoice selected', 'error')
+        return
+      }
+
+      if (!this.selectedMethod) {
+        this.showToast('Please select a payment method', 'error')
+        return
+      }
 
       const method = this.paymentMethods.find(m => m.id === this.selectedMethod)
       if (method && method.fields) {
@@ -793,14 +779,15 @@ export default {
 
       this.processingPayment = true
       try {
-        await paymentService.payInvoice(this.selectedInvoice.id, {
+        await paymentService.payInvoice(this.payingInvoice.id, {
           payment_method: this.selectedMethod,
           payment_details: paymentDetails
         })
 
         this.paymentCompleted = true
 
-        const index = this.invoices.findIndex(i => i.id === this.selectedInvoice.id)
+        // Update the invoice in the list
+        const index = this.invoices.findIndex(i => i.id === this.payingInvoice.id)
         if (index !== -1) {
           this.invoices[index] = {
             ...this.invoices[index],
@@ -917,8 +904,7 @@ export default {
   gap: 10px;
 }
 
-.btn-refresh,
-.btn-statement {
+.btn-refresh {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -932,8 +918,7 @@ export default {
   transition: all 0.3s;
 }
 
-.btn-refresh:hover:not(:disabled),
-.btn-statement:hover:not(:disabled) {
+.btn-refresh:hover:not(:disabled) {
   border-color: #ff6b35;
   color: #ff6b35;
 }
@@ -1266,8 +1251,7 @@ export default {
   justify-content: flex-end;
 }
 
-.btn-pay,
-.btn-download {
+.btn-pay {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1278,9 +1262,6 @@ export default {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
-}
-
-.btn-pay {
   background: #ff6b35;
   color: #fff;
 }
@@ -1293,15 +1274,6 @@ export default {
 .btn-pay:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.btn-download {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.btn-download:hover {
-  background: #e2e8f0;
 }
 
 /* ==================== PAGINATION ==================== */
@@ -1876,8 +1848,7 @@ export default {
     flex-direction: column;
   }
 
-  .btn-refresh,
-  .btn-statement {
+  .btn-refresh {
     justify-content: center;
   }
 
@@ -1908,8 +1879,7 @@ export default {
     flex-direction: column;
   }
 
-  .btn-pay,
-  .btn-download {
+  .btn-pay {
     justify-content: center;
   }
 
