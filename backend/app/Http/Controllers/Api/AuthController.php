@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -216,7 +217,7 @@ class AuthController extends Controller
     public function forgotPassword(ForgotPasswordRequest $request)
     {
         ResetPassword::createUrlUsing(function ($user, string $token) {
-            return 'http://localhost:5173/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+            return 'http://localhost/reset-password?token=' . $token . '&email=' . urlencode($user->email);
         });
         // send password reset mail to customer mail
         $status = Password::sendResetLink(
