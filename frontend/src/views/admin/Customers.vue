@@ -2,8 +2,8 @@
   <div class="admin-customers">
     <!-- Page Header -->
     <div class="page-header">
-      <h1 class="page-title">Customers Management</h1>
-      <p class="page-subtitle">View and manage all registered customers</p>
+      <h1 class="page-title">Customers</h1>
+      <p class="page-subtitle">View all registered customers</p>
     </div>
 
     <!-- Search and Actions -->
