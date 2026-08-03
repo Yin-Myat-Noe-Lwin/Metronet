@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS `service_areas`;
 DROP TABLE IF EXISTS `cpes`;
 DROP TABLE IF EXISTS `plan_discounts`;
 DROP TABLE IF EXISTS `isp_plans`;
+DROP TABLE IF EXISTS `password_reset_tokens`;
 DROP TABLE IF EXISTS `customers`;
 
 CREATE TABLE `jobs` (
@@ -65,6 +66,12 @@ CREATE TABLE `cache_locks` (
     `owner` VARCHAR(255) NOT NULL,
     `expiration` INT NOT NULL,
     INDEX `cache_locks_expiration_index` (`expiration`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `password_reset_tokens` (
+    `email` VARCHAR(255) NOT NULL PRIMARY KEY,
+    `token` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `customers` (
