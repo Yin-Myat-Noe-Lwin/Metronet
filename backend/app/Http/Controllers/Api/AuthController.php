@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Models\Customer;
 use App\Contracts\Services\AuthServiceInterface;
