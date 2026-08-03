@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SubscriptionRequest;
 use App\Jobs\ProcessSubscriptionJob;
 use App\Models\CustomerAddress;
+use App\Models\CpeAssignment;
 use App\Models\Notification;
 use App\Models\Invoice;
 use App\Models\IspPlan;
