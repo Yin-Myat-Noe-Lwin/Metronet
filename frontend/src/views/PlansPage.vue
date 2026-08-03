@@ -557,7 +557,7 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching service areas:', error)
-        this.showToast('Failed to load service areas', 'error')
+        // this.showToast('Failed to load service areas', 'error')
       } finally {
         this.loadingServiceAreas = false
       }
