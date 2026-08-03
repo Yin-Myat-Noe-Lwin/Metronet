@@ -31,19 +31,19 @@
           {{ successMessage }}
         </div>
 
-        <!-- Error Message -->
-        <div v-if="errorMessage" class="error-message">
+        <!-- Global Error Message (from login attempt) -->
+        <div v-if="globalError" class="error-message">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
             <line x1="12" y1="8" x2="12" y2="12"/>
             <line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          {{ errorMessage }}
+          {{ globalError }}
         </div>
 
         <form @submit.prevent="handleLogin" novalidate>
           <!-- Email -->
-          <div class="form-group" :class="{ 'has-error': errors.email }">
+          <div class="form-group" :class="{ 'has-error': showEmailError }">
             <label class="form-label">
               Email Address <span class="required">*</span>
             </label>
@@ -53,15 +53,16 @@
               required
               placeholder="you@example.com"
               class="form-input"
-              :class="{ 'input-error': errors.email }"
-              @blur="validateField('email')"
+              :class="{ 'input-error': showEmailError }"
+              @input="validateEmail"
+              @blur="touched.email = true; validateEmail()"
               autocomplete="email"
             >
-            <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
+            <span v-if="showEmailError" class="field-error">{{ emailError }}</span>
           </div>
 
           <!-- Password -->
-          <div class="form-group" :class="{ 'has-error': errors.password }">
+          <div class="form-group" :class="{ 'has-error': showPasswordError }">
             <div class="password-wrapper">
               <label class="form-label">
                 Password <span class="required">*</span>
@@ -72,19 +73,20 @@
                 required
                 placeholder="Enter your password"
                 class="form-input"
-                :class="{ 'input-error': errors.password }"
-                @blur="validateField('password')"
+                :class="{ 'input-error': showPasswordError }"
+                @input="validatePassword"
+                @blur="touched.password = true; validatePassword()"
                 autocomplete="current-password"
               >
               <button type="button" @click="showPassword = !showPassword" class="password-toggle" tabindex="-1">
                 {{ showPassword ? 'Hide' : 'Show' }}
               </button>
             </div>
-            <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
+            <span v-if="showPasswordError" class="field-error">{{ passwordError }}</span>
           </div>
 
           <!-- Submit Button -->
-          <button type="submit" class="login-btn" :disabled="isLoading">
+          <button type="submit" class="login-btn" :disabled="!isFormValid || isLoading">
             <span v-if="isLoading" class="spinner"></span>
             {{ isLoading ? 'Signing in...' : 'Sign In' }}
           </button>
@@ -107,172 +109,120 @@ export default {
     return {
       showPassword: false,
       isLoading: false,
-      errorMessage: null,
+      globalError: null,    // server-side or submission error
       successMessage: null,
-      errors: {
-        email: null,
-        password: null
+      touched: {
+        email: false,
+        password: false,
       },
       form: {
         email: '',
-        password: ''
-      }
+        password: '',
+      },
     }
   },
+  computed: {
+    // Email validation
+    emailError() {
+      if (!this.touched.email) return null
+      if (!this.form.email) return 'Email address is required'
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email)) {
+        return 'Please enter a valid email address (e.g., name@domain.com)'
+      }
+      return null
+    },
+    // Password validation
+    passwordError() {
+      if (!this.touched.password) return null
+      if (!this.form.password) return 'Password is required'
+      if (this.form.password.length < 8) {
+        return 'Password must be at least 8 characters long'
+      }
+      return null
+    },
+    // Show errors only when touched and invalid
+    showEmailError() {
+      return this.emailError !== null
+    },
+    showPasswordError() {
+      return this.passwordError !== null
+    },
+    // Overall form validity
+    isFormValid() {
+      return !this.emailError && !this.passwordError && this.form.email && this.form.password
+    },
+  },
   mounted() {
-    // Check if user was redirected from verification
     if (this.$route.query.verified === 'true') {
       this.successMessage = 'Email verified successfully! You can now log in.'
     }
   },
   methods: {
-    validateField(field) {
-      this.errors[field] = null
-
-      switch(field) {
-        case 'email':
-          if (!this.form.email) {
-            this.errors.email = 'Email is required'
-          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email)) {
-            this.errors.email = 'Please enter a valid email address'
-          }
-          break
-
-        case 'password':
-          if (!this.form.password) {
-            this.errors.password = 'Password is required'
-          } else if (this.form.password.length < 8) {
-            this.errors.password = 'Password must be at least 8 characters'
-          }
-          break
-      }
+    validateEmail() {
+      // Touch it so error appears immediately
+      this.touched.email = true
     },
-    validateAll() {
-      Object.keys(this.errors).forEach(field => this.validateField(field))
-      return !this.errors.email && !this.errors.password
+    validatePassword() {
+      this.touched.password = true
     },
     async handleLogin() {
-      // Clear previous messages
-      this.errorMessage = null
-      this.successMessage = null
+      // Clear previous server error
+      this.globalError = null
 
-      // Validate fields
-      if (!this.validateAll()) {
-        this.errorMessage = 'Please check the highlighted fields and provide the correct information.'
+      // Mark all fields as touched to show validation errors
+      this.touched.email = true
+      this.touched.password = true
+
+      // If form is invalid, do not proceed
+      if (!this.isFormValid) {
+        // Optionally focus the first invalid field
+        const firstInvalid = document.querySelector('.input-error')
+        if (firstInvalid) {
+          firstInvalid.focus()
+        }
         return
       }
 
-      // Start loading
       this.isLoading = true
-
       try {
         const response = await authService.login(
           this.form.email,
           this.form.password
         )
 
-        console.log('Full Login Response:', JSON.stringify(response, null, 2))
-
-        // Extract user data from response
+        // --- Extract and store user data (same as before) ---
         let userData = null
-        let token = null
-        let role = 1
+        let token = response.token || response.access_token || response.accessToken || ''
+        let role = response.role !== undefined ? response.role : 1
 
-        // Try different response structures
-        if (response.user) {
-          userData = response.user
-          console.log('Found user in response.user')
-        } else if (response.customer) {
-          userData = response.customer
-          console.log('Found user in response.customer')
-        } else if (response.data && response.data.user) {
-          userData = response.data.user
-          console.log('Found user in response.data.user')
-        } else if (response.data && response.data.customer) {
-          userData = response.data.customer
-          console.log('Found user in response.data.customer')
-        } else if (response.data) {
-          userData = response.data
-          console.log('Found user in response.data')
-        } else if (response.id || response.name || response.email) {
-          userData = response
-          console.log('Response itself is user data')
-        }
+        if (response.user) userData = response.user
+        else if (response.customer) userData = response.customer
+        else if (response.data?.user) userData = response.data.user
+        else if (response.data?.customer) userData = response.data.customer
+        else if (response.data) userData = response.data
+        else if (response.id || response.name || response.email) userData = response
 
-        // Get token
-        token = response.token || response.access_token || response.accessToken || ''
-
-        // Get role
-        role = response.role !== undefined ? response.role : 1
-
-        // If still no userData, create from email
         if (!userData) {
-          console.warn('No user data found, creating from email')
-          userData = {
-            email: this.form.email,
-            name: this.form.email.split('@')[0]
-          }
+          userData = { email: this.form.email, name: this.form.email.split('@')[0] }
         }
 
-        console.log('Final userData:', userData)
-        // Extract ALL user details
-        const userId = userData.id ||
-                       userData.user_id ||
-                       userData.customer_id ||
-                       userData.customerId ||
-                       null
-
-        const userName = userData.name ||
-                         userData.full_name ||
-                         userData.username ||
-                         userData.display_name ||
-                         userData.email?.split('@')[0] ||
-                         ''
-
+        const userId = userData.id || userData.user_id || userData.customer_id || userData.customerId || null
+        const userName = userData.name || userData.full_name || userData.username || userData.email?.split('@')[0] || ''
         const userEmail = userData.email || this.form.email
+        const userPhone = userData.phone_num || userData.phone || userData.phone_number || userData.mobile || ''
+        const userRole = userData.role !== undefined ? userData.role : role
+        const userStatus = userData.status !== undefined ? userData.status : (userData.is_active !== undefined ? userData.is_active : 1)
 
-        const userPhone = userData.phone_num ||
-                          userData.phone ||
-                          userData.phone_number ||
-                          userData.mobile ||
-                          userData.contact_number ||
-                          ''
-
-        const userRole = userData.role !== undefined ?
-                          userData.role :
-                          role
-
-        const userStatus = userData.status !== undefined ?
-                            userData.status :
-                            (userData.is_active !== undefined ? userData.is_active : 1)
-
-        console.log('Extracted user details:', {
-          userId,
-          userName,
-          userEmail,
-          userPhone,
-          userRole,
-          userStatus,
-          hasToken: !!token
-        })
-
-        // Create user data object
         const userDataToStore = {
           id: userId,
           name: userName,
           email: userEmail,
           phone_num: userPhone,
           role: userRole,
-          status: userStatus
+          status: userStatus,
         }
 
-        // Save ALL data to localStorage
-        // Save token
-        if (token) {
-          localStorage.setItem('authToken', token)
-        }
-
-        // Save user data
+        if (token) localStorage.setItem('authToken', token)
         localStorage.setItem('isLoggedIn', 'true')
         localStorage.setItem('userEmail', userEmail)
         localStorage.setItem('userName', userName)
@@ -280,29 +230,13 @@ export default {
         localStorage.setItem('isAdmin', String(userRole === 0))
         localStorage.setItem('userId', String(userId || ''))
         localStorage.setItem('userData', JSON.stringify(userDataToStore))
+        if (userPhone) localStorage.setItem('userPhone', userPhone)
 
-        // Save phone
-        if (userPhone) {
-          localStorage.setItem('userPhone', userPhone)
-        }
-        // Verify saved data
-        console.log('Verified localStorage:')
-        console.log('  - userData:', localStorage.getItem('userData'))
-        console.log('  - userName:', localStorage.getItem('userName'))
-        console.log('  - userEmail:', localStorage.getItem('userEmail'))
-        console.log('  - userRole:', localStorage.getItem('userRole'))
-        console.log('  - userId:', localStorage.getItem('userId'))
-        console.log('  - userPhone:', localStorage.getItem('userPhone'))
-
-        // Dispatch event and redirect
         window.dispatchEvent(new CustomEvent('userDataUpdated'))
 
         const returnPath = this.$route.query.return || '/'
-
-        // Show success message
         this.successMessage = `Welcome back, ${userName || 'User'}!`
 
-        // Redirect after delay
         setTimeout(() => {
           if (userRole === 0) {
             this.$router.push('/admin/customers')
@@ -313,22 +247,20 @@ export default {
 
       } catch (error) {
         console.error('Login error:', error)
-        console.error('Error details:', error.response?.data || error.message)
-
         if (error.response) {
-          this.errorMessage = error.response.data?.message ||
+          this.globalError = error.response.data?.message ||
                              error.response.data?.error ||
                              'Invalid email or password. Please try again.'
         } else if (error.request) {
-          this.errorMessage = 'No response from server. Please check your connection.'
+          this.globalError = 'No response from server. Please check your connection.'
         } else {
-          this.errorMessage = error.message || 'Login failed. Please try again.'
+          this.globalError = error.message || 'Login failed. Please try again.'
         }
       } finally {
         this.isLoading = false
       }
-    }
-  }
+    },
+  },
 }
 </script>
 
