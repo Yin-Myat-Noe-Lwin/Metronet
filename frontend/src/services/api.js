@@ -29,17 +29,23 @@ apiClient.interceptors.request.use(
 )
 
 // Response interceptor
+// Response interceptor
 apiClient.interceptors.response.use(
-  (response) => {
-    console.log('API response:', response.status, response.config.url)
-    return response
-  },
+  (response) => response,
   (error) => {
     console.error('API Error:', error.response?.status, error.response?.data)
 
     const isLoginEndpoint = error.config?.url?.includes('/login')
+    const isPublicEndpoint =
+      error.config?.url?.includes('/api/plans') ||
+      error.config?.url?.includes('/api/service-areas') ||
+      error.config?.url?.includes('/api/cities') ||
+      error.config?.url?.includes('/api/townships') ||
+      error.config?.url?.includes('/api/filtered') ||
+      error.config?.url?.includes('/api/subscribe')
 
-    if (error.response?.status === 401 && !isLoginEndpoint) {
+    // Only redirect for auth-required endpoints
+    if (error.response?.status === 401 && !isLoginEndpoint && !isPublicEndpoint) {
       localStorage.removeItem('authToken')
       localStorage.removeItem('isLoggedIn')
       localStorage.removeItem('userRole')
