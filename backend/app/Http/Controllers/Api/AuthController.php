@@ -5,16 +5,12 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
-
 use App\Models\Customer;
-
 use App\Contracts\Services\AuthServiceInterface;
-
 use App\Http\Controllers\Controller;
-
 use App\Mail\VerifyRegisterMail;
 use Illuminate\Log\Logger;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +23,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Auth\Notifications\ResetPassword;
 
 class AuthController extends Controller
 {
@@ -35,7 +33,6 @@ class AuthController extends Controller
         private AuthServiceInterface $authService
     )
     {
-
     }
 
     public function register(RegisterRequest $request): JsonResponse
@@ -112,7 +109,6 @@ class AuthController extends Controller
                 'message' => 'Something went wrong.'
             ]);
         }
-
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -122,10 +118,20 @@ class AuthController extends Controller
 
             $customer = Customer::where('email', $credentials['email'])->first();
 
+            // remember me flag
+            $remember = $request->boolean('remember', false);
+
             if (!$customer) {
                 return response()->json([
                     'message' => 'Invalid Email or Password'
                 ], 401);
+            }
+
+            // If remember is true, set token TTL to 7 days
+            if ($remember) {
+                auth()->factory()->setTTL(60 * 24 * 7); // 7 days in minutes
+            } else {
+                auth()->factory()->setTTL(60); // 1 hour default
             }
 
             if ($customer && $customer->status === 0) {
@@ -204,5 +210,47 @@ class AuthController extends Controller
                 'message' => 'Something went wrong.'
             ]);
         }
+    }
+
+    public function forgotPassword(ForgotPasswordRequest $request)
+    {
+        ResetPassword::createUrlUsing(function ($user, string $token) {
+            return 'http://localhost:5173/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+        });
+        // send password reset mail to customer mail
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json([
+                'message' => 'Password reset link sent to your email.'
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'email' => [trans($status)]
+        ]);
+    }
+
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->password = bcrypt($password);
+                $user->save();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => 'Password has been reset successfully.'
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'email' => [trans($status)]
+        ]);
     }
 }
