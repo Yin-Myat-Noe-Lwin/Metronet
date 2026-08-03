@@ -136,7 +136,7 @@ services:
       - metronet
 
   frontend:
-    image: scarletwitch22801/frontend-without-nginx:2.3
+    image: scarletwitch22801/frontend-without-nginx:2.4
     container_name: frontend
     ports:
       - "5173:5173"
