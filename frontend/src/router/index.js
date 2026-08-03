@@ -10,6 +10,8 @@ import NotificationsPage from '../views/NotificationsPage.vue'
 import PaymentsPage from '../views/PaymentsPage.vue'
 import VerifyEmailPage from '../views/VerifyEmail.vue'
 import UpdateEmailPage from '../views/UpdateEmail.vue'
+import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue'
+import ResetPasswordPage from '@/views/ResetPasswordPage.vue'
 
 // Admin Layout and Pages
 import AdminLayout from '../layout/AdminLayout.vue'
@@ -83,6 +85,26 @@ const routes = [
       guestOnly: true
     }
   },
+  {
+    path: '/forgot-password',
+    component: ForgotPasswordPage,
+    name: 'ForgotPassword',
+    meta: {
+      title: 'MetroNet - Forgot Password',
+      requiresAuth: false,
+      guestOnly: true
+    }
+  },
+  {
+    path: '/reset-password/:token?',
+    component: ResetPasswordPage,
+    name: 'ResetPassword',
+    meta: {
+      title: 'MetroNet - Reset Password',
+      requiresAuth: false,
+      guestOnly: true
+    }
+   },
   // Authenticated User Routes
   {
     path: '/profile',
