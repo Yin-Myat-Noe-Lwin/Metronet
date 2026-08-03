@@ -357,7 +357,10 @@ export default {
   },
   mounted() {
     this.refreshUserData()
-    this.fetchNotificationCount()
+    if (this.isLoggedIn && !this.isAdmin) {
+      this.fetchNotificationCount()
+      this.startPolling()
+    }
     this.startPolling()
     this.setupEventListeners()
   },
