@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   backend:
-    image: scarletwitch22801/backend-without-nginx:1.2
+    image: scarletwitch22801/backend-without-nginx:1.3
     container_name: backend
     env_file:
       - ./backend/.env
@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
 
   supervisor:
-    image: scarletwitch22801/backend-without-nginx:1.2
+    image: scarletwitch22801/backend-without-nginx:1.3
     container_name: supervisor
     working_dir: /var/www
     command: supervisord -c /etc/supervisor.conf
@@ -136,7 +136,7 @@ services:
       - metronet
 
   frontend:
-    image: scarletwitch22801/frontend-without-nginx:1.2
+    image: scarletwitch22801/frontend-without-nginx:1.3
     container_name: frontend
     ports:
       - "5173:5173"
