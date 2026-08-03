@@ -85,6 +85,17 @@
             <span v-if="showPasswordError" class="field-error">{{ passwordError }}</span>
           </div>
 
+          <!-- Remember Me & Forgot Password Row (NEW) -->
+          <div class="form-options">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="form.remember">
+              <span>Remember me</span>
+            </label>
+            <router-link to="/forgot-password" class="forgot-link">
+              Forgot password?
+            </router-link>
+          </div>
+
           <!-- Submit Button -->
           <button type="submit" class="login-btn" :disabled="!isFormValid || isLoading">
             <span v-if="isLoading" class="spinner"></span>
@@ -109,7 +120,7 @@ export default {
     return {
       showPassword: false,
       isLoading: false,
-      globalError: null,    // server-side or submission error
+      globalError: null,
       successMessage: null,
       touched: {
         email: false,
@@ -118,11 +129,11 @@ export default {
       form: {
         email: '',
         password: '',
+        remember: false,   // <-- NEW
       },
     }
   },
   computed: {
-    // Email validation
     emailError() {
       if (!this.touched.email) return null
       if (!this.form.email) return 'Email address is required'
@@ -131,7 +142,6 @@ export default {
       }
       return null
     },
-    // Password validation
     passwordError() {
       if (!this.touched.password) return null
       if (!this.form.password) return 'Password is required'
@@ -140,14 +150,12 @@ export default {
       }
       return null
     },
-    // Show errors only when touched and invalid
     showEmailError() {
       return this.emailError !== null
     },
     showPasswordError() {
       return this.passwordError !== null
     },
-    // Overall form validity
     isFormValid() {
       return !this.emailError && !this.passwordError && this.form.email && this.form.password
     },
@@ -159,38 +167,32 @@ export default {
   },
   methods: {
     validateEmail() {
-      // Touch it so error appears immediately
       this.touched.email = true
     },
     validatePassword() {
       this.touched.password = true
     },
     async handleLogin() {
-      // Clear previous server error
       this.globalError = null
-
-      // Mark all fields as touched to show validation errors
       this.touched.email = true
       this.touched.password = true
 
-      // If form is invalid, do not proceed
       if (!this.isFormValid) {
-        // Optionally focus the first invalid field
         const firstInvalid = document.querySelector('.input-error')
-        if (firstInvalid) {
-          firstInvalid.focus()
-        }
+        if (firstInvalid) firstInvalid.focus()
         return
       }
 
       this.isLoading = true
       try {
+        // Pass remember flag to the login service
         const response = await authService.login(
           this.form.email,
-          this.form.password
+          this.form.password,
+          this.form.remember   // <-- NEW
         )
 
-        // --- Extract and store user data (same as before) ---
+        // --- Extract and store user data (unchanged) ---
         let userData = null
         let token = response.token || response.access_token || response.accessToken || ''
         let role = response.role !== undefined ? response.role : 1
@@ -232,6 +234,13 @@ export default {
         localStorage.setItem('userData', JSON.stringify(userDataToStore))
         if (userPhone) localStorage.setItem('userPhone', userPhone)
 
+        // Optionally store remember preference
+        if (this.form.remember) {
+          localStorage.setItem('rememberMe', 'true')
+        } else {
+          localStorage.removeItem('rememberMe')
+        }
+
         window.dispatchEvent(new CustomEvent('userDataUpdated'))
 
         const returnPath = this.$route.query.return || '/'
@@ -265,6 +274,7 @@ export default {
 </script>
 
 <style scoped>
+/* ===== ALL YOUR EXISTING STYLES ARE HERE (unchanged) ===== */
 .login-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e8ecf1 100%);
@@ -565,6 +575,43 @@ form {
   -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
 }
 
+/* ===== NEW STYLES FOR THE OPTIONS ROW ===== */
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #ff6b35;
+  cursor: pointer;
+}
+
+.forgot-link {
+  font-size: 14px;
+  color: #ff6b35;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
   .login-container {
     padding: 28px 20px;
@@ -583,6 +630,12 @@ form {
   .password-toggle {
     font-size: 12px;
     padding: 4px 8px;
+  }
+
+  .form-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 </style>
