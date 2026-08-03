@@ -13,6 +13,9 @@
 
   Route::get('/plans', [IspPlanController::class, 'index']);
 
+  Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+  Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
   Route::middleware(['auth:api', 'admin'])->group(function () {
     Route::get('/admin/customers', [CustomerController::class, 'index']);
     Route::get('/admin/customers/{id}', [CustomerController::class, 'show']);
