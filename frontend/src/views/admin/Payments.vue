@@ -3,7 +3,7 @@
     <!-- Page Header -->
     <div class="page-header">
       <div>
-        <h1 class="page-title">Payments Management</h1>
+        <h1 class="page-title">Payments</h1>
         <p class="page-subtitle">View all customer payments</p>
       </div>
       <button class="btn-refresh" @click="fetchPayments" :disabled="loading">
