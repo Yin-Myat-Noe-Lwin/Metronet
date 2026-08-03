@@ -27,6 +27,7 @@
           v-model="searchQuery"
           placeholder="Search by customer, plan or ID..."
           class="search-input"
+          @input="onSearch"
         >
       </div>
       <div class="filter-group">
@@ -111,7 +112,7 @@
             <td>{{ formatDate(sub.created_at) }}</td>
             <td>
               <div class="action-buttons">
-                <!-- View Details (always visible) -->
+                <!-- View Details -->
                 <button class="action-btn view" @click="viewSubscription(sub.id)" title="View Details">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -171,88 +172,96 @@
           <h2>Subscription Details</h2>
           <button class="modal-close" @click="closeViewModal">×</button>
         </div>
-        <div v-if="viewingSubscription" class="subscription-detail">
-          <div class="detail-status-bar">
-            <span class="status-badge large" :class="getStatusClass(viewingSubscription.status)">
-              <span class="status-dot"></span>
-              {{ getStatusText(viewingSubscription.status) }}
-            </span>
-            <span class="detail-id">#{{ String(viewingSubscription.id).padStart(4, '0') }}</span>
+        <div class="modal-body" style="position: relative; min-height: 150px;">
+          <!-- Loading overlay while fetching details -->
+          <div v-if="viewLoading" class="modal-loading-overlay">
+            <div class="modal-spinner"></div>
+            <p>Loading details...</p>
           </div>
 
-          <div class="detail-grid compact">
-            <!-- Subscription Information -->
-            <div class="detail-section">
-              <h4>Subscription</h4>
-              <div class="detail-item">
-                <span class="detail-label">Requested</span>
-                <span class="detail-value">{{ formatDate(viewingSubscription.created_at) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Duration</span>
-                <span class="detail-value">{{ viewingSubscription.duration_months || 1 }} month(s)</span>
-              </div>
-              <div class="detail-item" v-if="viewingSubscription.installation_address">
-                <span class="detail-label">Address</span>
-                <span class="detail-value">{{ viewingSubscription.installation_address.address }}</span>
-              </div>
-              <div class="detail-item" v-if="viewingSubscription.installation_address">
-                <span class="detail-label">Location</span>
-                <span class="detail-value">{{ viewingSubscription.installation_address.township }}, {{ viewingSubscription.installation_address.city }}, {{ viewingSubscription.installation_address.region }}</span>
-              </div>
-              <div class="detail-item" v-if="viewingSubscription.rejection_reason">
-                <span class="detail-label">Rejection Reason</span>
-                <span class="detail-value" style="color: #dc2626;">{{ viewingSubscription.rejection_reason }}</span>
-              </div>
+          <div v-else-if="viewingSubscription" class="subscription-detail">
+            <div class="detail-status-bar">
+              <span class="status-badge large" :class="getStatusClass(viewingSubscription.status)">
+                <span class="status-dot"></span>
+                {{ getStatusText(viewingSubscription.status) }}
+              </span>
+              <span class="detail-id">#{{ String(viewingSubscription.id).padStart(4, '0') }}</span>
             </div>
 
-            <!-- Customer Information -->
-            <div class="detail-section">
-              <h4>Customer</h4>
-              <div class="detail-item">
-                <span class="detail-label">Name</span>
-                <span class="detail-value">{{ viewingSubscription.customer?.name || 'Unknown' }}</span>
+            <div class="detail-grid compact">
+              <!-- Subscription Information -->
+              <div class="detail-section">
+                <h4>Subscription</h4>
+                <div class="detail-item">
+                  <span class="detail-label">Requested</span>
+                  <span class="detail-value">{{ formatDate(viewingSubscription.created_at) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Duration</span>
+                  <span class="detail-value">{{ viewingSubscription.duration_months || 1 }} month(s)</span>
+                </div>
+                <div class="detail-item" v-if="viewingSubscription.installation_address">
+                  <span class="detail-label">Address</span>
+                  <span class="detail-value">{{ viewingSubscription.installation_address.address }}</span>
+                </div>
+                <div class="detail-item" v-if="viewingSubscription.installation_address">
+                  <span class="detail-label">Location</span>
+                  <span class="detail-value">{{ viewingSubscription.installation_address.township }}, {{ viewingSubscription.installation_address.city }}, {{ viewingSubscription.installation_address.region }}</span>
+                </div>
+                <div class="detail-item" v-if="viewingSubscription.rejection_reason">
+                  <span class="detail-label">Rejection Reason</span>
+                  <span class="detail-value" style="color: #dc2626;">{{ viewingSubscription.rejection_reason }}</span>
+                </div>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">Email</span>
-                <span class="detail-value">{{ viewingSubscription.customer?.email || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Phone</span>
-                <span class="detail-value">{{ viewingSubscription.customer?.phone_num || 'N/A' }}</span>
-              </div>
-            </div>
 
-            <!-- Plan Information -->
-            <div class="detail-section">
-              <h4>Plan</h4>
-              <div class="detail-item">
-                <span class="detail-label">Name</span>
-                <span class="detail-value plan-name">{{ viewingSubscription.plan?.name || 'N/A' }}</span>
+              <!-- Customer Information -->
+              <div class="detail-section">
+                <h4>Customer</h4>
+                <div class="detail-item">
+                  <span class="detail-label">Name</span>
+                  <span class="detail-value">{{ viewingSubscription.customer?.name || 'Unknown' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Email</span>
+                  <span class="detail-value">{{ viewingSubscription.customer?.email || 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Phone</span>
+                  <span class="detail-value">{{ viewingSubscription.customer?.phone_num || 'N/A' }}</span>
+                </div>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">Price</span>
-                <span class="detail-value">{{ formatPrice(viewingSubscription.plan?.price) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Download</span>
-                <span class="detail-value">{{ viewingSubscription.plan?.download_speed || 0 }} Mbps</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Upload</span>
-                <span class="detail-value">{{ viewingSubscription.plan?.upload_speed || 0 }} Mbps</span>
-              </div>
-            </div>
 
-            <!-- CPE Devices -->
-            <div class="detail-section" v-if="viewingSubscription.cpe_assignments && viewingSubscription.cpe_assignments.length">
-              <h4>CPE Devices</h4>
-              <div v-for="assignment in viewingSubscription.cpe_assignments" :key="assignment.id" class="cpe-item compact">
-                <span class="cpe-model">{{ assignment.cpe?.serial_number || 'N/A' }}</span>
-                <span class="cpe-mac">{{ assignment.cpe?.mac_address || 'N/A' }}</span>
-                <span class="cpe-status" :class="assignment.status === 1 ? 'active' : 'inactive'">
-                  {{ assignment.status === 1 ? 'Active' : 'Inactive' }}
-                </span>
+              <!-- Plan Information -->
+              <div class="detail-section">
+                <h4>Plan</h4>
+                <div class="detail-item">
+                  <span class="detail-label">Name</span>
+                  <span class="detail-value plan-name">{{ viewingSubscription.plan?.name || 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Price</span>
+                  <span class="detail-value">{{ formatPrice(viewingSubscription.plan?.price) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Download</span>
+                  <span class="detail-value">{{ viewingSubscription.plan?.download_speed || 0 }} Mbps</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Upload</span>
+                  <span class="detail-value">{{ viewingSubscription.plan?.upload_speed || 0 }} Mbps</span>
+                </div>
+              </div>
+
+              <!-- CPE Devices -->
+              <div class="detail-section" v-if="viewingSubscription.cpe_assignments && viewingSubscription.cpe_assignments.length">
+                <h4>CPE Devices</h4>
+                <div v-for="assignment in viewingSubscription.cpe_assignments" :key="assignment.id" class="cpe-item compact">
+                  <span class="cpe-model">{{ assignment.cpe?.serial_number || 'N/A' }}</span>
+                  <span class="cpe-mac">{{ assignment.cpe?.mac_address || 'N/A' }}</span>
+                  <span class="cpe-status" :class="assignment.status === 1 ? 'active' : 'inactive'">
+                    {{ assignment.status === 1 ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -263,7 +272,7 @@
       </div>
     </div>
 
-    <!-- Accept Modal (with loading overlay) -->
+    <!-- Accept Modal -->
     <div v-if="showAcceptModal" class="modal-overlay" @click.self="closeAcceptModal">
       <div class="modal modal-accept">
         <div class="modal-header">
@@ -271,7 +280,6 @@
           <button class="modal-close" @click="closeAcceptModal">×</button>
         </div>
         <div class="modal-body" style="position: relative;">
-          <!-- Loading overlay -->
           <div v-if="isAccepting" class="modal-loading-overlay">
             <div class="modal-spinner"></div>
             <p>Processing...</p>
@@ -317,7 +325,7 @@
       </div>
     </div>
 
-    <!-- Reject Modal (with loading overlay) -->
+    <!-- Reject Modal -->
     <div v-if="showRejectModal" class="modal-overlay" @click.self="closeRejectModal">
       <div class="modal modal-reject">
         <div class="modal-header">
@@ -325,7 +333,6 @@
           <button class="modal-close" @click="closeRejectModal">×</button>
         </div>
         <div class="modal-body" style="position: relative;">
-          <!-- Loading overlay -->
           <div v-if="isRejecting" class="modal-loading-overlay">
             <div class="modal-spinner"></div>
             <p>Processing...</p>
@@ -382,6 +389,7 @@ export default {
   data() {
     return {
       loading: false,
+      viewLoading: false,
       isAccepting: false,
       isRejecting: false,
       error: null,
@@ -462,6 +470,10 @@ export default {
   },
 
   methods: {
+    onSearch() {
+      // client-side filtering via computed property
+    },
+
     async fetchSubscriptions() {
       this.loading = true
       this.error = null
@@ -544,18 +556,25 @@ export default {
     },
 
     async viewSubscription(id) {
+      // Open modal with loading state
+      this.showViewModal = true
+      this.viewLoading = true
+      this.viewingSubscription = null
+
       const sub = await this.fetchSubscriptionDetail(id)
+      this.viewLoading = false
       if (sub) {
         this.viewingSubscription = sub
-        this.showViewModal = true
       } else {
         this.showToast('Subscription not found', 'error')
+        this.closeViewModal()
       }
     },
 
     closeViewModal() {
       this.showViewModal = false
       this.viewingSubscription = null
+      this.viewLoading = false
     },
 
     openAcceptModal(sub) {
@@ -1098,12 +1117,8 @@ export default {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal {
@@ -1115,14 +1130,8 @@ export default {
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-view {
@@ -1179,6 +1188,41 @@ export default {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #f1f5f9;
+}
+
+/* ===== MODAL LOADING OVERLAY ===== */
+.modal-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  z-index: 10;
+}
+
+.modal-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #ff6b35;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.modal-loading-overlay p {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 14px;
 }
 
 /* ===== VIEW DETAILS MODAL ===== */
@@ -1238,14 +1282,6 @@ export default {
 
 .detail-value.plan-name {
   color: #ff6b35;
-}
-
-.detail-actions.compact {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
 }
 
 /* ===== ACCEPT MODAL ===== */
@@ -1431,6 +1467,62 @@ export default {
   cursor: not-allowed;
 }
 
+.btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ===== LOADING / ERROR STATES ===== */
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #ff6b35;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.error-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.error-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.error-state p {
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+.retry-btn {
+  padding: 8px 24px;
+  background: #ff6b35;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.retry-btn:hover {
+  background: #e85a2a;
+}
+
 /* ===== CPE ===== */
 .cpe-item.compact {
   display: flex;
@@ -1563,10 +1655,6 @@ export default {
   .modal-accept,
   .modal-reject {
     max-width: 95%;
-  }
-
-  .detail-actions.compact {
-    flex-direction: column;
   }
 
   .table-footer {
