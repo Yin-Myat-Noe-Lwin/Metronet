@@ -126,13 +126,6 @@
             <label>Township <span class="required">*</span></label>
             <input type="text" v-model="areaForm.township" required class="form-input" placeholder="Enter township">
           </div>
-          <div class="form-group" v-if="showEditModal">
-            <label>Status</label>
-            <select v-model="areaForm.status" class="form-input">
-              <option :value="1">Active</option>
-              <option :value="0">Inactive</option>
-            </select>
-          </div>
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="isSaving">
               {{ isSaving ? 'Saving...' : (showEditModal ? 'Update Service Area' : 'Add Service Area') }}
