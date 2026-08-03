@@ -3,8 +3,8 @@
     <!-- Page Header -->
     <div class="page-header">
       <div>
-        <h1 class="page-title">Invoices Management</h1>
-        <p class="page-subtitle">View and manage all customer invoices</p>
+        <h1 class="page-title">Invoices</h1>
+        <p class="page-subtitle">View all customer invoices</p>
       </div>
       <button class="btn-refresh" @click="fetchInvoices" :disabled="loading">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
