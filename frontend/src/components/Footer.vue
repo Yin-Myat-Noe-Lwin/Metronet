@@ -7,7 +7,7 @@
           <span class="logo-icon">⚡</span>
           <span>MetroNet</span>
         </div>
-        <p class="footer-text">&copy; 2025 MetroNet ISP. All rights reserved.</p>
+        <p class="footer-text">&copy; 2026 MetroNet ISP. All rights reserved.</p>
       </div>
     </div>
   </footer>
