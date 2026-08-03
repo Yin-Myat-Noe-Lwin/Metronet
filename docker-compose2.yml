@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   backend:
-    image: scarletwitch22801/backend-with-nginx:1.0
+    image: scarletwitch22801/backend-with-nginx:2.0
     container_name: backend
     env_file:
       - ./backend/.env
@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
 
   supervisor:
-    image: scarletwitch22801/backend-with-nginx:1.0
+    image: scarletwitch22801/backend-with-nginx:2.0
     container_name: supervisor
     working_dir: /var/www
     env_file:
@@ -148,7 +148,7 @@ services:
       - backend
 
   frontend:
-    image: scarletwitch22801/frontend-with-nginx:1.1
+    image: scarletwitch22801/frontend-with-nginx:2.0
     container_name: frontend
     working_dir: /var/www
     volumes:
