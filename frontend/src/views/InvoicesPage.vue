@@ -72,10 +72,13 @@
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading your invoices...</p>
+      <!-- Loading (skeleton) -->
+      <div v-if="loading" class="loading-skeleton">
+        <div class="skeleton-card" v-for="i in 3" :key="i">
+          <div class="skeleton-line w-40"></div>
+          <div class="skeleton-line w-60"></div>
+          <div class="skeleton-line w-30"></div>
+        </div>
       </div>
 
       <!-- Empty -->
@@ -227,47 +230,38 @@
             </div>
           </div>
 
-          <!-- Loading -->
-          <div v-if="paymentMethodsLoading" class="payment-loading">
-            <div class="spinner-small"></div>
-            <p>Loading payment methods...</p>
-          </div>
-
-          <!-- Payment Methods -->
-          <div v-else>
-            <p class="section-label">Choose Payment Method</p>
-
-            <div class="payment-methods-list">
+          <!-- Payment Methods - 3 Column Grid -->
+          <div v-if="!paymentMethodsLoading && paymentMethods.length > 0">
+            <p class="section-label">Select Payment Method</p>
+            <div class="payment-methods-grid">
               <div
                 v-for="method in paymentMethods"
                 :key="method.id"
-                class="payment-method-item"
+                class="payment-method-card"
                 :class="{ active: selectedMethod === method.id }"
                 @click="toggleMethod(method.id)"
               >
-                <div class="method-left">
-                  <span class="method-icon">{{ getMethodIcon(method) }}</span>
-                  <div class="method-info">
-                    <span class="method-name">{{ method.name }}</span>
-                    <span class="method-desc">{{ method.description || '' }}</span>
-                  </div>
-                </div>
-                <div class="method-check">
-                  <span v-if="selectedMethod === method.id">✓</span>
-                </div>
+                <div class="method-card-icon">{{ getMethodIcon(method) }}</div>
+                <div class="method-card-name">{{ method.name }}</div>
+                <div class="method-card-check" v-if="selectedMethod === method.id">✓</div>
               </div>
             </div>
 
-            <!-- Dynamic Fields -->
-            <div v-if="selectedMethod && methodFields.length > 0" class="dynamic-fields">
-              <p class="fields-label">Payment Details</p>
-              <div class="fields-grid">
+            <!-- Selected method details -->
+            <div v-if="selectedMethod" class="selected-method-details">
+              <div class="selected-method-info">
+                <span class="selected-method-label">Selected:</span>
+                <span class="selected-method-name">{{ getSelectedMethod()?.name }}</span>
+              </div>
+
+              <!-- Dynamic Fields -->
+              <div v-if="methodFields.length > 0" class="dynamic-fields-compact">
                 <div
                   v-for="field in methodFields"
                   :key="field.key"
-                  class="field-group"
+                  class="field-row"
                 >
-                  <label>
+                  <label class="field-label-compact">
                     {{ field.label }}
                     <span v-if="field.required" class="required">*</span>
                   </label>
@@ -275,27 +269,30 @@
                     :type="field.type"
                     v-model="dynamicFields[field.key]"
                     :placeholder="field.placeholder"
-                    class="field-input"
+                    class="field-input-compact"
                     :required="field.required"
                   >
                 </div>
               </div>
-            </div>
 
-            <!-- Special Payment Info -->
-            <div v-if="selectedMethod" class="payment-info">
-              <div v-if="isCashPayment()" class="info-box cash">
+              <!-- Special Payment Info - Cash -->
+              <div v-if="isCashPayment()" class="info-box cash compact">
                 <span class="info-icon">💰</span>
                 <div>
                   <p class="info-title">Cash Payment</p>
-                  <p class="info-text">Visit our office to pay in cash</p>
-                  <div class="office-details">
-                    <p>📍 123 Main Street, Yangon</p>
+                  <div class="office-details compact">
+                    <p>📍 Yangon: 123 Main Street</p>
+                    <p>📍 Mandalay: 456 26th Street</p>
+                    <p>📍 Naypyidaw: 789 Parliament Road</p>
+                    <p>📍 Taunggyi: 101 Bogyoke Road</p>
                     <p>🕐 Mon-Fri 9:00 AM - 5:00 PM</p>
                   </div>
+                  <p class="cash-note">Please visit our office to pay in cash.</p>
                 </div>
               </div>
-              <div v-if="isMobilePayment()" class="info-box mobile">
+
+              <!-- Mobile Payment Info -->
+              <div v-if="isMobilePayment()" class="info-box mobile compact">
                 <span class="info-icon">📱</span>
                 <div>
                   <p class="info-title">{{ getSelectedMethod()?.name }}</p>
@@ -304,16 +301,35 @@
               </div>
             </div>
           </div>
+
+          <!-- Loading state -->
+          <div v-if="paymentMethodsLoading" class="payment-loading">
+            <div class="spinner-small"></div>
+            <p>Loading payment methods...</p>
+          </div>
+
+          <!-- No methods -->
+          <div v-if="!paymentMethodsLoading && paymentMethods.length === 0" class="payment-loading">
+            <p>No payment methods available</p>
+          </div>
         </div>
 
         <div class="modal-footer">
           <button class="btn-cancel" @click="handleModalClose">Cancel</button>
           <button
+            v-if="!isCashPayment()"
             class="btn-pay-modal"
             @click="confirmPayment"
             :disabled="processingPayment || !selectedMethod || !payingInvoice"
           >
             {{ processingPayment ? 'Processing...' : 'Pay Now' }}
+          </button>
+          <button
+            v-else
+            class="btn-pay-modal btn-cash"
+            @click="handleModalClose"
+          >
+            Close
           </button>
         </div>
       </div>
@@ -370,17 +386,12 @@ export default {
   name: 'InvoicePage',
   data() {
     return {
-      // Loading states
       loading: false,
       processingPayment: false,
       paymentMethodsLoading: false,
-
-      // Data
       invoices: [],
       paymentMethods: [],
       dynamicFields: {},
-
-      // Filters
       activeFilter: 'all',
       filters: [
         { key: 'all', label: 'All' },
@@ -390,29 +401,17 @@ export default {
         { key: '3', label: 'Cancelled' }
       ],
       searchQuery: '',
-
-      // Pagination
       currentPage: 1,
       itemsPerPage: 10,
-
-      // Modals
       showPaymentModal: false,
       showSuccessModal: false,
       showErrorModal: false,
-
-      // Selected items
       selectedInvoice: null,
-      payingInvoice: null, // Separate property for the invoice being paid
+      payingInvoice: null,
       selectedMethod: null,
-
-      // Error handling
       errorMessage: '',
-
-      // Toast
       toast: { show: false, message: '', type: 'success' },
       toastTimeout: null,
-
-      // Payment tracking
       paymentCompleted: false
     }
   },
@@ -427,14 +426,11 @@ export default {
     overdueCount() {
       return this.invoices.filter(i => i.status === 2).length
     },
-
     filteredInvoices() {
       let filtered = this.invoices
-
       if (this.activeFilter !== 'all') {
         filtered = filtered.filter(inv => String(inv.status) === this.activeFilter)
       }
-
       if (this.searchQuery) {
         const q = this.searchQuery.toLowerCase()
         filtered = filtered.filter(inv =>
@@ -443,33 +439,23 @@ export default {
           (inv.amount && String(inv.amount).includes(q))
         )
       }
-
       return filtered
     },
-
     paginatedInvoices() {
       const start = (this.currentPage - 1) * this.itemsPerPage
       const end = start + this.itemsPerPage
       return this.filteredInvoices.slice(start, end)
     },
-
     totalPages() {
       return Math.ceil(this.filteredInvoices.length / this.itemsPerPage)
     },
-
     methodFields() {
       if (!this.selectedMethod) return []
-
       const method = this.paymentMethods.find(m => m.id === this.selectedMethod)
       if (!method || !method.fields) return []
-
       try {
-        const fields = typeof method.fields === 'string'
-          ? JSON.parse(method.fields)
-          : method.fields
-
+        const fields = typeof method.fields === 'string' ? JSON.parse(method.fields) : method.fields
         if (typeof fields !== 'object') return []
-
         return Object.entries(fields).map(([key, value]) => ({
           key,
           required: value === 'required',
@@ -490,7 +476,6 @@ export default {
 
   methods: {
     // ==================== INVOICE METHODS ====================
-
     async fetchInvoices() {
       this.loading = true
       try {
@@ -525,46 +510,32 @@ export default {
     },
 
     // ==================== PAYMENT METHODS ====================
-
     getMethodIcon(method) {
       if (!method) return '💳'
-
       if (method.icon) {
         if (method.icon_type === 1) {
           const emoji = this.normalizeEmoji(method.icon)
           if (emoji && emoji.length > 0) return emoji
         }
-        if (method.icon_type === 2 || method.icon_type === 3) {
-          return '🖼️'
-        }
+        if (method.icon_type === 2 || method.icon_type === 3) return '🖼️'
         const icon = this.normalizeEmoji(method.icon)
         if (icon) return icon
       }
-
       return this.getFallbackIcon(method.name)
     },
 
     normalizeEmoji(text) {
       if (!text) return null
-
       try {
         let cleaned = text.replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
           .replace(/&#039;/g, "'")
-
         const emojiRegex = /[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FEFF}]|[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2700}-\u{27BF}]/u
-
         const matches = cleaned.match(emojiRegex)
-        if (matches && matches.length > 0) {
-          return matches[0]
-        }
-
-        if (cleaned.length === 1 || cleaned.length === 2) {
-          return cleaned
-        }
-
+        if (matches && matches.length > 0) return matches[0]
+        if (cleaned.length === 1 || cleaned.length === 2) return cleaned
         return null
       } catch (e) {
         return null
@@ -573,29 +544,16 @@ export default {
 
     getFallbackIcon(name) {
       if (!name) return '💳'
-
       const nameLower = name.toLowerCase()
       const fallbacks = {
-        'credit': '💳',
-        'debit': '💳',
-        'card': '💳',
-        'bank': '🏦',
-        'transfer': '🏦',
-        'cash': '💰',
-        'kbz': '📱',
-        'wave': '📱',
-        'cb pay': '📱',
-        'paypal': '💳',
-        'stripe': '💳',
-        'mobile': '📱',
-        'wallet': '📱',
-        'pay': '💳'
+        'credit': '💳', 'debit': '💳', 'card': '💳', 'bank': '🏦',
+        'transfer': '🏦', 'cash': '💰', 'kbz': '📱', 'wave': '📱',
+        'cb pay': '📱', 'paypal': '💳', 'stripe': '💳', 'mobile': '📱',
+        'wallet': '📱', 'pay': '💳'
       }
-
       for (const [key, icon] of Object.entries(fallbacks)) {
         if (nameLower.includes(key)) return icon
       }
-
       return '💳'
     },
 
@@ -627,7 +585,6 @@ export default {
     },
 
     // ==================== FIELD HELPERS ====================
-
     getFieldLabel(key) {
       const labels = {
         card_number: 'Card Number',
@@ -652,14 +609,14 @@ export default {
         expiry: 'MM/YY',
         cvv: '***',
         card_holder: 'John Doe',
-        bank_name: 'Enter bank name',
-        account_number: 'Enter account number',
-        account_holder: 'Enter account holder name',
+        bank_name: 'Bank Name',
+        account_number: 'Account Number',
+        account_holder: 'Account Holder Name',
         phone_number: '09xxxxxxxxx',
-        reference: 'Enter reference',
+        reference: 'Reference',
         email: 'email@example.com',
-        name: 'John Doe',
-        wallet_number: 'Enter wallet number'
+        name: 'Full Name',
+        wallet_number: 'Wallet Number'
       }
       return placeholders[key] || `Enter ${this.getFieldLabel(key).toLowerCase()}`
     },
@@ -680,9 +637,7 @@ export default {
     },
 
     // ==================== PAYMENT MODAL ====================
-
     async openPaymentModal(invoice) {
-      // Check if invoice is already paid or cancelled
       if (invoice.status === 1) {
         this.showToast('Invoice is already paid', 'error')
         return
@@ -692,39 +647,28 @@ export default {
         return
       }
 
-      // Store the invoice being paid
       this.payingInvoice = invoice
       this.selectedInvoice = invoice
       this.paymentCompleted = false
       this.selectedMethod = null
       this.resetPaymentFields()
-
       this.paymentMethodsLoading = true
       this.paymentMethods = []
 
       try {
         const response = await paymentService.getPaymentMethods()
         this.paymentMethods = response?.data || response || []
-        this.paymentMethods = this.paymentMethods.filter(
-          m => m.is_active !== false && m.is_active !== 0
-        )
-
+        this.paymentMethods = this.paymentMethods.filter(m => m.is_active !== false && m.is_active !== 0)
         if (this.paymentMethods.length === 0) {
           this.showToast('No payment methods available', 'error')
-          this.paymentMethodsLoading = false
-          return
         }
       } catch (error) {
         console.error('Failed to load payment methods:', error)
         this.showToast('Failed to load payment methods', 'error')
-        this.paymentMethodsLoading = false
-        return
       } finally {
         this.paymentMethodsLoading = false
+        this.showPaymentModal = true
       }
-
-      // Show modal AFTER data is loaded
-      this.showPaymentModal = true
     },
 
     closePaymentModal() {
@@ -738,11 +682,9 @@ export default {
     handleModalClose() {
       const wasPaymentMade = this.paymentCompleted
       this.closePaymentModal()
-
       if (!wasPaymentMade) {
         this.fetchInvoices()
       }
-
       this.paymentCompleted = false
     },
 
@@ -751,7 +693,6 @@ export default {
         this.showToast('No invoice selected', 'error')
         return
       }
-
       if (!this.selectedMethod) {
         this.showToast('Please select a payment method', 'error')
         return
@@ -760,10 +701,7 @@ export default {
       const method = this.paymentMethods.find(m => m.id === this.selectedMethod)
       if (method && method.fields) {
         try {
-          const fields = typeof method.fields === 'string'
-            ? JSON.parse(method.fields)
-            : method.fields
-
+          const fields = typeof method.fields === 'string' ? JSON.parse(method.fields) : method.fields
           for (const [key, value] of Object.entries(fields)) {
             if (value === 'required' && !this.dynamicFields[key]) {
               this.showToast(`Please fill in ${this.getFieldLabel(key)}`, 'error')
@@ -776,7 +714,6 @@ export default {
       }
 
       const paymentDetails = { ...this.dynamicFields }
-
       this.processingPayment = true
       try {
         await paymentService.payInvoice(this.payingInvoice.id, {
@@ -785,8 +722,6 @@ export default {
         })
 
         this.paymentCompleted = true
-
-        // Update the invoice in the list
         const index = this.invoices.findIndex(i => i.id === this.payingInvoice.id)
         if (index !== -1) {
           this.invoices[index] = {
@@ -812,7 +747,6 @@ export default {
     },
 
     // ==================== MODAL HELPERS ====================
-
     closeSuccessModal() {
       this.showSuccessModal = false
     },
@@ -828,7 +762,6 @@ export default {
     },
 
     // ==================== TOAST ====================
-
     showToast(message, type = 'success') {
       if (this.toastTimeout) clearTimeout(this.toastTimeout)
       this.toast.message = message
@@ -840,7 +773,6 @@ export default {
     },
 
     // ==================== FORMATTERS ====================
-
     formatCurrency(amount) {
       if (!amount) return 'Free'
       return 'MMK ' + parseFloat(amount).toLocaleString()
@@ -859,9 +791,7 @@ export default {
 </script>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 .invoices-page {
   min-height: 100vh;
@@ -876,7 +806,6 @@ export default {
 }
 
 /* ==================== HEADER ==================== */
-
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -929,7 +858,6 @@ export default {
 }
 
 /* ==================== STATS ==================== */
-
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -955,7 +883,6 @@ export default {
   align-items: center;
   justify-content: center;
 }
-
 .stat-icon.total { background: #eef2ff; color: #6366f1; }
 .stat-icon.pending { background: #fffbeb; color: #f59e0b; }
 .stat-icon.overdue { background: #fef2f2; color: #ef4444; }
@@ -967,42 +894,44 @@ export default {
   color: #0f172a;
   line-height: 1.2;
 }
-
 .stat-label {
   font-size: 13px;
   color: #94a3b8;
 }
 
-/* ==================== LOADING ==================== */
+/* ==================== SKELETON LOADING ==================== */
+.loading-skeleton {
+  display: grid;
+  gap: 16px;
+}
 
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
+.skeleton-card {
   background: #fff;
   border-radius: 10px;
+  padding: 20px 24px;
   border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  margin: 0 auto 16px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #ff6b35;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.skeleton-line {
+  height: 16px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  animation: shimmer 1.2s infinite;
 }
+.skeleton-line.w-40 { width: 40%; }
+.skeleton-line.w-60 { width: 60%; }
+.skeleton-line.w-30 { width: 30%; }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-state p {
-  color: #94a3b8;
+@keyframes shimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
 }
 
 /* ==================== EMPTY ==================== */
-
 .empty-state {
   text-align: center;
   padding: 80px 20px;
@@ -1010,7 +939,6 @@ export default {
   border-radius: 10px;
   border: 1px solid #e2e8f0;
 }
-
 .empty-icon {
   width: 80px;
   height: 80px;
@@ -1022,20 +950,17 @@ export default {
   justify-content: center;
   color: #cbd5e1;
 }
-
 .empty-state h3 {
   font-size: 20px;
   color: #0f172a;
   margin: 0 0 8px;
 }
-
 .empty-state p {
   color: #94a3b8;
   margin: 0;
 }
 
 /* ==================== FILTERS ==================== */
-
 .filters {
   display: flex;
   justify-content: space-between;
@@ -1062,18 +987,15 @@ export default {
   cursor: pointer;
   transition: all 0.3s;
 }
-
 .filter-btn:hover {
   border-color: #ff6b35;
   color: #ff6b35;
 }
-
 .filter-btn.active {
   background: #ff6b35;
   border-color: #ff6b35;
   color: #fff;
 }
-
 .filter-btn .count {
   display: inline-block;
   background: rgba(255,255,255,0.2);
@@ -1089,7 +1011,6 @@ export default {
   flex: 1;
   max-width: 280px;
 }
-
 .search-box input {
   width: 100%;
   padding: 8px 16px 8px 36px;
@@ -1099,12 +1020,10 @@ export default {
   background: #fff;
   transition: border-color 0.3s;
 }
-
 .search-box input:focus {
   outline: none;
   border-color: #ff6b35;
 }
-
 .search-icon {
   position: absolute;
   left: 12px;
@@ -1114,7 +1033,6 @@ export default {
 }
 
 /* ==================== INVOICES LIST ==================== */
-
 .invoices-list {
   display: grid;
   gap: 16px;
@@ -1127,7 +1045,6 @@ export default {
   border: 1px solid #e2e8f0;
   transition: all 0.3s;
 }
-
 .invoice-card:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
@@ -1146,13 +1063,11 @@ export default {
   align-items: center;
   gap: 16px;
 }
-
 .invoice-number {
   font-weight: 600;
   color: #0f172a;
   font-size: 16px;
 }
-
 .invoice-date {
   color: #94a3b8;
   font-size: 14px;
@@ -1168,22 +1083,17 @@ export default {
   font-weight: 600;
   text-transform: uppercase;
 }
-
 .status-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
 }
-
 .status-badge.pending { background: #fffbeb; color: #d97706; }
 .status-badge.pending .status-dot { background: #d97706; }
-
 .status-badge.paid { background: #ecfdf5; color: #059669; }
 .status-badge.paid .status-dot { background: #059669; }
-
 .status-badge.overdue { background: #fef2f2; color: #dc2626; }
 .status-badge.overdue .status-dot { background: #dc2626; }
-
 .status-badge.cancelled { background: #f1f3f5; color: #94a3b8; }
 .status-badge.cancelled .status-dot { background: #94a3b8; }
 
@@ -1197,41 +1107,30 @@ export default {
   border-top: 1px solid #f1f5f9;
   border-bottom: 1px solid #f1f5f9;
 }
-
 .detail {
   display: flex;
   flex-direction: column;
   flex: 1;
 }
-
 .detail .label {
   font-size: 11px;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 .detail .value {
   font-size: 14px;
   font-weight: 500;
   color: #0f172a;
   margin-top: 2px;
 }
-
-.detail .value.amount {
-  font-weight: 700;
-}
-
-.detail .value.text-danger {
-  color: #dc2626;
-}
-
+.detail .value.amount { font-weight: 700; }
+.detail .value.text-danger { color: #dc2626; }
 .divider {
   width: 1px;
   height: 30px;
   background: #e2e8f0;
 }
-
 .overdue-tag {
   font-size: 10px;
   background: #fef2f2;
@@ -1264,20 +1163,41 @@ export default {
   transition: all 0.3s;
   background: #ff6b35;
   color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-pay::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-pay:active::after {
+  width: 300px;
+  height: 300px;
 }
 
 .btn-pay:hover:not(:disabled) {
   background: #e85a2a;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  transform: scale(1.02);
 }
 
 .btn-pay:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* ==================== PAGINATION ==================== */
-
 .pagination {
   display: flex;
   justify-content: center;
@@ -1285,7 +1205,6 @@ export default {
   gap: 16px;
   margin-top: 24px;
 }
-
 .page-btn {
   padding: 8px 20px;
   background: #fff;
@@ -1297,24 +1216,20 @@ export default {
   cursor: pointer;
   transition: all 0.3s;
 }
-
 .page-btn:hover:not(:disabled) {
   border-color: #ff6b35;
   color: #ff6b35;
 }
-
 .page-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-
 .page-info {
   color: #94a3b8;
   font-size: 14px;
 }
 
 /* ==================== MODALS ==================== */
-
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1330,7 +1245,6 @@ export default {
   padding: 20px;
   animation: fadeIn 0.25s ease;
 }
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1339,30 +1253,24 @@ export default {
 .modal {
   background: #fff;
   border-radius: 16px;
-  max-height: 90vh;
-  overflow-y: auto;
   box-shadow: 0 24px 64px rgba(0,0,0,0.2);
   animation: slideUp 0.3s ease;
   position: relative;
   z-index: 10001;
+  max-height: 90vh;
+  overflow-y: auto;
 }
-
 @keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .payment-modal {
-  max-width: 480px;
+  max-width: 560px;
   width: 100%;
+  max-height: none;
+  overflow: visible;
 }
-
 .success-modal,
 .error-modal {
   max-width: 380px;
@@ -1370,25 +1278,20 @@ export default {
 }
 
 .modal-header {
-  padding: 18px 24px;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #f1f5f9;
-  position: sticky;
-  top: 0;
   background: #fff;
-  z-index: 10;
   border-radius: 16px 16px 0 0;
 }
-
 .modal-header h3 {
   font-size: 18px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
-
 .modal-close {
   width: 32px;
   height: 32px;
@@ -1403,15 +1306,13 @@ export default {
   justify-content: center;
   transition: background 0.2s;
 }
-
 .modal-close:hover {
   background: #f1f5f9;
 }
 
 .modal-body {
-  padding: 20px 24px;
+  padding: 16px 24px 12px;
 }
-
 .modal-body .text-muted {
   color: #94a3b8;
   font-size: 14px;
@@ -1427,293 +1328,269 @@ export default {
   font-size: 20px;
   font-weight: 700;
 }
-
-.success-icon {
-  background: #ecfdf5;
-  color: #059669;
-}
-
-.error-icon {
-  background: #fef2f2;
-  color: #dc2626;
-}
+.success-icon { background: #ecfdf5; color: #059669; }
+.error-icon { background: #fef2f2; color: #dc2626; }
 
 /* ==================== PAYMENT MODAL CONTENT ==================== */
-
 .invoice-summary {
   display: flex;
   justify-content: space-around;
   align-items: center;
   background: #f8fafc;
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
   border: 1px solid #eef2f6;
 }
-
 .summary-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 1;
 }
-
 .summary-item .summary-label {
-  font-size: 10px;
+  font-size: 9px;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   font-weight: 600;
 }
-
 .summary-item .summary-value {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #0f172a;
   margin-top: 2px;
 }
-
 .summary-item .summary-value.amount {
   color: #ff6b35;
   font-weight: 700;
 }
-
 .summary-divider {
   width: 1px;
-  height: 30px;
+  height: 24px;
   background: #e2e8f0;
 }
 
 .section-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #0f172a;
-  margin: 0 0 12px;
-}
-
-.payment-methods-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.payment-method-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  background: #fff;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.payment-method-item:hover {
-  border-color: #cbd5e1;
-  background: #fafbfc;
-}
-
-.payment-method-item.active {
-  border-color: #ff6b35;
-  background: #fff8f5;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.08);
-}
-
-.method-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.method-icon {
-  font-size: 22px;
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f1f5f9;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.method-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.method-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.method-desc {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.method-check {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #e2e8f0;
-  color: transparent;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.payment-method-item.active .method-check {
-  background: #ff6b35;
-  border-color: #ff6b35;
-  color: #fff;
-}
-
-.dynamic-fields {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.fields-label {
   font-size: 13px;
   font-weight: 600;
   color: #0f172a;
   margin: 0 0 10px;
 }
 
-.fields-grid {
+/* ===== PAYMENT METHODS GRID - 3 COLUMNS ===== */
+.payment-methods-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.payment-method-card {
+  padding: 14px 8px;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-method-card:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.payment-method-card.active {
+  border-color: #ff6b35;
+  background: #fff8f5;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15), 0 4px 12px rgba(255, 107, 53, 0.12);
+  transform: translateY(-2px);
+}
+
+.method-card-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.method-card-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.method-card-check {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  background: #ff6b35;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+}
+
+/* Selected method details */
+.selected-method-details {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px 14px;
+  border: 1px solid #eef2f6;
+}
+
+.selected-method-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.selected-method-label {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.selected-method-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Compact dynamic fields */
+.dynamic-fields-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.field-group label {
-  font-size: 12px;
+.field-label-compact {
+  font-size: 11px;
   font-weight: 500;
   color: #475569;
+  min-width: 90px;
+  flex-shrink: 0;
 }
 
-.field-group .required {
+.field-label-compact .required {
   color: #ef4444;
   margin-left: 2px;
 }
 
-.field-input {
-  padding: 8px 12px;
+.field-input-compact {
+  flex: 1;
+  padding: 6px 10px;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: 6px;
+  font-size: 12px;
   transition: border-color 0.3s;
   background: #fff;
-  width: 100%;
 }
 
-.field-input:focus {
+.field-input-compact:focus {
   outline: none;
   border-color: #ff6b35;
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.08);
 }
 
-.payment-info {
-  margin-top: 12px;
+/* Compact info boxes */
+.info-box.compact {
+  padding: 8px 12px;
+  gap: 8px;
+  margin-top: 6px;
 }
 
-.info-box {
-  display: flex;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  align-items: flex-start;
+.info-box.compact .info-icon {
+  font-size: 18px;
+}
+
+.info-box.compact .info-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.office-details.compact {
+  padding: 4px 8px;
+  margin-top: 4px;
+}
+
+.office-details.compact p {
+  font-size: 11px;
+  margin: 1px 0;
+  color: #0f172a;
+}
+
+.cash-note {
+  font-size: 12px;
+  color: #64748b;
+  margin: 4px 0 0;
+  font-style: italic;
 }
 
 .info-box.cash {
   background: #fffbeb;
   border: 1px solid #fef3c7;
 }
-
 .info-box.mobile {
   background: #f5f3ff;
   border: 1px solid #ede9fe;
 }
 
-.info-icon {
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-.info-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #0f172a;
-  margin: 0 0 2px;
-}
-
-.info-text {
-  font-size: 13px;
-  color: #64748b;
-  margin: 0;
-}
-
-.office-details {
-  margin-top: 6px;
-  padding: 8px 12px;
-  background: #fff;
-  border-radius: 6px;
-}
-
-.office-details p {
-  font-size: 12px;
-  color: #0f172a;
-  margin: 2px 0;
-}
-
 .payment-loading {
   text-align: center;
-  padding: 24px;
+  padding: 20px;
 }
-
 .spinner-small {
-  width: 32px;
-  height: 32px;
-  margin: 0 auto 8px;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 6px;
   border: 3px solid #e2e8f0;
   border-top: 3px solid #ff6b35;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 .payment-loading p {
   color: #94a3b8;
-  font-size: 14px;
+  font-size: 13px;
   margin: 0;
 }
 
 /* ==================== MODAL FOOTER ==================== */
-
 .modal-footer {
-  padding: 16px 24px 20px;
+  padding: 12px 24px 16px;
   display: flex;
   gap: 12px;
   border-top: 1px solid #f1f5f9;
-  position: sticky;
-  bottom: 0;
   background: #fff;
   border-radius: 0 0 16px 16px;
 }
-
 .modal-footer button {
   padding: 10px 20px;
   border: none;
@@ -1724,31 +1601,57 @@ export default {
   transition: all 0.3s;
   text-align: center;
 }
-
 .modal-footer button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
 .btn-cancel {
   background: #f1f5f9;
   color: #64748b;
   flex: 0.5;
 }
-
 .btn-cancel:hover:not(:disabled) {
   background: #e2e8f0;
 }
-
 .btn-pay-modal {
   background: #ff6b35;
   color: #fff;
   flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-pay-modal::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-pay-modal:active::after {
+  width: 300px;
+  height: 300px;
 }
 
 .btn-pay-modal:hover:not(:disabled) {
   background: #e85a2a;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  transform: scale(1.02);
+}
+
+.btn-pay-modal.btn-cash {
+  background: #22c55e;
+}
+
+.btn-pay-modal.btn-cash:hover:not(:disabled) {
+  background: #16a34a;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
 .btn-primary {
@@ -1763,13 +1666,11 @@ export default {
   transition: all 0.3s;
   flex: 1;
 }
-
 .btn-primary:hover {
   background: #e85a2a;
 }
 
 /* ==================== TOAST ==================== */
-
 .toast {
   position: fixed;
   bottom: 24px;
@@ -1785,22 +1686,9 @@ export default {
   max-width: 420px;
   animation: slideUp 0.3s ease;
 }
-
-.toast.success {
-  background: #0f172a;
-  color: #fff;
-}
-
-.toast.error {
-  background: #dc2626;
-  color: #fff;
-}
-
-.toast-icon {
-  font-weight: 700;
-  font-size: 16px;
-}
-
+.toast.success { background: #0f172a; color: #fff; }
+.toast.error { background: #dc2626; color: #fff; }
+.toast-icon { font-weight: 700; font-size: 16px; }
 .toast button {
   background: none;
   border: none;
@@ -1810,142 +1698,63 @@ export default {
   margin-left: auto;
   padding: 0 4px;
 }
-
-.toast button:hover {
-  color: #fff;
-}
+.toast button:hover { color: #fff; }
 
 /* ==================== SCROLLBAR ==================== */
-
 .modal::-webkit-scrollbar {
   width: 4px;
 }
-
 .modal::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
-
 .modal::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
 
 /* ==================== RESPONSIVE ==================== */
-
 @media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
-
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .header-actions {
-    flex-direction: column;
-  }
-
-  .btn-refresh {
-    justify-content: center;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-box {
-    max-width: none;
-  }
-
-  .card-middle {
-    flex-direction: column;
-    align-items: stretch;
+  .page-header { flex-direction: column; align-items: stretch; }
+  .header-actions { flex-direction: column; }
+  .btn-refresh { justify-content: center; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .filters { flex-direction: column; align-items: stretch; }
+  .search-box { max-width: none; }
+  .card-middle { flex-direction: column; align-items: stretch; gap: 8px; }
+  .divider { display: none; }
+  .card-bottom { flex-direction: column; }
+  .btn-pay { justify-content: center; }
+  .payment-modal { max-width: 100%; margin: 16px; }
+  .invoice-summary { flex-direction: column; gap: 4px; }
+  .summary-divider { display: none; }
+  .summary-item { flex-direction: row; justify-content: space-between; width: 100%; padding: 2px 0; }
+  .payment-methods-grid {
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
   }
-
-  .divider {
-    display: none;
-  }
-
-  .card-bottom {
-    flex-direction: column;
-  }
-
-  .btn-pay {
-    justify-content: center;
-  }
-
-  .payment-modal {
-    max-width: 100%;
-    margin: 16px;
-  }
-
-  .invoice-summary {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .summary-divider {
-    display: none;
-  }
-
-  .summary-item {
-    flex-direction: row;
-    justify-content: space-between;
-    width: 100%;
-    padding: 2px 0;
-  }
-
-  .fields-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .modal-footer {
-    flex-direction: column;
-  }
-
-  .btn-cancel {
-    flex: 1;
-  }
-
-  .toast {
-    bottom: 16px;
-    right: 16px;
-    left: 16px;
-    min-width: auto;
-    max-width: none;
-  }
+  .payment-method-card { min-height: 70px; padding: 10px 6px; }
+  .method-card-icon { font-size: 24px; }
+  .method-card-name { font-size: 10px; }
+  .field-row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .field-label-compact { min-width: auto; }
+  .modal-footer { flex-direction: column; }
+  .btn-cancel { flex: 1; }
+  .toast { bottom: 16px; right: 16px; left: 16px; min-width: auto; max-width: none; }
 }
-
 @media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .stats-grid { grid-template-columns: 1fr; }
+  .card-top { flex-direction: column; align-items: stretch; gap: 12px; }
+  .modal-body { padding: 12px 16px; }
+  .modal-header { padding: 12px 16px; }
+  .modal-footer { padding: 10px 16px 14px; }
+  .payment-methods-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-
-  .card-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .modal-body {
-    padding: 16px;
-  }
-
-  .modal-header {
-    padding: 14px 16px;
-  }
-
-  .modal-footer {
-    padding: 12px 16px 16px;
-  }
+  .payment-method-card { min-height: 65px; padding: 8px 4px; }
+  .method-card-icon { font-size: 20px; }
+  .method-card-name { font-size: 9px; }
 }
 </style>
