@@ -124,6 +124,16 @@ export const authService = {
     return response.data
   },
 
+  async forgotPassword(email) {
+    const response = await apiClient.post('/api/forgot-password', { email })
+    return response.data
+  },
+
+  async resetPassword(data) {
+    const response = await apiClient.post('/api/reset-password', data)
+    return response.data
+  },
+
   async updateProfile(data) {
     try {
       const response = await apiClient.patch('/api/profile', data)
