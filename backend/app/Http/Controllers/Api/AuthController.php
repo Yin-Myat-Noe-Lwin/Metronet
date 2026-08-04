@@ -217,7 +217,7 @@ class AuthController extends Controller
     public function forgotPassword(ForgotPasswordRequest $request)
     {
         ResetPassword::createUrlUsing(function ($user, string $token) {
-            return 'http://localhost/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+            return 'http://http://172.16.251.66:5173/reset-password?token=' . $token . '&email=' . urlencode($user->email);
         });
         // send password reset mail to customer mail
         $status = Password::sendResetLink(

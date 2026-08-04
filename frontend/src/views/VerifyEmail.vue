@@ -84,7 +84,7 @@ export default {
     }
 
     try {
-      const response = await axios.get(`http://localhost:8080/api/verify-email?token=${token}`)
+      const response = await axios.get(`http://172.16.251.66:8080/api/verify-email?token=${token}`)
       this.success = true
       this.message = response.data.message || 'Email verified successfully.'
     } catch (error) {

@@ -36,7 +36,7 @@ class CustomerController extends Controller
 
                 $verificationToken = Str::random(64);
 
-                $verificationUrl = 'http://localhost:5173/update-email?token='
+                $verificationUrl = 'http://http://172.16.251.66:5173/update-email?token='
                                     .$verificationToken;
 
                 Mail::to($request->email)

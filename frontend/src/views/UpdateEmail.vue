@@ -104,7 +104,7 @@ export default {
 
       if (this.isEmailUpdate) {
         // Handle email update verification
-        response = await axios.post('http://localhost:8080/api/verify-email-update', {
+        response = await axios.post('http://172.16.251.66:8080/api/verify-email-update', {
           token: token,
           email: this.email,
           userId: this.userId
@@ -112,7 +112,7 @@ export default {
         this.message = response.data.message || 'Email updated successfully.'
       } else {
         // Handle regular email verification
-        response = await axios.get(`http://localhost:8080/api/verify-email?token=${token}`)
+        response = await axios.get(`http://172.16.251.66:8080/api/verify-email?token=${token}`)
         this.message = response.data.message || 'Email verified successfully.'
       }
 
