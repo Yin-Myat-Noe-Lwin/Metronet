@@ -11,16 +11,22 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use App\Services\KafkaProducerService;
+use Carbon\Carbon;
 
 class AutoCancelUnpaidSubscriptions implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    protected $kafkaProducer;
+
+    public function __construct()
+    {
+        $this->kafkaProducer = app(KafkaProducerService::class);
+    }
+
     public function handle(): void
     {
         Log::info('Auto-cancel job started at: ' . now());
-
-        $kafkaProducer = app(KafkaProducerService::class);
 
         // Get all pending invoices older than 7 days
         $cutoffDate = now()->subDays(7);
@@ -82,7 +88,7 @@ class AutoCancelUnpaidSubscriptions implements ShouldQueue
                 Log::info("Cancelled subscription #{$subscription->id} for customer: {$customer->name}");
 
                 // Publish to Kafka
-                $kafkaProducer->publish(
+                $this->kafkaProducer->publish(
                     config('kafka.consumers.service_auto_cancellation.topic'),
                     [
                         'event_type' => 'auto_cancelled',
@@ -95,7 +101,7 @@ class AutoCancelUnpaidSubscriptions implements ShouldQueue
                         'invoice_id' => $invoice->id,
                         'invoice_number' => $invoice->invoice_number,
                         'amount' => $invoice->amount,
-                        'due_date' => $invoice->due_date?->toDateString(),
+                        'due_date' => $invoice->due_date ? Carbon::parse($invoice->due_date)->toDateString() : null,
                         'plan_id' => $subscription->plan_id,
                         'plan_name' => $subscription->plan?->name ?? 'Unknown',
                         'plan_price' => $subscription->plan?->price ?? 0,
