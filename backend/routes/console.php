@@ -18,12 +18,12 @@ Schedule::call(function () {
   ->withoutOverlapping();
 
 Schedule::job(new SendPaymentReminderJob())
-    ->everyMinute()
+    ->dailyAt('08:00')
     ->name('payment-reminder')
     ->withoutOverlapping();
 
 Schedule::job(new AutoCancelUnpaidSubscriptions())
-    ->everyMinute()
+    ->dailyAt('08:00')
     ->name('subscription-cancellation')
     ->withoutOverlapping();
 
