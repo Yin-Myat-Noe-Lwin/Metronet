@@ -11,16 +11,22 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use App\Services\KafkaProducerService;
+use Carbon\Carbon;
 
 class SendPaymentReminderJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    protected $kafkaProducer;
+
+    public function __construct()
+    {
+        $this->kafkaProducer = app(KafkaProducerService::class);
+    }
+
     public function handle(): void
     {
         Log::info('Payment reminder job started at: ' . now());
-
-        $kafkaProducer = app(KafkaProducerService::class);
 
         // 3-DAY REMINDER (3 days left before due date)
         $this->sendReminder(3, 'reminder');
@@ -60,7 +66,7 @@ class SendPaymentReminderJob implements ShouldQueue
                 Log::info("Publishing reminder for customer #{$customer->id}, invoice #{$invoice->invoice_number}");
 
                 // Publish to Kafka
-                $kafkaProducer->publish(
+                $this->kafkaProducer->publish(
                     config('kafka.consumers.payment_reminder.topic', 'payment.reminder'),
                     [
                         'event_type' => $eventType,
@@ -71,7 +77,7 @@ class SendPaymentReminderJob implements ShouldQueue
                         'invoice_id' => $invoice->id,
                         'invoice_number' => $invoice->invoice_number,
                         'amount' => $invoice->amount,
-                        'due_date' => $invoice->due_date?->toDateString(),
+                        'due_date' => $invoice->due_date ? Carbon::parse($invoice->due_date)->toDateString() : null,
                         'subscription_id' => $subscription->id,
                         'plan_id' => $subscription->plan_id,
                         'plan_name' => $subscription->plan?->name ?? 'Unknown',
