@@ -22,7 +22,7 @@ class ResetPasswordRequest extends FormRequest
 
     public function messages(): array
     {
-        [
+        return  [
             'token.required' => 'Reset token is missing or invalid.',
             'email.required' => 'Email address is required.',
             'email.email' => 'Please enter a valid email address.',
