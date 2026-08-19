@@ -6,13 +6,15 @@
         <h1 class="page-title">Subscriptions Management</h1>
         <p class="page-subtitle">View and manage all customer subscriptions</p>
       </div>
-      <button class="btn-refresh" @click="fetchSubscriptions" :disabled="loading">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-        </svg>
-        {{ loading ? 'Loading...' : 'Refresh' }}
-      </button>
+      <div class="header-actions">
+        <button class="btn-refresh" @click="fetchSubscriptions" :disabled="loading">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          {{ loading ? 'Loading...' : 'Refresh' }}
+        </button>
+      </div>
     </div>
 
     <!-- Search & Filters -->
@@ -467,6 +469,18 @@ export default {
 
   mounted() {
     this.fetchSubscriptions()
+    // Auto-refresh every 30 seconds
+    this.refreshInterval = setInterval(() => {
+      if (!this.loading && !this.showAcceptModal && !this.showRejectModal) {
+        this.fetchSubscriptions()
+      }
+    }, 30000)
+  },
+
+  beforeDestroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval)
+    }
   },
 
   methods: {
@@ -556,7 +570,6 @@ export default {
     },
 
     async viewSubscription(id) {
-      // Open modal with loading state
       this.showViewModal = true
       this.viewLoading = true
       this.viewingSubscription = null
@@ -597,12 +610,17 @@ export default {
         await subscriptionsService.acceptSubscription(this.acceptingSubscription.id)
         this.showToast('Subscription accepted successfully', 'success')
         this.closeAcceptModal()
-        this.fetchSubscriptions()
+        // Wait a moment before refetching to ensure backend has updated
+        await new Promise(resolve => setTimeout(resolve, 500))
+        await this.fetchSubscriptions()
       } catch (error) {
         console.error('Error accepting subscription:', error)
         this.showToast(error.response?.data?.error || 'Failed to accept subscription', 'error')
-      } finally {
         this.isAccepting = false
+      } finally {
+        if (this.isAccepting) {
+          this.isAccepting = false
+        }
       }
     },
 
@@ -631,12 +649,17 @@ export default {
         )
         this.showToast('Subscription rejected successfully', 'success')
         this.closeRejectModal()
-        this.fetchSubscriptions()
+        // Wait a moment before refetching to ensure backend has updated
+        await new Promise(resolve => setTimeout(resolve, 500))
+        await this.fetchSubscriptions()
       } catch (error) {
         console.error('Error rejecting subscription:', error)
         this.showToast(error.response?.data?.error || 'Failed to reject subscription', 'error')
-      } finally {
         this.isRejecting = false
+      } finally {
+        if (this.isRejecting) {
+          this.isRejecting = false
+        }
       }
     },
 
@@ -702,6 +725,11 @@ export default {
   color: #94a3b8;
   font-size: 15px;
   margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .btn-refresh {
@@ -1100,6 +1128,61 @@ export default {
   margin: 0;
 }
 
+/* ===== LOADING ===== */
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #ff6b35;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #94a3b8;
+}
+
+/* ===== ERROR ===== */
+.error-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.error-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.error-state p {
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+.retry-btn {
+  padding: 8px 24px;
+  background: #ff6b35;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.retry-btn:hover {
+  background: #e85a2a;
+}
+
 /* ===== MODALS ===== */
 .modal-overlay {
   position: fixed;
@@ -1213,10 +1296,6 @@ export default {
   border-top-color: #ff6b35;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .modal-loading-overlay p {
@@ -1475,52 +1554,6 @@ export default {
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-}
-
-/* ===== LOADING / ERROR STATES ===== */
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #ff6b35;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
-}
-
-.error-state {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-.error-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
-}
-
-.error-state p {
-  color: #dc2626;
-  margin-bottom: 12px;
-}
-
-.retry-btn {
-  padding: 8px 24px;
-  background: #ff6b35;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.retry-btn:hover {
-  background: #e85a2a;
 }
 
 /* ===== CPE ===== */
