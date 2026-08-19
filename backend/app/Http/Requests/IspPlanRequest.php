@@ -26,8 +26,8 @@ class IspPlanRequest extends FormRequest
             'name' => 'required|string|max:255|unique:isp_plans,name',
             'description' => 'required|string|max:100',
             'price' => 'required|numeric|min:0',
-            'upload_speed' => 'required|integer|min:1',
-            'download_speed' => 'required|integer|min:1',
+            'upload_speed' => 'required|integer|min:1|max:3',
+            'download_speed' => 'required|integer|min:1|max:3',
         ];
     }
 }
