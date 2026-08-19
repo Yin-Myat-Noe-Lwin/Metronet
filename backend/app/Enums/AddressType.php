@@ -7,7 +7,7 @@
     enum AddressType: int{
         case HOME = 1;
         case OFFICE = 2;
-        case BUSINESS =3;
+        case BUSINESS = 3;
     }
 
 ?>
