@@ -20,8 +20,9 @@ class Invoice extends Model
     ];
 
     protected $casts = [
-        'billing_period_start' => 'datetime',
-        'billing_period_end' => 'datetime'
+        'billing_period_start' => 'date',
+        'billing_period_end' => 'date',
+        'due_date' => 'date'
     ];
 
     public function subscription(): BelongsTo
