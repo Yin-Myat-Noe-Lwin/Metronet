@@ -85,28 +85,30 @@ class CreateInvoiceJob implements ShouldQueue
         // Calculate invoice amount with discount
         $invoiceAmount = $this->calculateInvoiceAmount($subscription);
 
-        // Create invoice
-        $invoice = Invoice::create([
-            'invoice_number' => $this->generateInvoiceNumber($subscription->id),
-            'subscription_id' => $subscription->id,
-            'amount' => $invoiceAmount,
-            'due_date' => $nextPeriodStart->copy()->addDays(7),
-            'billing_period_start' => $nextPeriodStart,
-            'billing_period_end' => $nextPeriodEnd,
-            'status' => 0, // pending
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+        if ($nextPeriodStart->isToday()) {
+            // Create invoice only when the next period starts
+            $invoice = Invoice::create([
+                'invoice_number' => $this->generateInvoiceNumber($subscription->id),
+                'subscription_id' => $subscription->id,
+                'amount' => $invoiceAmount,
+                'due_date' => $nextPeriodStart->copy()->addDays(7),
+                'billing_period_start' => $nextPeriodStart,
+                'billing_period_end' => $nextPeriodEnd,
+                'status' => 0, // pending
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
-        Log::info('Invoice created successfully', [
-            'invoice_id' => $invoice->id,
-            'subscription_id' => $subscription->id,
-            'amount' => $invoice->amount,
-            'period' => $nextPeriodStart->format('Y-m-d') . ' to ' . $nextPeriodEnd->format('Y-m-d')
-        ]);
+            Log::info('Invoice created successfully', [
+                'invoice_id' => $invoice->id,
+                'subscription_id' => $subscription->id,
+                'amount' => $invoice->amount,
+                'period' => $nextPeriodStart->format('Y-m-d') . ' to ' . $nextPeriodEnd->format('Y-m-d')
+            ]);
 
-        // Dispatch Kafka event
-        $this->publishInvoiceEvent($invoice, $subscription, $kafkaProducer);
+            // Dispatch Kafka event
+            $this->publishInvoiceEvent($invoice, $subscription, $kafkaProducer);
+        }
     }
 
     /**
