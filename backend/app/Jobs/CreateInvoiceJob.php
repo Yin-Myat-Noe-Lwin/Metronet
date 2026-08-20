@@ -19,13 +19,11 @@ class CreateInvoiceJob implements ShouldQueue
         Log::info("Invoice creation job started");
 
         // Get active subscriptions with their plans
-        $subscriptions = Subscription::with(['plan'])
-                                    ->where('status', 1) // Active only
-                                    ->whereNotNull('start_date')
+        $subscriptions = Subscription::where('status', 1) // Active only
                                     ->where('end_date', '>', now()) // Not expired
                                     ->get();
 
-        Log::info('Active subscriptions found', ['count' => $subscriptions->count()]);
+        Log::info('Active subscriptions found', $subscriptions->count());
 
         foreach ($subscriptions as $subscription) {
             $this->processSubscription($subscription, $kafkaProducer);
@@ -42,13 +40,12 @@ class CreateInvoiceJob implements ShouldQueue
         Log::info('Processing subscription', [
             'subscription_id' => $subscription->id,
             'billing_cycle' => $subscription->billing_cycle,
-            'plan' => $subscription->plan->name
         ]);
 
         // Determine the next billing period
         $lastInvoice = $subscription->invoices()
-            ->orderBy('billing_period_end', 'desc')
-            ->first();
+                                    ->orderBy('billing_period_end', 'desc')
+                                    ->first();
 
         if ($lastInvoice) {
             // if there is any last invoice, start from where last invoice ended
