@@ -43,7 +43,7 @@
 
         <form @submit.prevent="handleLogin" novalidate>
           <!-- Email -->
-          <div class="form-group" :class="{ 'has-error': showEmailError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('email') }">
             <label class="form-label">
               Email Address <span class="required">*</span>
             </label>
@@ -53,16 +53,16 @@
               required
               placeholder="you@example.com"
               class="form-input"
-              :class="{ 'input-error': showEmailError }"
-              @input="validateEmail"
-              @blur="touched.email = true; validateEmail()"
+              :class="{ 'input-error': shouldShowError('email') }"
+              @input="onInput('email')"
+              @blur="onBlur('email')"
               autocomplete="email"
             >
-            <span v-if="showEmailError" class="field-error">{{ emailError }}</span>
+            <span v-if="shouldShowError('email')" class="field-error">{{ emailError }}</span>
           </div>
 
           <!-- Password -->
-          <div class="form-group" :class="{ 'has-error': showPasswordError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('password') }">
             <div class="password-wrapper">
               <label class="form-label">
                 Password <span class="required">*</span>
@@ -73,19 +73,19 @@
                 required
                 placeholder="Enter your password"
                 class="form-input"
-                :class="{ 'input-error': showPasswordError }"
-                @input="validatePassword"
-                @blur="touched.password = true; validatePassword()"
+                :class="{ 'input-error': shouldShowError('password') }"
+                @input="onInput('password')"
+                @blur="onBlur('password')"
                 autocomplete="current-password"
               >
               <button type="button" @click="showPassword = !showPassword" class="password-toggle" tabindex="-1">
                 {{ showPassword ? 'Hide' : 'Show' }}
               </button>
             </div>
-            <span v-if="showPasswordError" class="field-error">{{ passwordError }}</span>
+            <span v-if="shouldShowError('password')" class="field-error">{{ passwordError }}</span>
           </div>
 
-          <!-- Remember Me & Forgot Password Row (NEW) -->
+          <!-- Remember Me & Forgot Password Row -->
           <div class="form-options">
             <label class="checkbox-label">
               <input type="checkbox" v-model="form.remember">
@@ -129,7 +129,7 @@ export default {
       form: {
         email: '',
         password: '',
-        remember: false,   // <-- NEW
+        remember: false,
       },
     }
   },
@@ -166,12 +166,36 @@ export default {
     }
   },
   methods: {
+    // Handle input events - mark field as touched and validate
+    onInput(field) {
+      this.touched[field] = true
+      if (field === 'email') this.validateEmail()
+      else if (field === 'password') this.validatePassword()
+    },
+
+    // Handle blur events - validate on leaving field
+    onBlur(field) {
+      this.touched[field] = true
+      if (field === 'email') this.validateEmail()
+      else if (field === 'password') this.validatePassword()
+    },
+
     validateEmail() {
       this.touched.email = true
     },
     validatePassword() {
       this.touched.password = true
     },
+
+    // Check if we should show error for a field
+    shouldShowError(field) {
+      const errorMap = {
+        email: this.emailError,
+        password: this.passwordError,
+      }
+      return this.touched[field] && errorMap[field] !== null
+    },
+
     async handleLogin() {
       this.globalError = null
       this.touched.email = true
@@ -185,14 +209,12 @@ export default {
 
       this.isLoading = true
       try {
-        // Pass remember flag to the login service
         const response = await authService.login(
           this.form.email,
           this.form.password,
-          this.form.remember   // <-- NEW
+          this.form.remember
         )
 
-        // --- Extract and store user data (unchanged) ---
         let userData = null
         let token = response.token || response.access_token || response.accessToken || ''
         let role = response.role !== undefined ? response.role : 1
@@ -234,7 +256,6 @@ export default {
         localStorage.setItem('userData', JSON.stringify(userDataToStore))
         if (userPhone) localStorage.setItem('userPhone', userPhone)
 
-        // Optionally store remember preference
         if (this.form.remember) {
           localStorage.setItem('rememberMe', 'true')
         } else {
@@ -274,7 +295,6 @@ export default {
 </script>
 
 <style scoped>
-/* ===== ALL YOUR EXISTING STYLES ARE HERE (unchanged) ===== */
 .login-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e8ecf1 100%);
@@ -435,38 +455,33 @@ form {
   background: #fff;
 }
 
+/* ====== FOCUS COLOR = WARNING (Yellow/Amber) ====== */
 .form-input:focus {
   outline: none;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.08);
-  background: #fff;
+  border-color: #f0c27a !important;
+  box-shadow: 0 0 0 4px rgba(240, 194, 122, 0.2) !important;
+  background: #fffbf5 !important;
 }
 
-.form-input::-webkit-credentials-auto-fill-button,
-.form-input::-webkit-caps-lock-indicator,
-.form-input::-webkit-contacts-auto-fill-button,
-.form-input::-webkit-credentials-auto-fill-button {
-  display: none !important;
-  visibility: hidden;
-  pointer-events: none;
+/* ====== ERROR COLOR = Red/Pink (only shows when there's an error) ====== */
+.has-error .form-input {
+  border-color: #f0a0a0 !important;
+  background: #fff8f8 !important;
 }
 
-.form-input::-moz-reveal {
-  display: none !important;
-}
-
-.form-input::-ms-reveal,
-.form-input::-ms-clear {
-  display: none !important;
+.has-error .form-input:focus {
+  border-color: #e88383 !important;
+  box-shadow: 0 0 0 4px rgba(240, 160, 160, 0.2) !important;
 }
 
 .input-error {
-  border-color: #e74c3c !important;
+  border-color: #f0a0a0 !important;
+  background: #fff8f8 !important;
 }
 
 .input-error:focus {
-  border-color: #e74c3c !important;
-  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.08) !important;
+  border-color: #e88383 !important;
+  box-shadow: 0 0 0 4px rgba(240, 160, 160, 0.2) !important;
 }
 
 .field-error {
@@ -575,7 +590,6 @@ form {
   -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
 }
 
-/* ===== NEW STYLES FOR THE OPTIONS ROW ===== */
 .form-options {
   display: flex;
   justify-content: space-between;
@@ -611,7 +625,6 @@ form {
   text-decoration: underline;
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
   .login-container {
     padding: 28px 20px;
