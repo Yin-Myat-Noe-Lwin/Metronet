@@ -19,6 +19,7 @@ use App\Http\Requests\IspPlanRequest;
 use Illuminate\Support\Facades\Log;
 use Junges\Kafka\Facades\Kafka;
 use App\Services\KafkaProducerService;
+use Illuminate\Validation\ValidationException;
 
 class IspPlanController extends Controller
 {
@@ -61,23 +62,13 @@ class IspPlanController extends Controller
 
             foreach ($plans as $plan) {
                 $planDiscounts = $discountsByPlan[$plan->id] ?? [];
-
                 // gt the discount for the default validity_months (usually 1 month)
                 // If the plan has a discount for 1 month, use it, otherwise 0
                 $defaultDiscount = $planDiscounts[$plan->validity_months] ?? 0;
-
                 // Get best discount (for display purposes, but don't apply to price)
                 $bestDiscount = !empty($planDiscounts) ? max($planDiscounts) : 0;
-
                 // Calculate discounted price ONLY if there's a discount for the default duration
-                $discountedPrice = $defaultDiscount > 0
-                                            ? $plan->price * (1 - $defaultDiscount / 100)
-                                            : $plan->price;
-
-                // Get discount label for the default duration
-                // $discountLabel = $defaultDiscount > 0
-                //                     ? "Save {$defaultDiscount}% on {$plan->validity_months} month plan"
-                //                     : null;
+                $discountedPrice = $defaultDiscount > 0 ? $plan->price * (1 - $defaultDiscount / 100) : $plan->price;
 
                 $result[] = [
                     'id' => $plan->id,
@@ -88,12 +79,11 @@ class IspPlanController extends Controller
                     'download_speed' => $plan->download_speed,
                     'validity_months' => $plan->validity_months,
                     'status' => $plan->status,
-                    'discounts' => $planDiscounts, // All discounts for this plan
-                    'has_discount' => $defaultDiscount > 0, // Only if default duration has discount
-                    'best_discount' => (float) $bestDiscount, // Best discount available (for display)
-                    'default_discount' => (float) $defaultDiscount, // Discount for default duration
-                    'discounted_price' => (float) $discountedPrice, // Price with default discount
-                    // 'discount_label' => $discountLabel // readable discount label
+                    'discounts' => $planDiscounts,
+                    'has_discount' => $defaultDiscount > 0,
+                    'best_discount' => (float) $bestDiscount,
+                    'default_discount' => (float) $defaultDiscount,
+                    'discounted_price' => (float) $discountedPrice,
                 ];
             }
 
@@ -105,81 +95,91 @@ class IspPlanController extends Controller
             ]);
         } catch (PDOException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 500);
         } catch (QueryException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 500);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 404);
         } catch (AuthenticationException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 401);
         } catch (AuthorizationException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 403);
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Something went wrong.'
-            ]);
+            ], 500);
         }
     }
 
     public function store(IspPlanRequest $request): JsonResponse
     {
-        try{
+        try {
+            $validated = $request->validated();
+
             $plan = IspPlan::create([
-                ...$request->validated(),
+                ...$validated,
                 'status' => 1
             ]);
 
             Cache::forget('active_isp_plans');
 
             return response()->json([
-                'message' => 'Plan created',
+                'message' => 'Plan created successfully',
                 'data' => $plan
-            ]);
+            ], 201);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (PDOException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 500);
         } catch (QueryException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 500);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 404);
         } catch (AuthenticationException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 401);
         } catch (AuthorizationException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 403);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong.'
-            ]);
+                'message' => 'Something went wrong: ' . $e->getMessage()
+            ], 500);
         }
     }
 
     public function update(IspPlanUpdateRequest $request, $id): JsonResponse
     {
-        try{
+        try {
+            $validated = $request->validated();
+
             $plan = IspPlan::find($id);
 
             if (!$plan) {
                 return response()->json([
-                    'message' => 'Not found'
-                ]);
+                    'message' => 'Plan not found'
+                ], 404);
             }
 
             // Get old data before update
@@ -191,7 +191,7 @@ class IspPlanController extends Controller
                 'status' => $plan->status
             ];
 
-            $plan->update($request->validated());
+            $plan->update($validated);
 
             Cache::forget('active_isp_plans');
 
@@ -240,51 +240,57 @@ class IspPlanController extends Controller
             }
 
             return response()->json([
-                'message' => 'Plan updated',
+                'message' => 'Plan updated successfully',
                 'data' => $plan
             ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (PDOException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 500);
         } catch (QueryException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 500);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 404);
         } catch (AuthenticationException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 401);
         } catch (AuthorizationException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 403);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong.'
-            ]);
+                'message' => 'Something went wrong: ' . $e->getMessage()
+            ], 500);
         }
     }
 
     public function destroy($id): JsonResponse
     {
-        try{
+        try {
             $plan = IspPlan::find($id);
 
             if (!$plan) {
                 return response()->json([
                     'message' => 'Plan not found'
-                ]);
+                ], 404);
             }
 
             if ($plan->status == 0) {
                 return response()->json([
                     'message' => 'Plan already inactive'
-                ]);
+                ], 400);
             }
 
             $plan->update([
@@ -311,30 +317,31 @@ class IspPlanController extends Controller
             return response()->json([
                 'message' => 'Plan deactivated successfully'
             ]);
+
         } catch (PDOException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 500);
         } catch (QueryException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 500);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 404);
         } catch (AuthenticationException $e) {
             return response()->json([
-                'message' =>  $e->getMessage()
-            ]);
+                'message' => $e->getMessage()
+            ], 401);
         } catch (AuthorizationException $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ]);
+            ], 403);
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Something went wrong.'
-            ]);
+            ], 500);
         }
     }
 }
