@@ -43,7 +43,7 @@
 
         <form @submit.prevent="handleSubmit" novalidate>
           <!-- Email -->
-          <div class="form-group" :class="{ 'has-error': showEmailError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('email') }">
             <label class="form-label">
               Email Address <span class="required">*</span>
             </label>
@@ -53,12 +53,12 @@
               required
               placeholder="you@example.com"
               class="form-input"
-              :class="{ 'input-error': showEmailError }"
-              @input="validateEmail"
-              @blur="touched.email = true; validateEmail()"
+              :class="{ 'input-error': shouldShowError('email') }"
+              @input="onInput('email')"
+              @blur="onBlur('email')"
               autocomplete="email"
             >
-            <span v-if="showEmailError" class="field-error">{{ emailError }}</span>
+            <span v-if="shouldShowError('email')" class="field-error">{{ emailError }}</span>
           </div>
 
           <!-- Submit Button -->
@@ -103,7 +103,28 @@ export default {
     isFormValid() { return !this.emailError && this.form.email },
   },
   methods: {
+    // Handle input events - mark field as touched and validate
+    onInput(field) {
+      this.touched[field] = true
+      if (field === 'email') this.validateEmail()
+    },
+
+    // Handle blur events - validate on leaving field
+    onBlur(field) {
+      this.touched[field] = true
+      if (field === 'email') this.validateEmail()
+    },
+
     validateEmail() { this.touched.email = true },
+
+    // Check if we should show error for a field
+    shouldShowError(field) {
+      const errorMap = {
+        email: this.emailError,
+      }
+      return this.touched[field] && errorMap[field] !== null
+    },
+
     async handleSubmit() {
       this.globalError = null
       this.successMessage = null
@@ -133,7 +154,6 @@ export default {
 </script>
 
 <style scoped>
-
 .forgot-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e8ecf1 100%);
@@ -246,15 +266,42 @@ form { display: flex; flex-direction: column; gap: 16px; }
   background: #fafbfc;
 }
 .form-input:hover { background: #fff; }
+
+/* ====== FOCUS COLOR = WARNING (Yellow/Amber) ====== */
 .form-input:focus {
   outline: none;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.08);
-  background: #fff;
+  border-color: #f0c27a !important;
+  box-shadow: 0 0 0 4px rgba(240, 194, 122, 0.2) !important;
+  background: #fffbf5 !important;
 }
-.input-error { border-color: #e74c3c !important; }
-.input-error:focus { border-color: #e74c3c !important; box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.08) !important; }
-.field-error { color: #e74c3c; font-size: 12px; font-weight: 500; margin-top: 2px; }
+
+/* ====== ERROR COLOR = Red/Pink (only shows when there's an error) ====== */
+.has-error .form-input {
+  border-color: #f0a0a0 !important;
+  background: #fff8f8 !important;
+}
+
+.has-error .form-input:focus {
+  border-color: #e88383 !important;
+  box-shadow: 0 0 0 4px rgba(240, 160, 160, 0.2) !important;
+}
+
+.input-error {
+  border-color: #f0a0a0 !important;
+  background: #fff8f8 !important;
+}
+
+.input-error:focus {
+  border-color: #e88383 !important;
+  box-shadow: 0 0 0 4px rgba(240, 160, 160, 0.2) !important;
+}
+
+.field-error {
+  color: #e74c3c;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 2px;
+}
 
 .forgot-btn {
   position: relative;
