@@ -42,8 +42,8 @@
         </div>
 
         <form @submit.prevent="handleSubmit" novalidate>
-          <!-- Email (hidden or disabled) -->
-          <div class="form-group" :class="{ 'has-error': showEmailError }">
+          <!-- Email -->
+          <div class="form-group" :class="{ 'has-error': shouldShowError('email') }">
             <label class="form-label">
               Email Address <span class="required">*</span>
             </label>
@@ -53,16 +53,16 @@
               required
               placeholder="you@example.com"
               class="form-input"
-              :class="{ 'input-error': showEmailError }"
-              @input="validateEmail"
-              @blur="touched.email = true; validateEmail()"
+              :class="{ 'input-error': shouldShowError('email') }"
+              @input="onInput('email')"
+              @blur="onBlur('email')"
               autocomplete="email"
             >
-            <span v-if="showEmailError" class="field-error">{{ emailError }}</span>
+            <span v-if="shouldShowError('email')" class="field-error">{{ emailError }}</span>
           </div>
 
           <!-- New Password -->
-          <div class="form-group" :class="{ 'has-error': showPasswordError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('password') }">
             <div class="password-wrapper">
               <label class="form-label">
                 New Password <span class="required">*</span>
@@ -74,19 +74,19 @@
                 placeholder="Minimum 8 characters"
                 minlength="8"
                 class="form-input"
-                :class="{ 'input-error': showPasswordError }"
-                @input="validatePassword"
-                @blur="touched.password = true; validatePassword()"
+                :class="{ 'input-error': shouldShowError('password') }"
+                @input="onInput('password')"
+                @blur="onBlur('password')"
               >
               <button type="button" @click="showPassword = !showPassword" class="password-toggle" tabindex="-1">
                 {{ showPassword ? 'Hide' : 'Show' }}
               </button>
             </div>
-            <span v-if="showPasswordError" class="field-error">{{ passwordError }}</span>
+            <span v-if="shouldShowError('password')" class="field-error">{{ passwordError }}</span>
           </div>
 
           <!-- Confirm Password -->
-          <div class="form-group" :class="{ 'has-error': showConfirmError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('confirm') }">
             <div class="password-wrapper">
               <label class="form-label">
                 Confirm New Password <span class="required">*</span>
@@ -97,15 +97,15 @@
                 required
                 placeholder="Re-enter new password"
                 class="form-input"
-                :class="{ 'input-error': showConfirmError }"
-                @input="validateConfirm"
-                @blur="touched.confirm = true; validateConfirm()"
+                :class="{ 'input-error': shouldShowError('confirm') }"
+                @input="onInput('confirm')"
+                @blur="onBlur('confirm')"
               >
               <button type="button" @click="showConfirm = !showConfirm" class="password-toggle" tabindex="-1">
                 {{ showConfirm ? 'Hide' : 'Show' }}
               </button>
             </div>
-            <span v-if="showConfirmError" class="field-error">{{ confirmError }}</span>
+            <span v-if="shouldShowError('confirm')" class="field-error">{{ confirmError }}</span>
           </div>
 
           <!-- Submit Button -->
@@ -184,9 +184,36 @@ export default {
     },
   },
   methods: {
+    // Handle input events - mark field as touched and validate
+    onInput(field) {
+      this.touched[field] = true
+      if (field === 'email') this.validateEmail()
+      else if (field === 'password') this.validatePassword()
+      else if (field === 'confirm') this.validateConfirm()
+    },
+
+    // Handle blur events - validate on leaving field
+    onBlur(field) {
+      this.touched[field] = true
+      if (field === 'email') this.validateEmail()
+      else if (field === 'password') this.validatePassword()
+      else if (field === 'confirm') this.validateConfirm()
+    },
+
     validateEmail() { this.touched.email = true },
     validatePassword() { this.touched.password = true },
     validateConfirm() { this.touched.confirm = true },
+
+    // Check if we should show error for a field
+    shouldShowError(field) {
+      const errorMap = {
+        email: this.emailError,
+        password: this.passwordError,
+        confirm: this.confirmError,
+      }
+      return this.touched[field] && errorMap[field] !== null
+    },
+
     async handleSubmit() {
       this.globalError = null
       this.successMessage = null
@@ -324,6 +351,7 @@ form { display: flex; flex-direction: column; gap: 16px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-size: 14px; font-weight: 600; color: #1a1a2e; }
 .required { color: #e74c3c; font-weight: 700; margin-left: 2px; }
+
 .form-input {
   width: 100%;
   padding: 12px 16px;
@@ -335,15 +363,43 @@ form { display: flex; flex-direction: column; gap: 16px; }
   background: #fafbfc;
 }
 .form-input:hover { background: #fff; }
+
+/* ====== FOCUS COLOR = WARNING (Yellow/Amber) ====== */
 .form-input:focus {
   outline: none;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.08);
-  background: #fff;
+  border-color: #f0c27a !important;
+  box-shadow: 0 0 0 4px rgba(240, 194, 122, 0.2) !important;
+  background: #fffbf5 !important;
 }
-.input-error { border-color: #e74c3c !important; }
-.input-error:focus { border-color: #e74c3c !important; box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.08) !important; }
-.field-error { color: #e74c3c; font-size: 12px; font-weight: 500; margin-top: 2px; }
+
+/* ====== ERROR COLOR = Red/Pink (only shows when there's an error) ====== */
+.has-error .form-input {
+  border-color: #f0a0a0 !important;
+  background: #fff8f8 !important;
+}
+
+.has-error .form-input:focus {
+  border-color: #e88383 !important;
+  box-shadow: 0 0 0 4px rgba(240, 160, 160, 0.2) !important;
+}
+
+.input-error {
+  border-color: #f0a0a0 !important;
+  background: #fff8f8 !important;
+}
+
+.input-error:focus {
+  border-color: #e88383 !important;
+  box-shadow: 0 0 0 4px rgba(240, 160, 160, 0.2) !important;
+}
+
+.field-error {
+  color: #e74c3c;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
 .password-wrapper { position: relative; }
 .password-wrapper .form-input { padding-right: 80px; }
 .password-toggle {
@@ -385,6 +441,7 @@ form { display: flex; flex-direction: column; gap: 16px; }
   box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
 }
 .reset-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .spinner {
   width: 20px;
   height: 20px;
@@ -394,6 +451,7 @@ form { display: flex; flex-direction: column; gap: 16px; }
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
 .login-link {
   text-align: center;
   font-size: 14px;
@@ -402,6 +460,7 @@ form { display: flex; flex-direction: column; gap: 16px; }
 }
 .login-link a { color: #ff6b35; text-decoration: none; font-weight: 600; }
 .login-link a:hover { text-decoration: underline; }
+
 @media (max-width: 480px) {
   .reset-container { padding: 28px 20px; border-radius: 16px; }
   .reset-header h1 { font-size: 24px; }
