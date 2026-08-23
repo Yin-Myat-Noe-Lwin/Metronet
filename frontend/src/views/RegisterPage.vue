@@ -43,7 +43,7 @@
 
         <form @submit.prevent="handleRegister" novalidate>
           <!-- Full Name -->
-          <div class="form-group" :class="{ 'has-error': showNameError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('name') }">
             <label class="form-label">
               Full Name <span class="required">*</span>
             </label>
@@ -53,15 +53,15 @@
               required
               placeholder="e.g., Leona Louisa"
               class="form-input"
-              :class="{ 'input-error': showNameError }"
-              @input="validateName"
-              @blur="touched.name = true; validateName()"
+              :class="{ 'input-error': shouldShowError('name') }"
+              @input="onInput('name')"
+              @blur="onBlur('name')"
             >
-            <span v-if="showNameError" class="field-error">{{ nameError }}</span>
+            <span v-if="shouldShowError('name')" class="field-error">{{ nameError }}</span>
           </div>
 
           <!-- Email -->
-          <div class="form-group" :class="{ 'has-error': showEmailError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('email') }">
             <label class="form-label">
               Email Address <span class="required">*</span>
             </label>
@@ -71,15 +71,15 @@
               required
               placeholder="you@example.com"
               class="form-input"
-              :class="{ 'input-error': showEmailError }"
-              @input="validateEmail"
-              @blur="touched.email = true; validateEmail()"
+              :class="{ 'input-error': shouldShowError('email') }"
+              @input="onInput('email')"
+              @blur="onBlur('email')"
             >
-            <span v-if="showEmailError" class="field-error">{{ emailError }}</span>
+            <span v-if="shouldShowError('email')" class="field-error">{{ emailError }}</span>
           </div>
 
           <!-- Phone -->
-          <div class="form-group" :class="{ 'has-error': showPhoneError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('phone') }">
             <label class="form-label">
               Phone Number <span class="required">*</span>
             </label>
@@ -89,15 +89,15 @@
               required
               placeholder="e.g., 09123456789"
               class="form-input"
-              :class="{ 'input-error': showPhoneError }"
-              @input="validatePhone"
-              @blur="touched.phone = true; validatePhone()"
+              :class="{ 'input-error': shouldShowError('phone') }"
+              @input="onInput('phone')"
+              @blur="onBlur('phone')"
             >
-            <span v-if="showPhoneError" class="field-error">{{ phoneError }}</span>
+            <span v-if="shouldShowError('phone')" class="field-error">{{ phoneError }}</span>
           </div>
 
           <!-- Password -->
-          <div class="form-group" :class="{ 'has-error': showPasswordError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('password') }">
             <label class="form-label">
               Password <span class="required">*</span>
             </label>
@@ -109,15 +109,15 @@
                 placeholder="Minimum 8 characters"
                 minlength="8"
                 class="form-input"
-                :class="{ 'input-error': showPasswordError }"
-                @input="validatePassword"
-                @blur="touched.password = true; validatePassword()"
+                :class="{ 'input-error': shouldShowError('password') }"
+                @input="onInput('password')"
+                @blur="onBlur('password')"
               >
               <button type="button" @click="showPassword = !showPassword" class="password-toggle" tabindex="-1">
                 {{ showPassword ? 'Hide' : 'Show' }}
               </button>
             </div>
-            <span v-if="showPasswordError" class="field-error">{{ passwordError }}</span>
+            <span v-if="shouldShowError('password')" class="field-error">{{ passwordError }}</span>
             <!-- Password Strength Indicator -->
             <div v-if="form.password.length > 0" class="password-strength">
               <div class="strength-bar">
@@ -128,7 +128,7 @@
           </div>
 
           <!-- Confirm Password -->
-          <div class="form-group" :class="{ 'has-error': showConfirmError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('confirm') }">
             <label class="form-label">
               Confirm Password <span class="required">*</span>
             </label>
@@ -139,21 +139,21 @@
                 required
                 placeholder="Re-enter your password"
                 class="form-input"
-                :class="{ 'input-error': showConfirmError }"
-                @input="validateConfirmPassword"
-                @blur="touched.confirm = true; validateConfirmPassword()"
+                :class="{ 'input-error': shouldShowError('confirm') }"
+                @input="onInput('confirm')"
+                @blur="onBlur('confirm')"
               >
               <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="password-toggle" tabindex="-1">
                 {{ showConfirmPassword ? 'Hide' : 'Show' }}
               </button>
             </div>
-            <span v-if="showConfirmError" class="field-error">{{ confirmError }}</span>
+            <span v-if="shouldShowError('confirm')" class="field-error">{{ confirmError }}</span>
           </div>
 
           <!-- Terms -->
-          <div class="form-group" :class="{ 'has-error': showTermsError }">
+          <div class="form-group" :class="{ 'has-error': shouldShowError('terms') }">
             <label class="checkbox-label">
-              <input type="checkbox" v-model="form.agreeTerms" @change="validateTerms">
+              <input type="checkbox" v-model="form.agreeTerms" @change="onChangeTerms">
               <span>
                 I agree to the
                 <router-link to="/terms" class="text-link">Terms of Service</router-link>
@@ -161,7 +161,7 @@
                 <router-link to="/privacy" class="text-link">Privacy Policy</router-link>
               </span>
             </label>
-            <span v-if="showTermsError" class="field-error">{{ termsError }}</span>
+            <span v-if="shouldShowError('terms')" class="field-error">{{ termsError }}</span>
           </div>
 
           <!-- Submit Button -->
@@ -189,7 +189,7 @@ export default {
       showPassword: false,
       showConfirmPassword: false,
       isLoading: false,
-      globalError: null,      // server-side error
+      globalError: null,
       successMessage: null,
       touched: {
         name: false,
@@ -300,13 +300,56 @@ export default {
     },
   },
   methods: {
-    // Individual validation methods (called on input/blur)
-    validateName() { this.touched.name = true },
-    validateEmail() { this.touched.email = true },
-    validatePhone() { this.touched.phone = true },
-    validatePassword() { this.touched.password = true },
-    validateConfirmPassword() { this.touched.confirm = true },
-    validateTerms() { this.touched.terms = true },
+    // Handle input events - mark field as touched and validate
+    onInput(field) {
+      this.touched[field] = true
+      // Trigger validation
+      if (field === 'name') this.validateName()
+      else if (field === 'email') this.validateEmail()
+      else if (field === 'phone') this.validatePhone()
+      else if (field === 'password') this.validatePassword()
+      else if (field === 'confirm') this.validateConfirmPassword()
+    },
+
+    // Handle blur events - validate on leaving field
+    onBlur(field) {
+      this.touched[field] = true
+      if (field === 'name') this.validateName()
+      else if (field === 'email') this.validateEmail()
+      else if (field === 'phone') this.validatePhone()
+      else if (field === 'password') this.validatePassword()
+      else if (field === 'confirm') this.validateConfirmPassword()
+    },
+
+    // Handle terms checkbox change
+    onChangeTerms() {
+      this.touched.terms = true
+      this.validateTerms()
+    },
+
+    // Individual validation methods
+    validateName() { /* touched already set */ },
+    validateEmail() { /* touched already set */ },
+    validatePhone() { /* touched already set */ },
+    validatePassword() { /* touched already set */ },
+    validateConfirmPassword() { /* touched already set */ },
+    validateTerms() { /* touched already set */ },
+
+    // Check if we should show error for a field
+    shouldShowError(field) {
+      // Map field names to their error state
+      const errorMap = {
+        name: this.nameError,
+        email: this.emailError,
+        phone: this.phoneError,
+        password: this.passwordError,
+        confirm: this.confirmError,
+        terms: this.termsError,
+      }
+
+      // Only show error if field is touched AND there's an error
+      return this.touched[field] && errorMap[field] !== null
+    },
 
     async handleRegister() {
       // Clear previous server error
@@ -357,17 +400,9 @@ export default {
           const fieldErrors = error.response.data.errors
           // Map them to our fields
           for (const [key, messages] of Object.entries(fieldErrors)) {
-            // Our fields: name, email, phone, password, password_confirmation, terms
-            // Map Laravel keys: phone_num -> phone
             let fieldKey = key
             if (key === 'phone_num') fieldKey = 'phone'
             if (this.touched.hasOwnProperty(fieldKey)) {
-              // We cannot set errors directly; we can set a global error or rely on computed.
-              // But we don't have an errors object. To show server validation errors, we can set a global error.
-              // Alternatively, we could populate a separate errors object, but we want dynamic.
-              // We'll display server validation errors in the global error message.
-              // We'll also touch the fields so they show their own errors, but they might not match.
-              // To handle server-side validation, we can set a global error with the first message.
               if (messages.length > 0) {
                 this.globalError = messages[0]
                 break
@@ -389,8 +424,6 @@ export default {
 </script>
 
 <style scoped>
-/* (Your existing styles remain unchanged – they already work well) */
-/* I'll keep them exactly as they were for consistency */
 .register-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e8ecf1 100%);
@@ -551,38 +584,33 @@ form {
   background: #fff;
 }
 
+/* ====== FOCUS COLOR = WARNING (Yellow/Amber) ====== */
 .form-input:focus {
   outline: none;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 4px rgba(255,107,53,0.08);
-  background: #fff;
+  border-color: #f0c27a !important;
+  box-shadow: 0 0 0 4px rgba(240, 194, 122, 0.2) !important;
+  background: #fffbf5 !important;
 }
 
-.form-input::-webkit-credentials-auto-fill-button,
-.form-input::-webkit-caps-lock-indicator,
-.form-input::-webkit-contacts-auto-fill-button,
-.form-input::-webkit-credentials-auto-fill-button {
-  display: none !important;
-  visibility: hidden;
-  pointer-events: none;
+/* ====== ERROR COLOR = Red/Pink (only shows when there's an error) ====== */
+.has-error .form-input {
+  border-color: #f0a0a0 !important;
+  background: #fff8f8 !important;
 }
 
-.form-input::-moz-reveal {
-  display: none !important;
-}
-
-.form-input::-ms-reveal,
-.form-input::-ms-clear {
-  display: none !important;
+.has-error .form-input:focus {
+  border-color: #e88383 !important;
+  box-shadow: 0 0 0 4px rgba(240, 160, 160, 0.2) !important;
 }
 
 .input-error {
-  border-color: #e74c3c !important;
+  border-color: #f0a0a0 !important;
+  background: #fff8f8 !important;
 }
 
 .input-error:focus {
-  border-color: #e74c3c !important;
-  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.08) !important;
+  border-color: #e88383 !important;
+  box-shadow: 0 0 0 4px rgba(240, 160, 160, 0.2) !important;
 }
 
 .field-error {
