@@ -24,15 +24,16 @@ class IspPlanUpdateRequest extends FormRequest
     {
         return [
             'name' => [
-                        'required',
+                        'sometimes',
                         'string',
                         'max:255',
                         Rule::unique('isp_plans', 'name')->ignore($this->route('id'))
                     ],
             'description' => 'sometimes|string|max:100',
-            'price' => 'sometimes|numeric|min:0',
-            'upload_speed' => 'sometimes|integer|min:1',
-            'download_speed' => 'sometimes|integer|min:1',
+            'price' => 'sometimes|numeric|min:0|max:999999',
+            'validity_months' => 'sometimes|integer|min:1|max:12',
+            'upload_speed' => 'sometimes|integer|min:1|max:200',
+            'download_speed' => 'sometimes|integer|min:1|max:200',
         ];
     }
 }
