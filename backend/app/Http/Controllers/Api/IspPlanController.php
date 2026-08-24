@@ -33,7 +33,7 @@ class IspPlanController extends Controller
             // get active plans
             $plans = Cache::remember('active_isp_plans', now()->addHours(6), function() {
                 Log::info('Cache miss - fetching plans from database');
-                return IspPlan::where('status', 1)->get();
+                return IspPlan::all();
             });
 
             Log::info('Plans fetched', ['plan' => $plans->toArray()]);
