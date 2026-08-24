@@ -27,8 +27,22 @@ class IspPlanRequest extends FormRequest
             'description' => 'required|string|max:100',
             'price' => 'required|numeric|min:0|max:999999',
             'validity_months' => 'required|integer|min:1|max:12',
-            'upload_speed' => 'required|integer|min:1|max:3',
-            'download_speed' => 'required|integer|min:1|max:3',
+            'upload_speed' => 'required|integer|min:1|max:200',
+            'download_speed' => 'required|integer|min:1|max:200',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return[
+            'name.required' => 'Plan name is required',
+            'name.unique' => 'Plan name already exists',
+            'price.required' => 'Price is required',
+            'validity_months.min' => 'Validity must be at least 1 month',
+            'upload_speed.required' => 'Upload speed is required',
+            'upload_speed.min' => 'Upload speed must be at least 1 Mbps',
+            'download_speed.required' => 'Download speed is required',
+            'download_speed.min' => 'Download speed must be at least 1 Mbps'
         ];
     }
 }
