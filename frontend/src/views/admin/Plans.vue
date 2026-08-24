@@ -92,8 +92,8 @@
           <div class="plan-card-header">
             <div class="plan-name-wrapper">
               <h3>{{ plan.name }}</h3>
-              <span class="status-badge" :class="plan.status === 1 ? 'active' : 'inactive'">
-                {{ plan.status === 1 ? 'Active' : 'Inactive' }}
+              <span class="status-badge" :class="Number(plan.status) === 1 ? 'active' : 'inactive'">
+                {{ Number(plan.status) === 1 ? 'Active' : 'Inactive' }}
               </span>
             </div>
             <div class="plan-actions">
@@ -113,8 +113,15 @@
           </div>
 
           <div class="plan-price">
-            <span class="price-amount">{{ formatPrice(plan.price) }}</span>
-            <span class="price-period">/month</span>
+            <div class="price-main">
+              <span class="price-amount">{{ formatPrice(calculateMonthlyPrice(plan.price, plan.validity_months)) }}</span>
+              <span class="price-period">/month</span>
+            </div>
+            <div class="price-total">
+              <span class="price-total-label">Total: </span>
+              <span class="price-total-amount">{{ formatPrice(plan.price) }}</span>
+              <span class="price-total-period">for {{ plan.validity_months }} month{{ plan.validity_months > 1 ? 's' : '' }}</span>
+            </div>
           </div>
 
           <div class="plan-specs">
@@ -143,39 +150,123 @@
           <h2>{{ showEditModal ? 'Edit Plan' : 'Add New Plan' }}</h2>
           <button class="modal-close" @click="closeModals">×</button>
         </div>
-        <form @submit.prevent="savePlan">
-          <div class="form-group">
-            <label>Plan Name <span class="required">*</span></label>
-            <input type="text" v-model="planForm.name" required class="form-input" placeholder="Enter plan name">
-          </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea v-model="planForm.description" rows="2" class="form-input" placeholder="Brief description of the plan"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Price (MMK) <span class="required">*</span></label>
-            <input type="number" v-model="planForm.price" required class="form-input" placeholder="Enter price">
-          </div>
+        <form @submit.prevent="savePlan" novalidate>
+          <!-- Row 1: Name & Description -->
           <div class="form-row">
-            <div class="form-group">
-              <label>Download Speed (Mbps) <span class="required">*</span></label>
-              <input type="number" v-model="planForm.download_speed" required class="form-input" placeholder="e.g., 100">
+            <div class="form-group" :class="{ 'has-error': validationErrors.name }">
+              <label>Name <span class="required">*</span></label>
+              <input
+                type="text"
+                v-model="planForm.name"
+                name="name"
+                class="form-input"
+                placeholder="Plan name"
+                maxlength="255"
+                @input="clearFieldError('name')"
+              >
+              <small v-if="validationErrors.name" class="error-text">{{ validationErrors.name[0] }}</small>
             </div>
-            <div class="form-group">
-              <label>Upload Speed (Mbps) <span class="required">*</span></label>
-              <input type="number" v-model="planForm.upload_speed" required class="form-input" placeholder="e.g., 10">
+            <div class="form-group" :class="{ 'has-error': validationErrors.description }">
+              <label>Description <span class="required">*</span></label>
+              <input
+                type="text"
+                v-model="planForm.description"
+                name="description"
+                class="form-input"
+                placeholder="Brief description"
+                maxlength="100"
+                @input="clearFieldError('description')"
+              >
+              <small v-if="validationErrors.description" class="error-text">{{ validationErrors.description[0] }}</small>
             </div>
           </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select v-model="planForm.status" class="form-input">
-              <option :value="1">Active</option>
-              <option :value="0">Inactive</option>
-            </select>
+
+          <!-- Row 2: Price & Validity -->
+          <div class="form-row">
+            <div class="form-group" :class="{ 'has-error': validationErrors.price }">
+              <label>Total Price (MMK) <span class="required">*</span></label>
+              <input
+                type="number"
+                v-model="planForm.price"
+                name="price"
+                class="form-input"
+                placeholder="0 - 999,999"
+                min="0"
+                max="999999"
+                step="0.01"
+                @input="clearFieldError('price')"
+              >
+              <small v-if="validationErrors.price" class="error-text">{{ validationErrors.price[0] }}</small>
+              <small class="hint-text" v-if="planForm.price && planForm.validity_months">
+                Monthly: {{ formatPrice(Number(planForm.price) / Number(planForm.validity_months)) }}
+              </small>
+            </div>
+            <div class="form-group" :class="{ 'has-error': validationErrors.validity_months }">
+              <label>Validity (Months) <span class="required">*</span></label>
+              <input
+                type="number"
+                v-model.number="planForm.validity_months"
+                name="validity_months"
+                class="form-input"
+                placeholder="1 - 12"
+                min="1"
+                max="12"
+                @input="clearFieldError('validity_months')"
+              >
+              <small v-if="validationErrors.validity_months" class="error-text">{{ validationErrors.validity_months[0] }}</small>
+              <small class="hint-text" v-if="planForm.price && planForm.validity_months">
+                Total: {{ formatPrice(Number(planForm.price)) }}
+              </small>
+            </div>
           </div>
+
+          <!-- Row 3: Download & Upload Speeds -->
+          <div class="form-row">
+            <div class="form-group" :class="{ 'has-error': validationErrors.download_speed }">
+              <label>Download (Mbps) <span class="required">*</span></label>
+              <input
+                type="number"
+                v-model.number="planForm.download_speed"
+                name="download_speed"
+                class="form-input"
+                placeholder="1 - 200"
+                min="1"
+                max="200"
+                @input="clearFieldError('download_speed')"
+              >
+              <small v-if="validationErrors.download_speed" class="error-text">{{ validationErrors.download_speed[0] }}</small>
+            </div>
+            <div class="form-group" :class="{ 'has-error': validationErrors.upload_speed }">
+              <label>Upload (Mbps) <span class="required">*</span></label>
+              <input
+                type="number"
+                v-model.number="planForm.upload_speed"
+                name="upload_speed"
+                class="form-input"
+                placeholder="1 - 200"
+                min="1"
+                max="200"
+                @input="clearFieldError('upload_speed')"
+              >
+              <small v-if="validationErrors.upload_speed" class="error-text">{{ validationErrors.upload_speed[0] }}</small>
+            </div>
+          </div>
+
+          <!-- Status (only shown in edit mode) -->
+          <div class="form-row" v-if="showEditModal">
+            <div class="form-group">
+              <label>Status</label>
+              <select v-model.number="planForm.status" class="form-input">
+                <option :value="1">Active</option>
+                <option :value="0">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Actions -->
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="isSaving">
-              {{ isSaving ? 'Saving...' : (showEditModal ? 'Update Plan' : 'Add Plan') }}
+              {{ isSaving ? 'Saving...' : (showEditModal ? 'Update' : 'Add') }}
             </button>
             <button type="button" class="btn-secondary" @click="closeModals">Cancel</button>
           </div>
@@ -183,7 +274,7 @@
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal - Clean & Simple -->
+    <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
       <div class="modal modal-delete">
         <div class="delete-icon">
@@ -242,10 +333,12 @@ export default {
       deletePlanId: null,
       deletePlanName: '',
       plans: [],
+      validationErrors: {},
       planForm: {
         name: '',
         description: '',
         price: '',
+        validity_months: 1,
         download_speed: '',
         upload_speed: '',
         status: 1
@@ -270,9 +363,9 @@ export default {
       }
 
       if (this.activeFilter === 'active') {
-        filtered = filtered.filter(p => p.status === 1)
+        filtered = filtered.filter(p => Number(p.status) === 1)
       } else if (this.activeFilter === 'inactive') {
-        filtered = filtered.filter(p => p.status === 0)
+        filtered = filtered.filter(p => Number(p.status) === 0)
       }
 
       return filtered
@@ -282,6 +375,13 @@ export default {
     this.fetchPlans()
   },
   methods: {
+    calculateMonthlyPrice(totalPrice, validityMonths) {
+      if (!totalPrice || !validityMonths || validityMonths === 0) {
+        return 0
+      }
+      return Number(totalPrice) / Number(validityMonths)
+    },
+
     async fetchPlans() {
       this.loading = true
       this.error = null
@@ -297,10 +397,32 @@ export default {
         }
 
         const seen = new Set()
-        this.plans = plansData.filter(plan => {
-          const duplicate = seen.has(plan.id)
-          seen.add(plan.id)
-          return !duplicate
+        this.plans = plansData
+          .filter(plan => {
+            const duplicate = seen.has(plan.id)
+            seen.add(plan.id)
+            return !duplicate
+          })
+          .map(plan => {
+            return {
+              ...plan,
+              status: Number(plan.status) || 0,
+              validity_months: Number(plan.validity_months) || 1
+            }
+          })
+
+        console.log('Plans loaded:', {
+          total: this.plans.length,
+          active: this.plans.filter(p => Number(p.status) === 1).length,
+          inactive: this.plans.filter(p => Number(p.status) === 0).length,
+          all: this.plans.map(p => ({
+            id: p.id,
+            name: p.name,
+            status: p.status,
+            price: p.price,
+            validity_months: p.validity_months,
+            monthly: this.calculateMonthlyPrice(p.price, p.validity_months)
+          }))
         })
 
       } catch (error) {
@@ -323,16 +445,23 @@ export default {
 
     getFilterCount(key) {
       if (key === 'all') return this.plans.length
-      if (key === 'active') return this.plans.filter(p => p.status === 1).length
-      if (key === 'inactive') return this.plans.filter(p => p.status === 0).length
+      if (key === 'active') return this.plans.filter(p => Number(p.status) === 1).length
+      if (key === 'inactive') return this.plans.filter(p => Number(p.status) === 0).length
       return 0
     },
 
+    clearFieldError(field) {
+      delete this.validationErrors[field]
+      this.validationErrors = { ...this.validationErrors }
+    },
+
     openAddModal() {
+      this.validationErrors = {}
       this.planForm = {
         name: '',
         description: '',
         price: '',
+        validity_months: 1,
         download_speed: '',
         upload_speed: '',
         status: 1
@@ -342,15 +471,22 @@ export default {
     },
 
     editPlan(plan) {
+      console.log('📝 Editing plan:', plan)
+      console.log('📝 Plan validity_months:', plan.validity_months)
+
+      this.validationErrors = {}
       this.editingId = plan.id
       this.planForm = {
         name: plan.name || '',
         description: plan.description || '',
         price: plan.price || '',
+        validity_months: Number(plan.validity_months) || 1,
         download_speed: plan.download_speed || '',
         upload_speed: plan.upload_speed || '',
-        status: plan.status || 1
+        status: Number(plan.status) || 1
       }
+
+      console.log('📝 Form validity_months after edit:', this.planForm.validity_months)
       this.showEditModal = true
     },
 
@@ -375,7 +511,7 @@ export default {
         await plansService.deletePlan(this.deletePlanId)
         this.showToast('Plan deactivated successfully!', 'success')
         this.closeDeleteModal()
-        this.fetchPlans()
+        await this.fetchPlans()
       } catch (error) {
         console.error('Error deleting plan:', error)
         this.showToast(error.response?.data?.message || 'Failed to deactivate plan.', 'error')
@@ -385,10 +521,84 @@ export default {
       }
     },
 
+    validateField(value, min, max, label, isInteger = true) {
+      if (value === '' || value === null || value === undefined) {
+        return { valid: false, message: `${label} is required` }
+      }
+
+      const num = Number(value)
+
+      if (isNaN(num)) {
+        return { valid: false, message: `${label} must be a valid number` }
+      }
+
+      if (isInteger && !Number.isInteger(num)) {
+        return { valid: false, message: `${label} must be a whole number` }
+      }
+
+      if (num < min) {
+        return { valid: false, message: `${label} must be at least ${min}` }
+      }
+
+      if (num > max) {
+        return { valid: false, message: `${label} must not exceed ${max}` }
+      }
+
+      return { valid: true, value: num }
+    },
+
     async savePlan() {
-      if (!this.planForm.name || !this.planForm.price ||
-          !this.planForm.download_speed || !this.planForm.upload_speed) {
-        this.showToast('Please fill in all required fields.', 'error')
+      this.validationErrors = {}
+      let hasError = false
+
+      // Validate Name
+      if (!this.planForm.name || !this.planForm.name.trim()) {
+        this.validationErrors.name = ['Name is required']
+        hasError = true
+      }
+
+      // Validate Description
+      if (!this.planForm.description || !this.planForm.description.trim()) {
+        this.validationErrors.description = ['Description is required']
+        hasError = true
+      } else if (this.planForm.description.length > 100) {
+        this.validationErrors.description = ['Max 100 characters']
+        hasError = true
+      }
+
+      // Validate Price
+      const priceResult = this.validateField(this.planForm.price, 0, 999999, 'Price', false)
+      if (!priceResult.valid) {
+        this.validationErrors.price = [priceResult.message]
+        hasError = true
+      }
+
+      // Validate Validity
+      const validityResult = this.validateField(this.planForm.validity_months, 1, 12, 'Validity')
+      if (!validityResult.valid) {
+        this.validationErrors.validity_months = [validityResult.message]
+        hasError = true
+      }
+
+      // Validate Download Speed
+      const downloadResult = this.validateField(this.planForm.download_speed, 1, 200, 'Download')
+      if (!downloadResult.valid) {
+        this.validationErrors.download_speed = [downloadResult.message]
+        hasError = true
+      }
+
+      // Validate Upload Speed
+      const uploadResult = this.validateField(this.planForm.upload_speed, 1, 200, 'Upload')
+      if (!uploadResult.valid) {
+        this.validationErrors.upload_speed = [uploadResult.message]
+        hasError = true
+      }
+
+      if (hasError) {
+        const firstKey = Object.keys(this.validationErrors)[0]
+        this.showToast(this.validationErrors[firstKey]?.[0] || 'Please fix errors', 'error')
+        const input = document.querySelector(`[name="${firstKey}"]`)
+        if (input) { input.focus(); input.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
         return
       }
 
@@ -396,16 +606,28 @@ export default {
 
       try {
         const data = {
-          name: this.planForm.name,
-          description: this.planForm.description || '',
-          price: parseFloat(this.planForm.price),
-          download_speed: parseInt(this.planForm.download_speed),
-          upload_speed: parseInt(this.planForm.upload_speed),
-          status: parseInt(this.planForm.status)
+          name: this.planForm.name.trim(),
+          description: this.planForm.description.trim(),
+          price: Number(this.planForm.price),
+          validity_months: Number(this.planForm.validity_months),
+          download_speed: Number(this.planForm.download_speed),
+          upload_speed: Number(this.planForm.upload_speed),
+          status: Number(this.planForm.status) || 1
         }
 
+        // 🔍 DEBUG: Log what's being sent
+        console.log('🔍 SENDING UPDATE DATA:')
+        console.log('Plan ID:', this.editingId)
+        console.log('Form Data:', this.planForm)
+        console.log('Data being sent:', data)
+        console.log('validity_months value:', data.validity_months)
+        console.log('validity_months type:', typeof data.validity_months)
+        console.log('========================')
+
         if (this.showEditModal) {
-          await plansService.updatePlan(this.editingId, data)
+          const response = await plansService.updatePlan(this.editingId, data)
+          console.log('✅ Update response:', response.data)
+          console.log('✅ New validity_months from response:', response.data.data?.validity_months)
           this.showToast('Plan updated successfully!', 'success')
         } else {
           await plansService.createPlan(data)
@@ -413,11 +635,29 @@ export default {
         }
 
         this.closeModals()
-        this.fetchPlans()
+        await this.fetchPlans()
 
       } catch (error) {
-        console.error('Error saving plan:', error)
-        this.showToast(error.response?.data?.message || 'Failed to save plan.', 'error')
+        console.error('❌ Error saving plan:', error)
+        console.error('❌ Error response:', error.response?.data)
+
+        if (error.response?.status === 422) {
+          if (error.response?.data?.errors && Object.keys(error.response.data.errors).length > 0) {
+            this.validationErrors = error.response.data.errors
+            const firstKey = Object.keys(this.validationErrors)[0]
+            this.showToast(this.validationErrors[firstKey]?.[0] || 'Validation failed', 'error')
+            const input = document.querySelector(`[name="${firstKey}"]`)
+            if (input) { input.focus(); input.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
+          } else if (error.response?.data?.message) {
+            this.showToast(error.response.data.message, 'error')
+          } else {
+            this.showToast('Validation failed. Please check your input.', 'error')
+          }
+        } else if (error.response?.data?.message) {
+          this.showToast(error.response.data.message, 'error')
+        } else {
+          this.showToast('Failed to save plan. Please try again.', 'error')
+        }
       } finally {
         this.isSaving = false
       }
@@ -428,10 +668,12 @@ export default {
       this.showEditModal = false
       this.editingId = null
       this.isSaving = false
+      this.validationErrors = {}
       this.planForm = {
         name: '',
         description: '',
         price: '',
+        validity_months: 1,
         download_speed: '',
         upload_speed: '',
         status: 1
@@ -439,7 +681,7 @@ export default {
     },
 
     formatPrice(price) {
-      if (!price) return '0 MMK'
+      if (!price && price !== 0) return '0 MMK'
       return new Intl.NumberFormat('my-MM', {
         style: 'currency',
         currency: 'MMK',
@@ -452,10 +694,7 @@ export default {
       this.toast.message = message
       this.toast.type = type
       this.toast.show = true
-
-      setTimeout(() => {
-        this.toast.show = false
-      }, 4000)
+      setTimeout(() => { this.toast.show = false }, 4000)
     }
   }
 }
@@ -682,7 +921,7 @@ export default {
   background: #e85a2a;
 }
 
-/* ===== EMPTY STATE - CENTERED ===== */
+/* ===== EMPTY STATE ===== */
 .empty-state {
   text-align: center;
   padding: 80px 20px;
@@ -823,8 +1062,15 @@ export default {
   background: #fecaca;
 }
 
+/* ===== PRICE DISPLAY ===== */
 .plan-price {
   margin-bottom: 16px;
+}
+
+.price-main {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
 .price-amount {
@@ -838,6 +1084,30 @@ export default {
   font-size: 14px;
 }
 
+.price-total {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 13px;
+  color: #94a3b8;
+  flex-wrap: wrap;
+}
+
+.price-total-label {
+  color: #94a3b8;
+}
+
+.price-total-amount {
+  font-weight: 600;
+  color: #475569;
+}
+
+.price-total-period {
+  color: #94a3b8;
+}
+
+/* ===== PLAN SPECS ===== */
 .plan-specs {
   display: flex;
   align-items: center;
@@ -918,10 +1188,10 @@ export default {
 }
 
 .modal-form {
-  padding: 32px;
+  padding: 24px 28px;
 }
 
-/* ===== DELETE MODAL - CLEAN & SIMPLE ===== */
+/* ===== DELETE MODAL ===== */
 .modal-delete {
   max-width: 420px;
   padding: 40px 32px;
@@ -1012,11 +1282,11 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .modal-header h2 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -1039,26 +1309,34 @@ export default {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 16px;
+  gap: 3px;
+  margin-bottom: 10px;
 }
 
 .form-group label {
   font-weight: 600;
   color: #0f172a;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .required {
   color: #dc2626;
 }
 
+.hint-text {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 .form-input {
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 14px;
   transition: border-color 0.3s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-input:focus {
@@ -1066,26 +1344,29 @@ export default {
   border-color: #ff6b35;
 }
 
-textarea.form-input {
-  resize: vertical;
-  min-height: 60px;
-  font-family: inherit;
+.form-group.has-error .form-input {
+  border-color: #dc2626;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 11px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 
 .form-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: 8px;
 }
 
 .btn-primary {
-  padding: 10px 24px;
+  padding: 8px 20px;
   background: #ff6b35;
   color: #fff;
   border: none;
@@ -1107,7 +1388,7 @@ textarea.form-input {
 }
 
 .btn-secondary {
-  padding: 10px 24px;
+  padding: 8px 20px;
   background: #f1f5f9;
   color: #64748b;
   border: none;
@@ -1204,7 +1485,7 @@ textarea.form-input {
   }
 
   .modal {
-    padding: 20px;
+    padding: 16px;
   }
 
   .form-row {
@@ -1238,7 +1519,7 @@ textarea.form-input {
   }
 
   .modal {
-    padding: 16px;
+    padding: 12px;
   }
 
   .modal-delete {
