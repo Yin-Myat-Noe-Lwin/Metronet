@@ -252,17 +252,6 @@
             </div>
           </div>
 
-          <!-- Status (only shown in edit mode) -->
-          <div class="form-row" v-if="showEditModal">
-            <div class="form-group">
-              <label>Status</label>
-              <select v-model.number="planForm.status" class="form-input">
-                <option :value="1">Active</option>
-                <option :value="0">Inactive</option>
-              </select>
-            </div>
-          </div>
-
           <!-- Actions -->
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="isSaving">
