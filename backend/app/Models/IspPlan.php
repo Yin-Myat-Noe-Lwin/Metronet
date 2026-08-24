@@ -19,6 +19,10 @@ class IspPlan extends Model
         'download_speed'
     ];
 
+    protected $casts = [
+        'validity_months' => 'integer'
+    ];
+
     public function subscriptions():HasMany
     {
         return $this->hasMany(Subscription::class);
