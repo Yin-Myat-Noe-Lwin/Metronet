@@ -285,14 +285,14 @@ VALUES
 ('Zoey', '09000000000', 'zoey@gmail.com', 1, 1, '$2y$12$2RCBemfIWVKa9a9NT7ECNOGd7OW9VsZiL2mFK7J5eyXhfbRl8ykXK', NOW(), NOW());
 
 INSERT INTO isp_plans
-(name, description, price, status, upload_speed, download_speed, created_at, updated_at)
+(name, description, price, validity_months, status, upload_speed, download_speed, created_at, updated_at)
 VALUES
-('Home Starter', 'Basic internet for browsing, messaging and social media. Best for 1-2 users.', 25000.00, 1, 10, 20, NOW(), NOW()),
-('Home Basic', 'Stable internet for streaming, online classes and daily home usage.', 35000.00, 1, 15, 30, NOW(), NOW()),
-('Home Plus', 'Fast HD streaming, video calls and light gaming for small families.', 55000.00, 1, 25, 50, NOW(), NOW()),
-('Fiber Family', 'High-speed fiber for multiple devices, streaming and online learning.', 75000.00, 1, 35, 70, NOW(), NOW()),
-('Premium Ultra', 'Ultra-fast internet for 4K streaming, gaming and smart home use.', 95000.00, 1, 50, 100, NOW(), NOW()),
-('Business Pro', 'Enterprise-grade stable connection for offices and heavy usage.', 120000.00, 1, 75, 150, NOW(), NOW());
+('Home Starter', 'Basic internet for browsing, messaging and social media. Best for 1-2 users.', 25000.00, 1, 1, 10, 20, NOW(), NOW()),
+('Home Basic', 'Stable internet for streaming, online classes and daily home usage.', 35000.00, 1, 1, 15, 30, NOW(), NOW()),
+('Home Plus', 'Fast HD streaming, video calls and light gaming for small families.', 55000.00, 1, 1, 25, 50, NOW(), NOW()),
+('Fiber Family', 'High-speed fiber for multiple devices, streaming and online learning.', 75000.00, 1, 1, 35, 70, NOW(), NOW()),
+('Premium Ultra', 'Ultra-fast internet for 4K streaming, gaming and smart home use.', 95000.00, 1, 1, 50, 100, NOW(), NOW()),
+('Business Pro', 'Enterprise-grade stable connection for offices and heavy usage.', 120000.00, 1, 1, 75, 150, NOW(), NOW());
 
 INSERT INTO `plan_discounts` (`plan_id`, `duration_months`, `discount_percentage`, `is_active`, `created_at`, `updated_at`) VALUES
 (1, 1, 0.00, 1, NOW(), NOW()),
