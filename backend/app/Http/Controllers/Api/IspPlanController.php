@@ -31,10 +31,11 @@ class IspPlanController extends Controller
     {
         try {
             // get active plans
-            $plans = Cache::remember('all_isp_plans', now()->addHours(6), function() {
-                Log::info('Cache miss - fetching plans from database');
-                return IspPlan::all();
-            });
+            // $plans = Cache::remember('all_isp_plans', now()->addHours(6), function() {
+            //     Log::info('Cache miss - fetching plans from database');
+            //     return IspPlan::all();
+            // });
+            $plans = IspPlan::all();
 
             Log::info('Plans fetched', ['plan' => $plans->toArray()]);
 
@@ -130,7 +131,7 @@ class IspPlanController extends Controller
                 'status' => 1
             ]);
 
-            Cache::forget('all_isp_plans');
+            // Cache::forget('all_isp_plans');
 
             return response()->json([
                 'message' => 'Plan created successfully',
@@ -193,7 +194,7 @@ class IspPlanController extends Controller
 
             $plan->update($validated);
 
-            Cache::forget('all_isp_plans');
+            // Cache::forget('all_isp_plans');
 
             // Check what changed
             $priceChanged = $oldData['price'] != $plan->price;
@@ -297,7 +298,7 @@ class IspPlanController extends Controller
                 'status' => 0
             ]);
 
-            Cache::forget('active_isp_plans');
+            // Cache::forget('active_isp_plans');
 
             // Notify customers about plan deactivation
             try {
